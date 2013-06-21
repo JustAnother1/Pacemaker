@@ -1,9 +1,16 @@
 Project Pacemaker
---------------------
+-----------------
 
 A host - client - system to control 3d printers, CNC milling or laser cutters.
 
+Summary
+-------
 
+The Pacemaker protocol provides an open interface to allow the separation of real-time and non-real-time control components for 3D printers, CNC machines and laser cutters. 
+
+This has the huge benefit of allowing new controller hardware (the real-time component) to work with existing host software solutions (the non-real-time component). This makes it easy to expand the Pacemaker system to new machines.
+
+Pacemaker allows a much richer level of machine control by the non-real-time host software than is possible with typical G-code based systems. This provides feature-rich host software, more integrated start-to-finish tool chain solutions whilst still being able to operate on a wide range of platforms. 
 
 LICENSE
 -------
