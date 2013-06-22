@@ -1,0 +1,31 @@
+<project default="Pacemaker">
+    <target name="Pacemaker">
+        <delete file="Pacemaker.jar"></delete>
+        <tstamp>
+            <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
+        </tstamp>
+        <javac srcdir="src" destdir="bin" includeantruntime="false" />
+        <jar destfile="Pacemaker.jar" update="false">
+            <fileset dir="bin">
+                <include name="**/*.class" />
+            </fileset>
+            <manifest>
+                <attribute name="Main-Class" value="de.nomagic.printerController.ControllerMain" />
+            	<attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar"/>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Built-Date" value="${TODAY}"/>
+            </manifest>
+        </jar>
+        <jar destfile="PacemakerTest.jar" update="false">
+            <fileset dir="bin">
+                <include name="**/*.class" />
+            </fileset>
+            <manifest>
+                <attribute name="Main-Class" value="de.nomagic.test.pacemaker.ClientMain" />
+            	<attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar"/>
+                <attribute name="Built-By" value="${user.name}"/>
+                <attribute name="Built-Date" value="${TODAY}"/>
+            </manifest>
+        </jar>
+    </target>
+</project>

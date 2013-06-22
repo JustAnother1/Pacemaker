@@ -12,7 +12,20 @@ This has the huge benefit of allowing new controller hardware (the real-time com
 
 Pacemaker allows a much richer level of machine control by the non-real-time host software than is possible with typical G-code based systems. This provides feature-rich host software, more integrated start-to-finish tool chain solutions whilst still being able to operate on a wide range of platforms. 
 
-LICENSE
+
+Building and Starting
+---------------------
+
+An ant script(build.xml) is provided. With Ant installed building is just:
+
++$ ant+
+
+The Pacemaker host application can be started like this:
+
++$ java -jar Pacemaker.jar+
+
+
+License
 -------
 
 This program is free software; you can redistribute it and/or
