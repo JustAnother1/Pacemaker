@@ -94,9 +94,6 @@ public abstract class ClientConnection
         (byte)0xFA, (byte)0xFD, (byte)0xF4, (byte)0xF3
     };
 
-    /**
-     *
-     */
     public ClientConnection()
     {
     }
@@ -129,10 +126,11 @@ public abstract class ClientConnection
     {
         byte crc = 0;
         int pos = offset;
-        while (length-- > 0)
+        while (length > 0)
         {
-             crc = crc_array[buf[pos] ^ crc];
+             crc = crc_array[0xff & (buf[pos] ^ crc)];
              pos = pos + 1;
+             length = length - 1;
          }
          return crc;
     }

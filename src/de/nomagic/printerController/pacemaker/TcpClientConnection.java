@@ -20,6 +20,8 @@ import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.Tool;
+
 /** TCP Communiocation to test protocol. Protocol Layer is UART !
  *
  * @author Lars P&ouml;tter
@@ -78,7 +80,8 @@ public class TcpClientConnection extends ClientConnection
         {
             buf[4 + i] = parameter[i];
         }
-        buf[4 + parameter.length] = getCRCfor(buf, 3 + parameter.length);
+        // log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(buf, 4 + parameter.length));
+        buf[4 + parameter.length] = getCRCfor(buf, 4 + parameter.length);
         try
         {
             out.write(buf);
@@ -110,6 +113,7 @@ public class TcpClientConnection extends ClientConnection
                 isSynced = true;
             }
             } while (false == isSynced);
+            // log.traceSystem.out.print("Sync-");
 
             // Reply Code
             final byte reply =  (byte)getAByte();
@@ -119,6 +123,7 @@ public class TcpClientConnection extends ClientConnection
                 log.error("Invalid reply code !");
                 return null;
             }
+            // log.traceSystem.out.print("Order-");
 
             // Length
             final int replyLength = getAByte();
@@ -128,6 +133,8 @@ public class TcpClientConnection extends ClientConnection
                 log.error("Invalid length !");
                 return null;
             }
+            // log.traceSystem.out.print("Length(" + replyLength + ")-");
+
             final byte[] buf = new byte[4 + replyLength];
             buf[0] = Protocol.START_OF_CLIENT_FRAME;
             buf[1] = reply;
@@ -141,21 +148,26 @@ public class TcpClientConnection extends ClientConnection
                 log.error("Wrong Sequence Number !");
                 return null;
             }
+            // log.traceSystem.out.println("Control-");
 
             // Parameter
             for(int i = 0; i < (replyLength - 1);i++)
             {
                 buf[4 + i] = (byte)getAByte();
+                // log.traceSystem.out.print(" " + i);
             }
+            // log.traceSystem.out.print("Parameter bytes-");
 
             // Error Check Code (CRC-8)
-            final byte receivedCRC = (byte)getAByte();
-            if(getCRCfor(buf, replyLength + 3) != receivedCRC)
+            buf[3 + replyLength] = (byte)getAByte();
+            if(getCRCfor(buf, replyLength + 3) != buf[3 + replyLength])
             {
                 // TODO Retransmit
                 log.error("Wrong CRC !");
                 return null;
             }
+            // log.traceSystem.out.println("CRC !");
+            return new Reply(buf);
         }
         catch (final IOException e)
         {

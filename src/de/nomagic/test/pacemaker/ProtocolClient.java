@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 
+import de.nomagic.printerController.Tool;
 import de.nomagic.printerController.pacemaker.ClientConnection;
 import de.nomagic.printerController.pacemaker.Protocol;
 
@@ -164,6 +165,7 @@ public class ProtocolClient
 
     private void sendCachedResponse() throws IOException
     {
+    	System.out.println("sending cached Reply !");
         out.write(cachedResponse, 0, cachedResponseLength);
         out.flush();
     }
@@ -205,7 +207,7 @@ public class ProtocolClient
         {
             response[4 + i] = (byte)list[i];
         }
-        addChecksumControlAndSend(list.length + 1);
+        addChecksumControlAndSend(list.length + 3);
     }
 
     private void sendByte(final int parameterByte) throws IOException
@@ -226,7 +228,7 @@ public class ProtocolClient
         {
             response[4 + i] = str[i];
         }
-        addChecksumControlAndSend(str.length + 1);
+        addChecksumControlAndSend(str.length + 3);
     }
 
     private void sendReply(final byte replyCode, final int parameterByte) throws IOException
@@ -250,6 +252,7 @@ public class ProtocolClient
             response[3] = (byte)(0x0f & control);
         }
         response[cspos] = ClientConnection.getCRCfor(response, cspos);
+        System.out.println("sending : " + Tool.fromByteBufferToHexString(response, bytesToSend));
         out.write(response, 0, bytesToSend);
         out.flush();
         cachedResponse = response;
@@ -259,14 +262,16 @@ public class ProtocolClient
 
     private int calculateChecksum(final int order, final int length, final int control, final int[] parameter)
     {
-        final byte[] data = new byte[parameter.length + 3];
-        data[0] = (byte)order;
-        data[1] = (byte)length;
-        data[2] = (byte)control;
-        for(int i = 0; i < parameter.length; i++)
+        final byte[] data = new byte[length + 3];
+        data[0] = Protocol.START_OF_HOST_FRAME;
+        data[1] = (byte)order;
+        data[2] = (byte)length;
+        data[3] = (byte)control;
+        for(int i = 0; i < (length - 1); i++)
         {
-            data[i + 3] = (byte)parameter[i];
+            data[i + 4] = (byte)parameter[i];
         }
+        System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data));
         return ClientConnection.getCRCfor(data);
     }
 

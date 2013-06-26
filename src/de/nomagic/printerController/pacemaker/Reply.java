@@ -22,24 +22,28 @@ import java.nio.charset.Charset;
  */
 public class Reply
 {
-    private final byte replyCode;
-    private final byte control;
-    private final byte[] parameter;
-    public Reply(final byte replyCode, final byte control, final byte[] parameter)
+    private final static int POS_OF_REPLY_CODE = 1;
+    private final static int POS_OF_LENGTH = 2;
+    private final static int POS_OF_CONTROL = 3;
+    private final static int POS_OF_PARAMETER_START = 4;
+
+    private final byte[] data;
+    private final int length;
+
+    public Reply(byte[] data)
     {
-        this.replyCode = replyCode;
-        this.control = control;
-        this.parameter = parameter;
+        this.data = data;
+        length = (0xff & data[POS_OF_LENGTH]) - 1;
     }
 
     public byte getReplyCode()
     {
-        return replyCode;
+        return data[POS_OF_REPLY_CODE];
     }
 
     public boolean isOKReply()
     {
-        if(Protocol.RESPONSE_OK == replyCode)
+        if(Protocol.RESPONSE_OK == data[POS_OF_REPLY_CODE])
         {
             return true;
         }
@@ -51,19 +55,24 @@ public class Reply
 
     public byte getControl()
     {
-        return control;
+        return data[POS_OF_CONTROL];
     }
 
     public byte[] getParameter()
     {
-        return parameter;
+        byte[] res = new byte[length];
+        for(int i = 0; i < length; i ++)
+        {
+            res[i] = data[i + POS_OF_PARAMETER_START];
+        }
+        return res;
     }
 
     public String getParameterAsString(final int offset)
     {
-        final String res = new String(parameter,
-                                      offset,
-                                      parameter.length -offset,
+        final String res = new String(data,
+                                      offset + POS_OF_PARAMETER_START,
+                                      length - offset,
                                       Charset.forName("UTF-8"));
         return res;
     }

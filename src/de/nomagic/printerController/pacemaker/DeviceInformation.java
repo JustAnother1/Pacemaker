@@ -108,6 +108,11 @@ public class DeviceInformation
         BoardName = requestString(Protocol.INFO_BOARD_NAME_STRING);
         givenName = requestString(Protocol.INFO_GIVEN_NAME_STRING);
         majorVersionsSupported = requestList(Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR);
+        if(null == majorVersionsSupported)
+        {
+            log.error("Could not read the supported protocol major versions !");
+            return false;
+        }
         minorVersionSupportedUpTo = requestInteger(Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MINOR);
 
         final Vector<Integer> extensions = requestList(Protocol.INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS);
@@ -257,11 +262,13 @@ public class DeviceInformation
         final Reply r = uartProtocol.sendInformationRequest(which);
         if(null == r)
         {
+            log.error("Received no Reply !");
             return null;
         }
         final byte[] p = r.getParameter();
         if(null == p)
         {
+            log.error("Received no Reply !");
             return null;
         }
         final Vector<Integer> res = new Vector<Integer>();
