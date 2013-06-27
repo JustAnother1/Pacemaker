@@ -35,6 +35,8 @@ public class Cfg
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
+    public final static String COMMENT_START = "#";
+
     private enum Sect {GENERAL, AXIS, HEATERS, TEMPERATURES, INVALID}
     public final static String GENERAL_SECTION = "[general]";
     public final static String SETTING_CLIENT_DEVICE_STRING = "CLientDeviceString = ";
@@ -147,131 +149,137 @@ public class Cfg
             Sect curSection = Sect.INVALID;
             while(null != curLine)
             {
+                curLine = removeCommentsFrom(curLine);
+                if(0 < curLine.length())
+                {
+                    if(true == curLine.startsWith("["))
+                    {
+                        // new Section
+                        if(true == GENERAL_SECTION.equals(curLine))
+                        {
+                            curSection = Sect.GENERAL;
+                        }
+                        else if(true == AXIS_SECTION.equals(curLine))
+                        {
+                            curSection = Sect.AXIS;
+                        }
+                        else if(true == HEATERS_SECTION.equals(curLine))
+                        {
+                            curSection = Sect.HEATERS;
+                        }
+                        else if(true == TEMPERATURES_SECTION.equals(curLine))
+                        {
+                            curSection = Sect.TEMPERATURES;
+                        }
+                    }
+                    else
+                    {
+                        switch(curSection)
+                        {
+                        case GENERAL:
+                            if(true == curLine.startsWith(SETTING_CLIENT_DEVICE_STRING))
+                            {
+                                ClientDeviceString = getValueFrom(curLine);
+                            }
+                            break;
+
+                        case AXIS:
+                            char axis = curLine.charAt(0);
+                            axis = Character.toUpperCase(axis);
+                            int axisIdx = -1;
+                            for(int i = 0; i < NUMBER_OF_AXIS; i++)
+                            {
+                                if(axis == axisNames[i])
+                                {
+                                    axisIdx = i;
+                                    break;
+                                }
+                            }
+                            if(-1 == axisIdx)
+                            {
+                                log.warn("Found Configuration for undefined axis {} !", axis);
+                            }
+                            else
+                            {
+                                final String axissettingLine = curLine.substring(2);
+                                if(true == axissettingLine.startsWith(SETTING_STEPS_PER_MILLIMETER))
+                                {
+                                    axisMapping[axisIdx].setStepsPerMillimeter(getDoubleValueFrom(axissettingLine));
+                                }
+                                else if(true == axissettingLine.startsWith(SETTING_MIN_SWITCH))
+                                {
+                                    axisMapping[axisIdx].setMinSwitch((byte)getIntValueFrom(axissettingLine));
+                                }
+                                else if(true == axissettingLine.startsWith(SETTING_MAX_SWITCH))
+                                {
+                                    axisMapping[axisIdx].setMaxSwitch((byte)getIntValueFrom(axissettingLine));
+                                }
+                                else if(true == axissettingLine.startsWith(SETTING_STEPPER_ONE))
+                                {
+                                    axisMapping[axisIdx].setStepperNumber((byte)getIntValueFrom(axissettingLine));
+                                }
+                                else if(true == axissettingLine.startsWith(SETTING_STEPPER_TWO))
+                                {
+                                    axisMapping[axisIdx].setSecondStepperNumber((byte)getIntValueFrom(axissettingLine));
+                                }
+                            }
+                            break;
+
+                        case HEATERS:
+                            if(true == curLine.startsWith(SETTING_CHAMBER_HEATER_STRING))
+                            {
+                                heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_PRINT_BED_HEATER_STRING))
+                            {
+                                heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_EXTRUDER_ONE_HEATER_STRING))
+                            {
+                                heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_EXTRUDER_TWO_HEATER_STRING))
+                            {
+                                heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_EXTRUDER_THREE_HEATER_STRING))
+                            {
+                                heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            break;
+
+                        case TEMPERATURES:
+                            if(true == curLine.startsWith(SETTING_CHAMBER_TEMP_SENSOR_STRING))
+                            {
+                                temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_PRINT_BED_TEMP_SENSOR_STRING))
+                            {
+                                temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_EXTRUDER_ONE_TEMP_SENSOR_STRING))
+                            {
+                                temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_EXTRUDER_TWO_TEMP_SENSOR_STRING))
+                            {
+                                temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_EXTRUDER_THREE_TEMP_SENSOR_STRING))
+                            {
+                                temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
+                            }
+                            break;
+
+                        default:
+                            log.error("Found Text in Invalid Section ! ");
+                            break;
+                        }
+                    }
+                }
+                // else -> the line is empty -> nothing to do with it !
+                // We are done with this line -> Read the next line.
                 curLine = br.readLine();
-                if(true == curLine.startsWith("["))
-                {
-                    // new Section
-                    if(true == GENERAL_SECTION.equals(curLine))
-                    {
-                        curSection = Sect.GENERAL;
-                    }
-                    else if(true == AXIS_SECTION.equals(curLine))
-                    {
-                        curSection = Sect.AXIS;
-                    }
-                    else if(true == HEATERS_SECTION.equals(curLine))
-                    {
-                        curSection = Sect.HEATERS;
-                    }
-                    else if(true == TEMPERATURES_SECTION.equals(curLine))
-                    {
-                        curSection = Sect.TEMPERATURES;
-                    }
-                }
-                else
-                {
-                    switch(curSection)
-                    {
-                    case GENERAL:
-                        if(true == curLine.startsWith(SETTING_CLIENT_DEVICE_STRING))
-                        {
-                            ClientDeviceString = getValueFrom(curLine);
-                        }
-                        break;
-
-                    case AXIS:
-                        char axis = curLine.charAt(0);
-                        axis = Character.toUpperCase(axis);
-                        int axisIdx = -1;
-                        for(int i = 0; i < NUMBER_OF_AXIS; i++)
-                        {
-                            if(axis == axisNames[i])
-                            {
-                                axisIdx = i;
-                                break;
-                            }
-                        }
-                        if(-1 == axisIdx)
-                        {
-                            log.warn("Found Configuration for undefined axis {} !", axis);
-                        }
-                        else
-                        {
-                            final String axissettingLine = curLine.substring(2);
-                            if(true == axissettingLine.startsWith(SETTING_STEPS_PER_MILLIMETER))
-                            {
-                                axisMapping[axisIdx].setStepsPerMillimeter(getDoubleValueFrom(axissettingLine));
-                            }
-                            else if(true == axissettingLine.startsWith(SETTING_MIN_SWITCH))
-                            {
-                                axisMapping[axisIdx].setMinSwitch((byte)getIntValueFrom(axissettingLine));
-                            }
-                            else if(true == axissettingLine.startsWith(SETTING_MAX_SWITCH))
-                            {
-                                axisMapping[axisIdx].setMaxSwitch((byte)getIntValueFrom(axissettingLine));
-                            }
-                            else if(true == axissettingLine.startsWith(SETTING_STEPPER_ONE))
-                            {
-                                axisMapping[axisIdx].setStepperNumber((byte)getIntValueFrom(axissettingLine));
-                            }
-                            else if(true == axissettingLine.startsWith(SETTING_STEPPER_TWO))
-                            {
-                                axisMapping[axisIdx].setSecondStepperNumber((byte)getIntValueFrom(axissettingLine));
-                            }
-                        }
-                        break;
-
-                    case HEATERS:
-                        if(true == curLine.startsWith(SETTING_CHAMBER_HEATER_STRING))
-                        {
-                            heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        else if(true == curLine.startsWith(SETTING_PRINT_BED_HEATER_STRING))
-                        {
-                            heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        else if(true == curLine.startsWith(SETTING_EXTRUDER_ONE_HEATER_STRING))
-                        {
-                            heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        else if(true == curLine.startsWith(SETTING_EXTRUDER_TWO_HEATER_STRING))
-                        {
-                            heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        else if(true == curLine.startsWith(SETTING_EXTRUDER_THREE_HEATER_STRING))
-                        {
-                            heaterMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        break;
-
-                    case TEMPERATURES:
-                        if(true == curLine.startsWith(SETTING_CHAMBER_TEMP_SENSOR_STRING))
-                        {
-                            temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        else if(true == curLine.startsWith(SETTING_PRINT_BED_TEMP_SENSOR_STRING))
-                        {
-                            temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        else if(true == curLine.startsWith(SETTING_EXTRUDER_ONE_TEMP_SENSOR_STRING))
-                        {
-                            temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        else if(true == curLine.startsWith(SETTING_EXTRUDER_TWO_TEMP_SENSOR_STRING))
-                        {
-                            temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        else if(true == curLine.startsWith(SETTING_EXTRUDER_THREE_TEMP_SENSOR_STRING))
-                        {
-                            temperatureSensorMapping[CHAMBER]  = getIntValueFrom(curLine);
-                        }
-                        break;
-
-                    default:
-                        log.error("Found Text in Invalid Section ! ");
-                        break;
-                    }
-                }
             }
             br.close();
             return true;
@@ -281,6 +289,19 @@ public class Cfg
             e.printStackTrace();
         }
         return false;
+    }
+
+    private String removeCommentsFrom(String aLine)
+    {
+        if(true == aLine.contains(COMMENT_START))
+        {
+            String res = aLine.substring(0, aLine.indexOf(COMMENT_START));
+            return res.trim();
+        }
+        else
+        {
+            return aLine.trim();
+        }
     }
 
     private String getValueFrom(final String line)
