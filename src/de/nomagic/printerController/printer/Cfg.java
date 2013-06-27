@@ -39,27 +39,27 @@ public class Cfg
 
     private enum Sect {GENERAL, AXIS, HEATERS, TEMPERATURES, INVALID}
     public final static String GENERAL_SECTION = "[general]";
-    public final static String SETTING_CLIENT_DEVICE_STRING = "CLientDeviceString = ";
+    public final static String SETTING_CLIENT_DEVICE_STRING = "CLientDeviceString";
     public final static String AXIS_SECTION = "[axis]";
-    public final static String SETTING_STEPS_PER_MILLIMETER = "steps per millimeter = ";
-    public final static String SETTING_MIN_SWITCH = "index of minimal switch = ";
-    public final static String SETTING_MAX_SWITCH = "index of maximal switch = ";
-    public final static String SETTING_STEPPER_ONE = "index of stepper motor = ";
-    public final static String SETTING_STEPPER_TWO = "index of second stepper motor = ";
+    public final static String SETTING_STEPS_PER_MILLIMETER = "steps per millimeter";
+    public final static String SETTING_MIN_SWITCH = "index of minimal switch";
+    public final static String SETTING_MAX_SWITCH = "index of maximal switch";
+    public final static String SETTING_STEPPER_ONE = "index of stepper motor";
+    public final static String SETTING_STEPPER_TWO = "index of second stepper motor";
 
 
     public final static String HEATERS_SECTION = "[heaters]";
-    public final static String SETTING_CHAMBER_HEATER_STRING = "chamber heater =";
-    public final static String SETTING_PRINT_BED_HEATER_STRING = "print bed heater =";
-    public final static String SETTING_EXTRUDER_ONE_HEATER_STRING = "extruder one heater =";
-    public final static String SETTING_EXTRUDER_TWO_HEATER_STRING = "extruder two heater =";
-    public final static String SETTING_EXTRUDER_THREE_HEATER_STRING = "extruder three heater =";
+    public final static String SETTING_CHAMBER_HEATER_STRING = "chamber heater";
+    public final static String SETTING_PRINT_BED_HEATER_STRING = "print bed heater";
+    public final static String SETTING_EXTRUDER_ONE_HEATER_STRING = "extruder one heater";
+    public final static String SETTING_EXTRUDER_TWO_HEATER_STRING = "extruder two heater";
+    public final static String SETTING_EXTRUDER_THREE_HEATER_STRING = "extruder three heater";
     public final static String TEMPERATURES_SECTION = "[temperatures]";
-    public final static String SETTING_CHAMBER_TEMP_SENSOR_STRING = "chamber temperature sensor =";
-    public final static String SETTING_PRINT_BED_TEMP_SENSOR_STRING = "print bed temperature sensor =";
-    public final static String SETTING_EXTRUDER_ONE_TEMP_SENSOR_STRING = "extruder one temperature sensor =";
-    public final static String SETTING_EXTRUDER_TWO_TEMP_SENSOR_STRING = "extruder two temperature sensor =";
-    public final static String SETTING_EXTRUDER_THREE_TEMP_SENSOR_STRING = "extruder three temperature sensor =";
+    public final static String SETTING_CHAMBER_TEMP_SENSOR_STRING = "chamber temperature sensor";
+    public final static String SETTING_PRINT_BED_TEMP_SENSOR_STRING = "print bed temperature sensor";
+    public final static String SETTING_EXTRUDER_ONE_TEMP_SENSOR_STRING = "extruder one temperature sensor";
+    public final static String SETTING_EXTRUDER_TWO_TEMP_SENSOR_STRING = "extruder two temperature sensor";
+    public final static String SETTING_EXTRUDER_THREE_TEMP_SENSOR_STRING = "extruder three temperature sensor";
 
     private String ClientDeviceString = null;
     private final AxisConfiguration[] axisMapping = new AxisConfiguration[NUMBER_OF_AXIS];
@@ -103,30 +103,30 @@ public class Cfg
         try
         {
             ow.write(GENERAL_SECTION + "\n");
-            ow.write(SETTING_CLIENT_DEVICE_STRING + ClientDeviceString + "\n");
+            ow.write(SETTING_CLIENT_DEVICE_STRING + " = " + ClientDeviceString + "\n");
 
             ow.write(HEATERS_SECTION + "\n");
-            ow.write(SETTING_CHAMBER_HEATER_STRING + heaterMapping[CHAMBER] + "\n");
-            ow.write(SETTING_PRINT_BED_HEATER_STRING + heaterMapping[PRINT_BED] + "\n");
-            ow.write(SETTING_EXTRUDER_ONE_HEATER_STRING + heaterMapping[EXTRUDER_1] + "\n");
-            ow.write(SETTING_EXTRUDER_TWO_HEATER_STRING + heaterMapping[EXTRUDER_2] + "\n");
-            ow.write(SETTING_EXTRUDER_THREE_HEATER_STRING + heaterMapping[EXTRUDER_3] + "\n");
+            ow.write(SETTING_CHAMBER_HEATER_STRING + " = " + heaterMapping[CHAMBER] + "\n");
+            ow.write(SETTING_PRINT_BED_HEATER_STRING + " = " + heaterMapping[PRINT_BED] + "\n");
+            ow.write(SETTING_EXTRUDER_ONE_HEATER_STRING + " = " + heaterMapping[EXTRUDER_1] + "\n");
+            ow.write(SETTING_EXTRUDER_TWO_HEATER_STRING + " = " + heaterMapping[EXTRUDER_2] + "\n");
+            ow.write(SETTING_EXTRUDER_THREE_HEATER_STRING + " = " + heaterMapping[EXTRUDER_3] + "\n");
 
             ow.write(TEMPERATURES_SECTION + "\n");
-            ow.write(SETTING_CHAMBER_TEMP_SENSOR_STRING + temperatureSensorMapping[CHAMBER] + "\n");
-            ow.write(SETTING_PRINT_BED_TEMP_SENSOR_STRING + temperatureSensorMapping[PRINT_BED] + "\n");
-            ow.write(SETTING_EXTRUDER_ONE_TEMP_SENSOR_STRING + temperatureSensorMapping[EXTRUDER_1] + "\n");
-            ow.write(SETTING_EXTRUDER_TWO_TEMP_SENSOR_STRING + temperatureSensorMapping[EXTRUDER_2] + "\n");
-            ow.write(SETTING_EXTRUDER_THREE_TEMP_SENSOR_STRING + temperatureSensorMapping[EXTRUDER_3] + "\n");
+            ow.write(SETTING_CHAMBER_TEMP_SENSOR_STRING +  " = " + temperatureSensorMapping[CHAMBER] + "\n");
+            ow.write(SETTING_PRINT_BED_TEMP_SENSOR_STRING +  " = " + temperatureSensorMapping[PRINT_BED] + "\n");
+            ow.write(SETTING_EXTRUDER_ONE_TEMP_SENSOR_STRING +  " = " + temperatureSensorMapping[EXTRUDER_1] + "\n");
+            ow.write(SETTING_EXTRUDER_TWO_TEMP_SENSOR_STRING +  " = " + temperatureSensorMapping[EXTRUDER_2] + "\n");
+            ow.write(SETTING_EXTRUDER_THREE_TEMP_SENSOR_STRING +  " = " + temperatureSensorMapping[EXTRUDER_3] + "\n");
 
             ow.write(AXIS_SECTION + "\n");
             for(int i = 0; i < NUMBER_OF_AXIS; i++)
             {
-                ow.write(axisNames[i] + " " + SETTING_STEPS_PER_MILLIMETER + axisMapping[i].getStepsPerMillimeter() + "\n");
-                ow.write(axisNames[i] + " " + SETTING_MIN_SWITCH + axisMapping[i].getMinSwitch() + "\n");
-                ow.write(axisNames[i] + " " + SETTING_MAX_SWITCH + axisMapping[i].getMaxSwitch() + "\n");
-                ow.write(axisNames[i] + " " + SETTING_STEPPER_ONE + axisMapping[i].getStepperNumber() + "\n");
-                ow.write(axisNames[i] + " " + SETTING_STEPPER_TWO + axisMapping[i].getSecondStepper() + "\n");
+                ow.write(axisNames[i] + " " + SETTING_STEPS_PER_MILLIMETER + " = " + axisMapping[i].getStepsPerMillimeter() + "\n");
+                ow.write(axisNames[i] + " " + SETTING_MIN_SWITCH + " = " + axisMapping[i].getMinSwitch() + "\n");
+                ow.write(axisNames[i] + " " + SETTING_MAX_SWITCH + " = " + axisMapping[i].getMaxSwitch() + "\n");
+                ow.write(axisNames[i] + " " + SETTING_STEPPER_ONE + " = " + axisMapping[i].getStepperNumber() + "\n");
+                ow.write(axisNames[i] + " " + SETTING_STEPPER_TWO + " = " + axisMapping[i].getSecondStepper() + "\n");
             }
 
             ow.flush();
@@ -311,12 +311,16 @@ public class Cfg
 
     private int getIntValueFrom(final String line)
     {
-        return Integer.parseInt(line.substring(line.indexOf('=') + 1));
+        String hlp = line.substring(line.indexOf('=') + 1);
+        hlp = hlp.trim();
+        return Integer.parseInt(hlp);
     }
 
     private double getDoubleValueFrom(final String line)
     {
-        return Double.parseDouble(line.substring(line.indexOf('=') + 1));
+        String hlp = line.substring(line.indexOf('=') + 1);
+        hlp = hlp.trim();
+        return Double.parseDouble(hlp);
     }
 
     public void setClientDeviceString(final String ClientDeviceString)

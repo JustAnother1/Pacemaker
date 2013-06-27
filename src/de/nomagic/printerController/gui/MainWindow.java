@@ -28,7 +28,6 @@ import de.nomagic.printerController.printer.PrintProcess;
 public class MainWindow extends JFrame
 {
     private static final long serialVersionUID = 1L;
-    private final ClientPanel clientPane;
     private final PrinterStatusPanel printerStatusPanel;
     private final MachineControlPanel machineControlPanel;
 
@@ -44,17 +43,13 @@ public class MainWindow extends JFrame
 
         // add all sub Panes
 
-        // connection to Client Panel (connect, disconnect,...)
-        clientPane = new ClientPanel(pp);
-        this.add(clientPane.getPanel(), BorderLayout.PAGE_END);
-
         // Printer Status Panel (cur extruder, cur Temperature, cur Position of print head,....)
         printerStatusPanel = new PrinterStatusPanel(pp);
         this.add(printerStatusPanel.getPanel(), BorderLayout.EAST);
 
         // Machine Control Panel
-        machineControlPanel = new MachineControlPanel(pp);
-        this.add(machineControlPanel.getPanel(), BorderLayout.CENTER);
+        machineControlPanel = new MachineControlPanel(pp, printerStatusPanel);
+        this.add(machineControlPanel.getPanel(), BorderLayout.WEST);
 
         // End of Panels
         this.pack();

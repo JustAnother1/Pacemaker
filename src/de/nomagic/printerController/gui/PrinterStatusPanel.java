@@ -30,9 +30,11 @@ import de.nomagic.printerController.printer.PrintProcess;
  */
 public class PrinterStatusPanel
 {
+    private final static String OFFLINE_MESSAGE = "Status Information not available !";
+
     private final PrintProcess pp;
     private final JPanel myPanel = new JPanel();
-    private final JLabel statusLabel = new JLabel("Status Information not available !");
+    private final JLabel statusLabel = new JLabel(OFFLINE_MESSAGE);
 
     public PrinterStatusPanel(final PrintProcess pp)
     {
@@ -46,6 +48,16 @@ public class PrinterStatusPanel
     public Component getPanel()
     {
         return myPanel;
+    }
+
+    public void setToOffline()
+    {
+        statusLabel.setText(OFFLINE_MESSAGE);
+    }
+
+    public void setToOnline()
+    {
+        statusLabel.setText("Connected to Pacemaker client !");
     }
 
 }

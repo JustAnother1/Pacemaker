@@ -38,9 +38,11 @@ import de.nomagic.printerController.printer.PrintProcess;
  */
 public class ControllerMain
 {
+    public final static String DEFAULT_CONFIGURATION_FILE_NAME = "pacemaker.cfg";
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final Cfg cfg = new Cfg();
     private String fileToPrint = null;
+    private boolean hasReadConfiguration = false;
 
     /**
      *
@@ -55,11 +57,12 @@ public class ControllerMain
         System.out.println("Parameters:");
         System.out.println("-h                         : print this message.");
         System.out.println("-p <G-Code File>           : print the file and exit");
-        System.out.println("-r <Configuration File>    : read configuration from file");
+        System.out.println("-r <Configuration File>    : read configuration from file\n"
+                         + "                           : defaults to " + DEFAULT_CONFIGURATION_FILE_NAME);
         System.out.println("-c TCP:<host or ip>:<port> : connect to client using TCP");
-        System.out.println("\n" +
-        		           "-c UART:<device>,<baudrate>,<bits per symbol>,<parity>,<Numbe of Stop Bits>\n" +
-                           "                           : connect to client using UART");
+        System.out.println("\n"
+                         + "-c UART:<device>,<baudrate>,<bits per symbol>,<parity>,<Numbe of Stop Bits>\n"
+                         + "                           : connect to client using UART");
     }
 
     public boolean parseCommandLineParameters(final String[] args)
@@ -90,9 +93,11 @@ public class ControllerMain
                     {
                         final FileInputStream cfgIn = new FileInputStream(new File(args[i]));
                         cfg.readFrom(cfgIn);
+                        hasReadConfiguration = true;
                     }
                     catch (final FileNotFoundException e)
                     {
+                        hasReadConfiguration = false;
                         System.err.println(e.getLocalizedMessage());
                         return false;
                     }
@@ -110,12 +115,33 @@ public class ControllerMain
                 return false;
             }
         }
+        if(false == hasReadConfiguration)
+        {
+            System.out.println("No Configuration File defined. Trying default (" + DEFAULT_CONFIGURATION_FILE_NAME + ") !");
+            try
+            {
+                final FileInputStream cfgIn = new FileInputStream(new File(DEFAULT_CONFIGURATION_FILE_NAME));
+                cfg.readFrom(cfgIn);
+                hasReadConfiguration = true;
+            }
+            catch (final FileNotFoundException e)
+            {
+                hasReadConfiguration = false;
+                System.err.println(e.getLocalizedMessage());
+                // this is OK if we go for the GUI !
+            }
+        }
         return true;
     }
 
     public void sendGCodeFile()
     {
         final PrintProcess pp = new PrintProcess();
+        if(false == hasReadConfiguration)
+        {
+            System.out.println("No Configuration File found ! Printing not possible !");
+            return;
+        }
         pp.setCfg(cfg);
 
         if(false == pp.connectToPacemaker())

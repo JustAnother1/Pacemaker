@@ -17,7 +17,6 @@ package de.nomagic.printerController.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
@@ -33,18 +32,21 @@ import de.nomagic.printerController.printer.PrintProcess;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class ClientPanel implements ActionListener
+public class ClientPanel
 {
+    public final static String ACTION_OPEN_CLIENT_CONNECTION = "connect";
+    public final static String ACTION_CLOSE_CLIENT_CONNECTION = "disconnect";
+
     private final JPanel myPanel = new JPanel();
     private final JPanel myDescriptionPanel = new JPanel();
     private final JPanel myButtonPanel = new JPanel();
     private final JLabel label = new JLabel("Connection Description : ");
-    private final JTextField desscriptionField = new JTextField("TCP:localhost:12345");
+    private final JTextField desscriptionField = new JTextField("", 20);
     private final JButton connectButton = new JButton("Connect");
     private final JButton disconnectButton = new JButton("Disconnect");
     private final PrintProcess pp;
 
-    public ClientPanel(final PrintProcess pp)
+    public ClientPanel(final PrintProcess pp, ActionListener parent)
     {
         this.pp = pp;
         myPanel.setBorder(BorderFactory.createTitledBorder(
@@ -52,13 +54,15 @@ public class ClientPanel implements ActionListener
                 "Client Connection"));
 
         myDescriptionPanel.add(label, BorderLayout.WEST);
+        Cfg cfg = pp.getCfg();
+        desscriptionField.setText(cfg.getClientDeviceString());
         myDescriptionPanel.add(desscriptionField, BorderLayout.EAST);
 
         updateButtons();
-        connectButton.addActionListener(this);
-        disconnectButton.addActionListener(this);
-        connectButton.setActionCommand("enable");
-        disconnectButton.setActionCommand("disable");
+        connectButton.addActionListener(parent);
+        disconnectButton.addActionListener(parent);
+        connectButton.setActionCommand(ACTION_OPEN_CLIENT_CONNECTION);
+        disconnectButton.setActionCommand(ACTION_CLOSE_CLIENT_CONNECTION);
         myButtonPanel.add(connectButton, BorderLayout.NORTH);
         myButtonPanel.add(disconnectButton, BorderLayout.SOUTH);
 
@@ -66,26 +70,7 @@ public class ClientPanel implements ActionListener
         myPanel.add(myButtonPanel, BorderLayout.WEST);
     }
 
-    @Override
-    public void actionPerformed(final ActionEvent e)
-    {
-        if ("disable".equals(e.getActionCommand()))
-        {
-            pp.closeClientConnection();
-        }
-        else
-        {
-            // enable
-            final Cfg cfg = pp.getCfg();
-            cfg.setClientDeviceString(desscriptionField.getText());
-            pp.setCfg(cfg);
-            pp.connectToPacemaker();
-        }
-        updateButtons();
-    }
-
-
-    private void updateButtons()
+    public void updateButtons()
     {
         if(true == pp.isClientConnected())
         {
@@ -102,6 +87,11 @@ public class ClientPanel implements ActionListener
     public Component getPanel()
     {
         return myPanel;
+    }
+
+    public String getConnectionDefinition()
+    {
+        return desscriptionField.getText();
     }
 
 }
