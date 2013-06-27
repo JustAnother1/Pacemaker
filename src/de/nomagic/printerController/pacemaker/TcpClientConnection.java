@@ -20,8 +20,6 @@ import java.net.Socket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.nomagic.printerController.Tool;
-
 /** TCP Communiocation to test protocol. Protocol Layer is UART !
  *
  * @author Lars P&ouml;tter

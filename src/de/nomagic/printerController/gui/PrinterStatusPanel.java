@@ -22,8 +22,6 @@ import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import de.nomagic.printerController.printer.PrintProcess;
-
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -32,13 +30,11 @@ public class PrinterStatusPanel
 {
     private final static String OFFLINE_MESSAGE = "Status Information not available !";
 
-    private final PrintProcess pp;
     private final JPanel myPanel = new JPanel();
     private final JLabel statusLabel = new JLabel(OFFLINE_MESSAGE);
 
-    public PrinterStatusPanel(final PrintProcess pp)
+    public PrinterStatusPanel()
     {
-        this.pp = pp;
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Printer Status"));

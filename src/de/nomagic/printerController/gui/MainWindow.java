@@ -44,7 +44,7 @@ public class MainWindow extends JFrame
         // add all sub Panes
 
         // Printer Status Panel (cur extruder, cur Temperature, cur Position of print head,....)
-        printerStatusPanel = new PrinterStatusPanel(pp);
+        printerStatusPanel = new PrinterStatusPanel();
         this.add(printerStatusPanel.getPanel(), BorderLayout.EAST);
 
         // Machine Control Panel
