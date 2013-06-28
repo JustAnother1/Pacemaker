@@ -41,6 +41,7 @@ public class ClientConnectionFactory
     {
         if(null == cfg)
         {
+            log.error("No Configuration available !");
             return null;
         }
         final String connectionDescription = cfg.getClientDeviceString();
@@ -48,23 +49,27 @@ public class ClientConnectionFactory
         if(true == connectionDescription.startsWith(UART_PREFIX))
         {
             // TODO
+            log.error("Not Implemented !");
             return null;
         }
         else if(true == connectionDescription.startsWith(TCP_PREFIX))
         {
             if(connectionDescription.length() < TCP_PREFIX.length())
             {
+                log.error("Description({}) too short !", connectionDescription);
                 return null;
             }
             final String data = connectionDescription.substring(TCP_PREFIX.length());
             if(false == data.contains(":"))
             {
+                log.error("Description({}) has no : !", connectionDescription);
                 return null;
             }
             final String host = data.substring(0, data.indexOf(':'));
             final String port = data.substring(data.indexOf(':') + 1);
             return establishTcpConnectionTo(host, Integer.parseInt(port));
         }
+        log.error("Description({}) has unknown prefix !", connectionDescription);
         return null;
     }
 
@@ -82,6 +87,7 @@ public class ClientConnectionFactory
             else
             {
                 pms.close();
+                log.error("Could not connect !");
                 return null;
             }
         }
@@ -92,6 +98,7 @@ public class ClientConnectionFactory
         }
         catch (final IOException e)
         {
+            log.error("IOException !");
             e.printStackTrace();
         }
         return null;

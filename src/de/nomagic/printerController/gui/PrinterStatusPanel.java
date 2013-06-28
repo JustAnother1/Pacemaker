@@ -19,8 +19,12 @@ import java.awt.Color;
 import java.awt.Component;
 
 import javax.swing.BorderFactory;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+
+import de.nomagic.printerController.pacemaker.DeviceInformation;
+import de.nomagic.printerController.printer.PrintProcess;
 
 /**
  * @author Lars P&ouml;tter
@@ -31,14 +35,19 @@ public class PrinterStatusPanel
     private final static String OFFLINE_MESSAGE = "Status Information not available !";
 
     private final JPanel myPanel = new JPanel();
-    private final JLabel statusLabel = new JLabel(OFFLINE_MESSAGE);
+    private final JTextArea statusText = new JTextArea();
+    private final JScrollPane scrollPane = new JScrollPane(statusText);
+    private final PrintProcess pp;
 
-    public PrinterStatusPanel()
+    public PrinterStatusPanel(PrintProcess pp)
     {
+        this.pp = pp;
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Printer Status"));
-        myPanel.add(statusLabel, BorderLayout.CENTER);
+        statusText.setText(OFFLINE_MESSAGE);
+        statusText.setEditable(false);
+        myPanel.add(scrollPane, BorderLayout.CENTER);
     }
 
     public Component getPanel()
@@ -48,12 +57,14 @@ public class PrinterStatusPanel
 
     public void setToOffline()
     {
-        statusLabel.setText(OFFLINE_MESSAGE);
+        statusText.setText(OFFLINE_MESSAGE);
     }
 
     public void setToOnline()
     {
-        statusLabel.setText("Connected to Pacemaker client !");
+        DeviceInformation di = pp.getPrinterAbilities();
+        statusText.setText("Connected to Pacemaker client !\n"
+                           + di.toString());
     }
 
 }

@@ -73,6 +73,11 @@ public class Planner
         }
     }
 
+    public DeviceInformation getPrinterAbilities()
+    {
+        return printerAbilities;
+    }
+
     public boolean doImmediateShutDown()
     {
         for(int i = 0; i < Cfg.NUMBER_OF_HEATERS; i++)

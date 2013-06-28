@@ -14,9 +14,8 @@
  */
 package de.nomagic.printerController.gui;
 
-import java.awt.BorderLayout;
-
 import javax.swing.JFrame;
+import javax.swing.JSplitPane;
 
 import de.nomagic.printerController.printer.Cfg;
 import de.nomagic.printerController.printer.PrintProcess;
@@ -40,17 +39,16 @@ public class MainWindow extends JFrame
         this.setTitle("Pacemaker - printerController");
         this.setResizable(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
         // add all sub Panes
-
         // Printer Status Panel (cur extruder, cur Temperature, cur Position of print head,....)
-        printerStatusPanel = new PrinterStatusPanel();
-        this.add(printerStatusPanel.getPanel(), BorderLayout.EAST);
-
+        printerStatusPanel = new PrinterStatusPanel(pp);
         // Machine Control Panel
         machineControlPanel = new MachineControlPanel(pp, printerStatusPanel);
-        this.add(machineControlPanel.getPanel(), BorderLayout.WEST);
 
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                                              machineControlPanel.getPanel(),
+                                              printerStatusPanel.getPanel());
+        this.add(splitPane);
         // End of Panels
         this.pack();
         this.setVisible(true);

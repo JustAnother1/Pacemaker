@@ -74,6 +74,7 @@ public class MachineControlPanel implements ActionListener
     @Override
     public void actionPerformed(final ActionEvent e)
     {
+        log.info("Action performed : " + e.getActionCommand());
         if(ClientPanel.ACTION_CLOSE_CLIENT_CONNECTION.equals(e.getActionCommand()))
         {
             log.trace("User requests to close the connection to the client!");
@@ -83,7 +84,7 @@ public class MachineControlPanel implements ActionListener
         }
         else if(ClientPanel.ACTION_OPEN_CLIENT_CONNECTION.equals(e.getActionCommand()))
         {
-            log.trace("User requests to open the connection to the client!");
+            log.info("User requests to open the connection to the client!");
             final Cfg cfg = pp.getCfg();
             cfg.setClientDeviceString(clientPane.getConnectionDefinition());
             pp.setCfg(cfg);
@@ -93,7 +94,10 @@ public class MachineControlPanel implements ActionListener
                 clientPane.updateButtons();
                 printerStatusPanel.setToOnline();
             }
-            // else connection failed !
+            else
+            {
+                log.info("connection failed !");
+            }
         }
         else if(ACTION_LOAD_CONFIGURATION.equals(e.getActionCommand()))
         {
@@ -108,6 +112,7 @@ public class MachineControlPanel implements ActionListener
                     {
                         log.trace("using the newly read configuration !");
                         pp.setCfg(c);
+                        clientPane.updateConnectionDefinition();
                     }
                 }
                 catch (FileNotFoundException e1)

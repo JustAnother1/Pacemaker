@@ -45,9 +45,47 @@ public class StatusWindow extends JFrame implements Hardware
     }
 
     @Override
+    public String getNameOfStepper(int idx)
+    {
+        switch(idx)
+        {
+        case 0: return "Stepper_1";
+        case 1: return "Stepper_2";
+        case 2: return "Stepper_3";
+        case 3: return "Stepper_4";
+        case 4: return "Stepper_5";
+        default: return "Invalid Stepper Motor";
+        }
+    }
+
+    @Override
     public int getNumberHeaters()
     {
         return 3;
+    }
+
+    @Override
+    public String getNameOfPwm(int idx)
+    {
+        switch(idx)
+        {
+        case 0: return "PWM_1";
+        case 1: return "PWM_2";
+        case 2: return "PWM_3";
+        default: return "Invalid PWM Output";
+        }
+    }
+
+    @Override
+    public String getNameOfHeater(int idx)
+    {
+        switch(idx)
+        {
+        case 0: return "Heater_1";
+        case 1: return "Heater_2";
+        case 2: return "Heater_3";
+        default: return "Invalid Heater";
+        }
     }
 
     @Override
@@ -63,15 +101,69 @@ public class StatusWindow extends JFrame implements Hardware
     }
 
     @Override
+    public String getNameOfTemperatureSensor(int idx)
+    {
+        switch(idx)
+        {
+        case 0: return "Temp_1";
+        case 1: return "Temp_2";
+        case 2: return "Temp_3";
+        case 3: return "Temp_4";
+        default: return "Invalid Temperature Sensor";
+        }
+    }
+
+    @Override
     public int getNumberInput()
     {
         return 10;
     }
 
     @Override
+    public String getNameOfInput(int idx)
+    {
+        switch(idx)
+        {
+        case 0: return "Input_1";
+        case 1: return "Input_2";
+        case 2: return "Input_3";
+        case 3: return "Input_4";
+        case 4: return "Input_5";
+        case 5: return "Input_6";
+        case 6: return "Input_7";
+        case 7: return "Input_8";
+        case 8: return "Input_9";
+        case 9: return "Input_10";
+        default: return "Invalid Input";
+        }
+    }
+
+    @Override
     public int getNumberOutput()
     {
         return 13;
+    }
+
+    @Override
+    public String getNameOfOutput(int idx)
+    {
+        switch(idx)
+        {
+        case 0: return "Output_1";
+        case 1: return "Output_2";
+        case 2: return "Output_3";
+        case 3: return "Output_4";
+        case 4: return "Output_5";
+        case 5: return "Output_6";
+        case 6: return "Output_7";
+        case 7: return "Output_8";
+        case 8: return "Output_9";
+        case 9: return "Output_10";
+        case 10: return "Output_11";
+        case 11: return "Output_12";
+        case 12: return "Output_13";
+        default: return "Invalid Output";
+        }
     }
 
     @Override

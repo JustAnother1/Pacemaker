@@ -54,8 +54,7 @@ public class ClientPanel
                 "Client Connection"));
 
         myDescriptionPanel.add(label, BorderLayout.WEST);
-        Cfg cfg = pp.getCfg();
-        desscriptionField.setText(cfg.getClientDeviceString());
+        updateConnectionDefinition();
         myDescriptionPanel.add(desscriptionField, BorderLayout.EAST);
 
         updateButtons();
@@ -82,6 +81,12 @@ public class ClientPanel
             connectButton.setEnabled(true);
             disconnectButton.setEnabled(false);
         }
+    }
+
+    public void updateConnectionDefinition()
+    {
+        Cfg cfg = pp.getCfg();
+        desscriptionField.setText(cfg.getClientDeviceString());
     }
 
     public Component getPanel()

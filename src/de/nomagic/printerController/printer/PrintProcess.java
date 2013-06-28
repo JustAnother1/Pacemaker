@@ -14,9 +14,13 @@
  */
 package de.nomagic.printerController.printer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.nomagic.printerController.gcode.GCodeDecoder;
 import de.nomagic.printerController.pacemaker.ClientConnection;
 import de.nomagic.printerController.pacemaker.ClientConnectionFactory;
+import de.nomagic.printerController.pacemaker.DeviceInformation;
 import de.nomagic.printerController.pacemaker.Protocol;
 import de.nomagic.printerController.planner.Planner;
 
@@ -26,6 +30,8 @@ import de.nomagic.printerController.planner.Planner;
  */
 public class PrintProcess
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     private Cfg cfg;
     private Protocol proto = null;
     private Planner plan = null;
@@ -42,6 +48,7 @@ public class PrintProcess
         cc = ClientConnectionFactory.establishConnectionTo(cfg);
         if(null == cc)
         {
+            log.error("Could not establish the connection !");
             return false;
         }
         else
@@ -88,6 +95,11 @@ public class PrintProcess
         {
             proto.setCfg(cfg);
         }
+    }
+
+    public DeviceInformation getPrinterAbilities()
+    {
+        return plan.getPrinterAbilities();
     }
 
 }

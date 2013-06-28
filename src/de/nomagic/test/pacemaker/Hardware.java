@@ -39,4 +39,10 @@ public interface Hardware
     int getNumberInput();
     int getNumberOutput();
     int getNumberBuzzer();
+    String getNameOfInput(int idx);
+    String getNameOfOutput(int idx);
+    String getNameOfPwm(int idx);
+    String getNameOfStepper(int idx);
+    String getNameOfHeater(int idx);
+    String getNameOfTemperatureSensor(int idx);
 }

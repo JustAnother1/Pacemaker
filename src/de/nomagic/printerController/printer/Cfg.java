@@ -306,7 +306,7 @@ public class Cfg
 
     private String getValueFrom(final String line)
     {
-        return line.substring(line.indexOf('=') + 1);
+        return (line.substring(line.indexOf('=') + 1)).trim();
     }
 
     private int getIntValueFrom(final String line)

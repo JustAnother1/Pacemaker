@@ -116,45 +116,146 @@ public class ProtocolClient
                         switch(order)
                         {
                         case Protocol.ORDER_REQ_INFORMATION:
-                            switch(parameter[0])
+                            if(2 != length)
                             {
-                            case Protocol.INFO_FIRMWARE_NAME_STRING:sendString(hw.getFirmwareNameString()); break;
-                            case Protocol.INFO_SERIAL_NUMBER_STRING:sendString(hw.getSerialNumberString()); break;
-                            case Protocol.INFO_BOARD_NAME_STRING:sendString(hw.getBoardNameString()); break;
-                            case Protocol.INFO_GIVEN_NAME_STRING:sendString(hw.getGivenNameString()); break;
-                            case Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR:sendByte(hw.getProtocolVersionMajor()); break;
-                            case Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MINOR:sendByte(hw.getProtocolVersionMinor()); break;
-                            case Protocol.INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS:sendByteArray(hw.getListOfSupportedProtocolExtensions()); break;
-                            case Protocol.INFO_FIRMWARE_TYPE:sendByte(hw.getFirmwareType()); break;
-                            case Protocol.INFO_FIRMWARE_REVISION_MAJOR:sendByte(hw.getFirmwareRevisionMajor()); break;
-                            case Protocol.INFO_FIRMWARE_REVISION_MINOR:sendByte(hw.getFirmwareRevisionMinor()); break;
-                            case Protocol.INFO_HARDWARE_TYPE:sendByte(hw.getHardwareType()); break;
-                            case Protocol.INFO_HARDWARE_REVISION:sendByte(hw.getHardwareRevision()); break;
-                            case Protocol.INFO_NUMBER_STEPPERS:sendByte(hw.getNumberSteppers()); break;
-                            case Protocol.INFO_NUMBER_HEATERS:sendByte(hw.getNumberHeaters()); break;
-                            case Protocol.INFO_NUMBER_PWM:sendByte(hw.getNumberPwm()); break;
-                            case Protocol.INFO_NUMBER_TEMP_SENSOR:sendByte(hw.getNumberTempSensor()); break;
-                            case Protocol.INFO_NUMBER_INPUT:sendByte(hw.getNumberInput()); break;
-                            case Protocol.INFO_NUMBER_OUTPUT:sendByte(hw.getNumberOutput()); break;
-                            case Protocol.INFO_NUMBER_BUZZER:sendByte(hw.getNumberBuzzer()); break;
-                            case Protocol.INFO_QUEUE_TOTAL_SLOTS:sendI16(totalSlots); break;
-                            case Protocol.INFO_QUEUE_USED_SLOTS:
-                                int usedSlots = -1;
-                                if(lastWritenSlot >= lastExecutedSlot)
+                                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR, Protocol.RESPONSE_BAD_PARAMETER_FORMAT);
+                            }
+                            else
+                            {
+                                switch(parameter[0])
                                 {
-                                    usedSlots = lastWritenSlot  - lastExecutedSlot;
+                                case Protocol.INFO_FIRMWARE_NAME_STRING:sendString(hw.getFirmwareNameString()); break;
+                                case Protocol.INFO_SERIAL_NUMBER_STRING:sendString(hw.getSerialNumberString()); break;
+                                case Protocol.INFO_BOARD_NAME_STRING:sendString(hw.getBoardNameString()); break;
+                                case Protocol.INFO_GIVEN_NAME_STRING:sendString(hw.getGivenNameString()); break;
+                                case Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR:sendByte(hw.getProtocolVersionMajor()); break;
+                                case Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MINOR:sendByte(hw.getProtocolVersionMinor()); break;
+                                case Protocol.INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS:sendByteArray(hw.getListOfSupportedProtocolExtensions()); break;
+                                case Protocol.INFO_FIRMWARE_TYPE:sendByte(hw.getFirmwareType()); break;
+                                case Protocol.INFO_FIRMWARE_REVISION_MAJOR:sendByte(hw.getFirmwareRevisionMajor()); break;
+                                case Protocol.INFO_FIRMWARE_REVISION_MINOR:sendByte(hw.getFirmwareRevisionMinor()); break;
+                                case Protocol.INFO_HARDWARE_TYPE:sendByte(hw.getHardwareType()); break;
+                                case Protocol.INFO_HARDWARE_REVISION:sendByte(hw.getHardwareRevision()); break;
+                                case Protocol.INFO_NUMBER_STEPPERS:sendByte(hw.getNumberSteppers()); break;
+                                case Protocol.INFO_NUMBER_HEATERS:sendByte(hw.getNumberHeaters()); break;
+                                case Protocol.INFO_NUMBER_PWM:sendByte(hw.getNumberPwm()); break;
+                                case Protocol.INFO_NUMBER_TEMP_SENSOR:sendByte(hw.getNumberTempSensor()); break;
+                                case Protocol.INFO_NUMBER_INPUT:sendByte(hw.getNumberInput()); break;
+                                case Protocol.INFO_NUMBER_OUTPUT:sendByte(hw.getNumberOutput()); break;
+                                case Protocol.INFO_NUMBER_BUZZER:sendByte(hw.getNumberBuzzer()); break;
+                                case Protocol.INFO_QUEUE_TOTAL_SLOTS:sendI16(totalSlots); break;
+                                case Protocol.INFO_QUEUE_USED_SLOTS:
+                                    int usedSlots = -1;
+                                    if(lastWritenSlot >= lastExecutedSlot)
+                                    {
+                                        usedSlots = lastWritenSlot  - lastExecutedSlot;
+                                    }
+                                    else
+                                    {
+                                        usedSlots = (lastWritenSlot + totalSlots) - lastExecutedSlot;
+                                    }
+                                    sendI16(usedSlots);
+                                    break;
+                                default:
+                                    sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                              Protocol.RESPONSE_BAD_PARAMETER_VALUE);
+                                    break;
                                 }
-                                else
+                            }
+                            break;
+
+                        case Protocol.ORDER_REQ_DEVICE_NAME:
+                            if(3 != length)
+                            {
+                                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                          Protocol.RESPONSE_BAD_PARAMETER_FORMAT);
+                            }
+                            else
+                            {
+                                switch(parameter[0])
                                 {
-                                    usedSlots = (lastWritenSlot + totalSlots) - lastExecutedSlot;
+                                case Protocol.DEVICE_TYPE_INPUT:
+                                    if(hw.getNumberSteppers() < parameter[1])
+                                    {
+                                        sendString(hw.getNameOfInput(parameter[1]));
+                                    }
+                                    else
+                                    {
+                                        sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                                  Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+                                    }
+                                    break;
+
+                                case Protocol.DEVICE_TYPE_OUTPUT:
+                                    if(hw.getNumberSteppers() < parameter[1])
+                                    {
+                                        sendString(hw.getNameOfOutput(parameter[1]));
+                                    }
+                                    else
+                                    {
+                                        sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                                  Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+                                    }
+                                    break;
+
+                                case Protocol.DEVICE_TYPE_PWM_OUTPUT:
+                                    if(hw.getNumberSteppers() < parameter[1])
+                                    {
+                                        sendString(hw.getNameOfPwm(parameter[1]));
+                                    }
+                                    else
+                                    {
+                                        sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                                  Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+                                    }
+                                    break;
+
+                                case Protocol.DEVICE_TYPE_STEPPER:
+                                    if(hw.getNumberSteppers() < parameter[1])
+                                    {
+                                        sendString(hw.getNameOfStepper(parameter[1]));
+                                    }
+                                    else
+                                    {
+                                        sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                                  Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+                                    }
+                                    break;
+
+                                case Protocol.DEVICE_TYPE_HEATER:
+                                    if(hw.getNumberSteppers() < parameter[1])
+                                    {
+                                        sendString(hw.getNameOfHeater(parameter[1]));
+                                    }
+                                    else
+                                    {
+                                        sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                                  Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+                                    }
+                                    break;
+
+                                case Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR:
+                                    if(hw.getNumberSteppers() < parameter[1])
+                                    {
+                                        sendString(hw.getNameOfTemperatureSensor(parameter[1]));
+                                    }
+                                    else
+                                    {
+                                        sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                                  Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+                                    }
+                                    break;
+
+                                default:
+                                    sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                              Protocol.RESPONSE_INVALID_DEVICE_TYPE);
+                                    break;
                                 }
-                                sendI16(usedSlots);
-                                break;
-                            default: sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR, Protocol.RESPONSE_BAD_PARAMETER_VALUE); break;
                             }
                             break;
                         // New Orders go here
-                        default: sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR, Protocol.RESPONSE_UNKNOWN_ORDER);
+                        default: sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                                           Protocol.RESPONSE_UNKNOWN_ORDER);
                         }
                     }
                 }
@@ -165,7 +266,7 @@ public class ProtocolClient
 
     private void sendCachedResponse() throws IOException
     {
-    	System.out.println("sending cached Reply !");
+        System.out.println("sending cached Reply !");
         out.write(cachedResponse, 0, cachedResponseLength);
         out.flush();
     }
