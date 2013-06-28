@@ -52,6 +52,7 @@ public class MachineControlPanel implements ActionListener
     private final PrintProcess pp;
     private final JPanel myPanel = new JPanel();
     private final ClientPanel clientPane;
+    private final DirectControlPanel directControlPane;
     private final JButton configurationButton = new JButton("load configuration");
     private final JButton printButton = new JButton("print");
     private final PrinterStatusPanel printerStatusPanel;
@@ -74,6 +75,9 @@ public class MachineControlPanel implements ActionListener
         // connection to Client Panel (connect, disconnect,...)
         clientPane = new ClientPanel(pp, this);
         myPanel.add(clientPane.getPanel(), BorderLayout.PAGE_END);
+        // move motors ,control heaters,...
+        directControlPane = new DirectControlPanel();
+        myPanel.add(directControlPane.getPanel(), BorderLayout.CENTER);
     }
 
     public Component getPanel()
