@@ -62,6 +62,7 @@ public class GCode
             case 'B': // B -axis
             case 'C': // C -axis
             case 'D': // tool radius compensation number
+            case 'E': // extrude - not in standard ! 3d printing specific!
             case 'F': // feedrate
             case 'G': // General function
             case 'H': // Tool length offset index
@@ -95,12 +96,12 @@ public class GCode
                     catch(final NullPointerException e)
                     {
                         valid = false;
-                        log.error("No value given for Word {} !", curWordType);
+                        log.error("No value given for Word {} in line: {} !", curWordType, line);
                     }
                     catch(final NumberFormatException e)
                     {
                         valid = false;
-                        log.error("Invalid value({}) given for Word {} !", help, curWordType);
+                        log.error("Invalid value({}) given for Word {} in line: {} !", help, curWordType, line);
                     }
                     words.put(curWordType,d);
                     curNumber = new StringBuffer();
@@ -121,6 +122,7 @@ public class GCode
             // non standard:
             case ';':
                 // comment until end of line -> we are done here
+                 i = line.length();
                 break;
 
             // whitespace
@@ -138,7 +140,35 @@ public class GCode
                 break;
             }
         }
+        // deal with last word
+        if(' ' == curWordType)
+        {
+            // no Word -> nothing to do
+        }
+        else
+        {
+            final String help = curNumber.toString();
+            Double d = 0.0;
+            try
+            {
+                d =  Double.parseDouble(help);
+            }
+            catch(final NullPointerException e)
+            {
+                valid = false;
+                log.error("No value given for Word {} in line: {} !", curWordType, line);
+            }
+            catch(final NumberFormatException e)
+            {
+                valid = false;
+                log.error("Invalid value({}) given for Word {} in line: {} !", help, curWordType, line);
+            }
+            words.put(curWordType,d);
+            curNumber = new StringBuffer();
+        }
     }
+
+
 
     public boolean hasWord(final Character wordType)
     {

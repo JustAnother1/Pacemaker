@@ -249,7 +249,7 @@ public class Planner
     {
         if(false == proto.setTemperature(heaterNum, temperature))
         {
-            log.error("Falied set the Temperature !");
+            log.error("Falied to set the Temperature !");
             return false;
         }
         else

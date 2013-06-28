@@ -80,7 +80,14 @@ public class PrintProcess
 
     public boolean executeGCode(final String line)
     {
-        return decoder.sendLine(line);
+        if(null == decoder)
+        {
+            return false;
+        }
+        else
+        {
+            return decoder.sendLine(line);
+        }
     }
 
     public Cfg getCfg()

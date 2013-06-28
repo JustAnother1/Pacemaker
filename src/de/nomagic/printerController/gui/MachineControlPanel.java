@@ -19,9 +19,13 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -43,11 +47,13 @@ public class MachineControlPanel implements ActionListener
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     public final static String ACTION_LOAD_CONFIGURATION = "loadConfig";
+    public final static String ACTION_PRINT = "print";
 
     private final PrintProcess pp;
     private final JPanel myPanel = new JPanel();
     private final ClientPanel clientPane;
     private final JButton configurationButton = new JButton("load configuration");
+    private final JButton printButton = new JButton("print");
     private final PrinterStatusPanel printerStatusPanel;
     final JFileChooser fc = new JFileChooser();
 
@@ -61,6 +67,10 @@ public class MachineControlPanel implements ActionListener
         configurationButton.addActionListener(this);
         configurationButton.setActionCommand(ACTION_LOAD_CONFIGURATION);
         myPanel.add(configurationButton, BorderLayout.NORTH);
+        printButton.addActionListener(this);
+        printButton.setActionCommand(ACTION_PRINT);
+        printButton.setEnabled(false);
+        myPanel.add(printButton, BorderLayout.NORTH);
         // connection to Client Panel (connect, disconnect,...)
         clientPane = new ClientPanel(pp, this);
         myPanel.add(clientPane.getPanel(), BorderLayout.PAGE_END);
@@ -81,6 +91,7 @@ public class MachineControlPanel implements ActionListener
             pp.closeClientConnection();
             clientPane.updateButtons();
             printerStatusPanel.setToOffline();
+            printButton.setEnabled(false);
         }
         else if(ClientPanel.ACTION_OPEN_CLIENT_CONNECTION.equals(e.getActionCommand()))
         {
@@ -93,6 +104,7 @@ public class MachineControlPanel implements ActionListener
                 log.trace("connection to client is now open !");
                 clientPane.updateButtons();
                 printerStatusPanel.setToOnline();
+                printButton.setEnabled(true);
             }
             else
             {
@@ -118,6 +130,64 @@ public class MachineControlPanel implements ActionListener
                 catch (FileNotFoundException e1)
                 {
                     e1.printStackTrace();
+                }
+            }
+        }
+        else if(ACTION_PRINT.equals(e.getActionCommand()))
+        {
+            log.trace("User wants to print a G-Code file,..");
+            if(fc.showOpenDialog(myPanel) == JFileChooser.APPROVE_OPTION)
+            {
+                //TODO move to own task
+                File file = fc.getSelectedFile();
+                BufferedReader br = null;
+                FileInputStream fin = null;
+                try
+                {
+                    fin = new FileInputStream(file);
+                    br = new BufferedReader(new InputStreamReader(fin, Charset.forName("UTF-8")));
+                    String curLine = br.readLine();
+                    while(null != curLine)
+                    {
+                        if(false == pp.executeGCode(curLine))
+                        {
+                            return;
+                        }
+                        curLine = br.readLine();
+                    }
+                }
+                catch (FileNotFoundException e1)
+                {
+                    e1.printStackTrace();
+                }
+                catch (IOException e1)
+                {
+                    e1.printStackTrace();
+                }
+                finally
+                {
+                    if(null != br)
+                    {
+                        try
+                        {
+                            br.close();
+                        }
+                        catch (IOException e1)
+                        {
+                            e1.printStackTrace();
+                        }
+                    }
+                    if(null != fin)
+                    {
+                        try
+                        {
+                            fin.close();
+                        }
+                        catch (IOException e1)
+                        {
+                            e1.printStackTrace();
+                        }
+                    }
                 }
             }
         }
