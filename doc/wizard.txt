@@ -1,0 +1,56 @@
+Configuration Creation Wizard
+=============================
+
+// Configure the Interface to use
+1. user must choose between TCP, UART, I2C
+2. dependent on chosen Interface user has to provide the needed parameters
+3. Testing if connection to client is possible.
+  if no -> show error then go back to 1
+  if yes -> read client informations
+// temperature sensors
+4. read temperatures from all temperature sensors that the client supports
+5. assemble list with temperatures. And interface names. Select all reasonable/valid temperatures.
+6. User needs to change selection as needed.
+  Selected sensors will be used. Not selected sensors will be ignored(not connected or broken)
+// heaters
+7. show list of all heaters with connection names. Ask users to select all used or unknown heaters.
+8. with all selected heaters do:
+ a) read and store all temperature sensors temperatures.
+ b) switch the heater on to full heating for 10 seconds
+ c) read all temperatures again.
+ d) present list of temp. sensors and interface names and cur. Temp. to user.
+  Select the temp. sensor with highest temperature increase. Ask user to acknowledge that this is the correct temp. sensor far the heater.
+ e) ask User which component has been heated. Move temperature to 60 degree centigrade. This way user can determine by touching without burning.
+ f) if client supports: do an PID auto tune on the heater with the selected sensor.
+// Stepper motors
+9. Ask user to move all axis in a middle position(so that movement in both directions is possible)
+10. ask user to remove all plastic or modify extruder stepper in a way that the motor can move. Alternatively heat all extruder to a temperature that allows extrusion.
+11. show list of steppers with interface names to user and ask state for each motor which axis it drives. Allow unknown.
+12. if user knows start with these stepper else with all steppers:
+ a) move stepper in increasing direction.
+ b) ask user what axis has moved - if unsure go back to a)
+ c) ask user in which direction the motor moved.  - if unsure go back to a)
+
+ if is is either X, Y or Z then:
+
+ d) ask user if end switch at min and max are available.
+ e) let user trigger the min end switch
+ f) let user trigger the max end switch
+ g) move to min position ( end switch triggered)
+ h) ask user to mark the position of the nozzle.
+ i) move nozzle in increasing direction either triggered by user or till end stop. Count steps.
+ j) ask user for distance of current nozzle position to marked position (steps moved/distance = steps per mm)
+
+ if the stepper handles a extruder then:
+
+ d) tell user to insert plastic
+ e) tell user to mark the plastic 10 cm from where it disappears into the extruder.
+ e) heat extruder up
+ f) do some steps
+ f) ask user to measure distance between extruder and marking in plastic (steps/distance = steps per mm)
+
+ 13. Show a list of all Fan connectors to the user. Put the connection names next to each connection.
+ give the user the option to enable/disable each fan and then let him decide which fan is connected to what( Extruder fan, Nozzle fan, ...)
+
+
+At the end or whenever the user cancels the procedure he gets asked if he wants to store the configuration. If yes ask for filename and store configuration then exit.
