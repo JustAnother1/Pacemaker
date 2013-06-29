@@ -6,11 +6,11 @@ A host - client - system to control 3d printers, CNC milling or laser cutters.
 Summary
 -------
 
-The Pacemaker protocol provides an open interface to allow the separation of real-time and non-real-time control components for 3D printers, CNC machines and laser cutters. 
+The Pacemaker protocol provides an open interface to allow the separation of real-time and non-real-time control components for 3D printers, CNC machines and laser cutters.
 
 This has the huge benefit of allowing new controller hardware (the real-time component) to work with existing host software solutions (the non-real-time component). This makes it easy to expand the Pacemaker system to new machines.
 
-Pacemaker allows a much richer level of machine control by the non-real-time host software than is possible with typical G-code based systems. This provides feature-rich host software, more integrated start-to-finish tool chain solutions whilst still being able to operate on a wide range of platforms. 
+Pacemaker allows a much richer level of machine control by the non-real-time host software than is possible with typical G-code based systems. This provides feature-rich host software, more integrated start-to-finish tool chain solutions whilst still being able to operate on a wide range of platforms.
 
 
 Building and Starting
@@ -24,6 +24,14 @@ The Pacemaker host application can be started like this:
 
 +$ java -jar Pacemaker.jar+
 
+The host needs a configuration file that file can be created manually or by running this:
+
++$ java -jar PacemakerWizard.jar+
+
+To test the Pacemaker system without real hardware a simulation for the client can be started like this:
+
++$ java -jar PacemakerTest.jar+
+
 
 License
 -------
@@ -31,11 +39,11 @@ License
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License version 2
 as published by the Free Software Foundation.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along
-with this program; if not, see <http://www.gnu.org/licenses/> 
+with this program; if not, see <http://www.gnu.org/licenses/>
