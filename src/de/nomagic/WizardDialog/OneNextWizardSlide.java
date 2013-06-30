@@ -49,4 +49,16 @@ public abstract class OneNextWizardSlide implements WizardSlide
     {
         return nextSlide;
     }
+
+    @Override
+    public DataStore actionOnShow(DataStore ds)
+    {
+        return ds;
+    }
+
+    @Override
+    public DataStore actionOnClose(DataStore ds)
+    {
+        return ds;
+    }
 }
