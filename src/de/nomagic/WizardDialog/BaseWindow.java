@@ -269,4 +269,9 @@ public class BaseWindow implements ActionListener, Runnable
         this.ds = ds;
     }
 
+    public void setNextAllowed(boolean enabled)
+    {
+        nextButton.setEnabled(enabled);
+    }
+
 }
