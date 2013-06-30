@@ -62,6 +62,7 @@ public class BaseWindow implements ActionListener, Runnable
     private Translator t;
     private DataStore ds = new DataStore();
     private CancelAction ca = null;
+    private final Container contPane;
     /** The String-based action command for the 'Next' button. */
     public static final String NEXT_BUTTON_ACTION_COMMAND = "NextButtonActionCommand";
     /** The String-based action command for the 'Back' button. */
@@ -100,7 +101,7 @@ public class BaseWindow implements ActionListener, Runnable
         iconLabel.setBorder(new EtchedBorder(EtchedBorder.RAISED));
         iconLabel.setOpaque(true);
 
-        final Container contPane = Dialog.getContentPane();
+        contPane = Dialog.getContentPane();
         if(null == contPane)
         {
             log.error("Content Pane is Null !");
@@ -167,6 +168,7 @@ public class BaseWindow implements ActionListener, Runnable
     private void setCurrentPanel(final WizardSlide cs)
     {
         log.debug("setting current Panel to " + cs.getName());
+        setNextAllowed(true);
         curSlide = cs;
         // Next or Finish on last Slide
         if(false == curSlide.hasNextSlide())
@@ -189,7 +191,11 @@ public class BaseWindow implements ActionListener, Runnable
             backButton.setEnabled(true);
         }
         SlideLayout.show(SlidePanel, cs.getName());
-        ds = curSlide.actionOnShow(ds);
+        DataStore help = curSlide.actionOnShow(ds);
+        if(help != null)
+        {
+            ds = help;
+        }
         SlidePanel.revalidate();
         SlidePanel.repaint();
     }
@@ -226,7 +232,11 @@ public class BaseWindow implements ActionListener, Runnable
 
     private void nextButtonPressed()
     {
-        ds = curSlide.actionOnClose(ds);
+        DataStore help = curSlide.actionOnClose(ds);
+        if(null != help)
+        {
+            ds = help;
+        }
         final WizardSlide next = curSlide.getNextSlide();
         if(null != next)
         {
@@ -275,6 +285,7 @@ public class BaseWindow implements ActionListener, Runnable
     public void setNextAllowed(boolean enabled)
     {
         nextButton.setEnabled(enabled);
+        contPane.repaint();
     }
 
 }
