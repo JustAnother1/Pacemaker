@@ -17,38 +17,51 @@ package de.nomagic.printerController.printerConfigurationCreationWizard;
 import java.awt.Component;
 
 import javax.swing.JPanel;
-import javax.swing.JTextArea;
 
 import de.nomagic.Translator.Translator;
+import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
 
-/** Welcomes the user and explains what this is about.
+/** Ask user for parameters of UART Interface.
  *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
+ *
  */
-public class WelcomeSlide extends OneNextWizardSlide
+public class InterfaceTypeUartSlide extends OneNextWizardSlide
 {
     private JPanel slide = new JPanel();
-    private JTextArea welcomeMessage = new JTextArea();
 
-    public WelcomeSlide(Translator t)
+    public InterfaceTypeUartSlide(Translator t)
     {
-        welcomeMessage.setText(t.t("Welcome_Headline") + "\n\n"
-                             + t.t("Welcome_Text"));
-        welcomeMessage.setEditable(false);
-        slide.add(welcomeMessage);
+        // TODO Auto-generated constructor stub
     }
 
     @Override
     public String getName()
     {
-        return "WelcomeSlide";
+        return "UartSlide";
     }
 
     @Override
     public Component getComponent()
     {
+        // TODO Auto-generated method stub
         return slide;
     }
+
+    @Override
+    public DataStore actionOnShow(DataStore ds)
+    {
+        // TODO Auto-generated method stub
+        return ds;
+    }
+
+    @Override
+    public DataStore actionOnClose(DataStore ds)
+    {
+        // TODO Auto-generated method stub
+        return ds;
+    }
+
 }
