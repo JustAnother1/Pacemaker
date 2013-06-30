@@ -45,7 +45,11 @@ public class ClientConnectionFactory
             return null;
         }
         final String connectionDescription = cfg.getClientDeviceString();
-
+        if(null == connectionDescription)
+        {
+            log.error("No Connection Description available !");
+            return null;
+        }
         if(true == connectionDescription.startsWith(UART_PREFIX))
         {
             // TODO
