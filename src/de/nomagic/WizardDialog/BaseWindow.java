@@ -264,4 +264,9 @@ public class BaseWindow implements ActionListener, Runnable
         SlidePanel.add(slide, Name);
     }
 
+    public void setDatatStore(DataStore ds)
+    {
+        this.ds = ds;
+    }
+
 }
