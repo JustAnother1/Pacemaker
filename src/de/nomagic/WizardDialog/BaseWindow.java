@@ -69,7 +69,7 @@ public class BaseWindow implements ActionListener, Runnable
     /** The String-based action command for the 'Cancel' button. */
     public static final String CANCEL_BUTTON_ACTION_COMMAND = "CancelButtonActionCommand";
 
-    public BaseWindow(Translator t, WizardSlide firstSlide,  CancelAction ca)
+    public BaseWindow(Translator t, CancelAction ca)
     {
         this.t = t;
         this.ca = ca;
@@ -85,8 +85,6 @@ public class BaseWindow implements ActionListener, Runnable
         SlidePanel.setOpaque(true);
         SlidePanel.setBackground(Color.RED);
         SlidePanel.setMinimumSize(new Dimension(300, 300));
-
-        curSlide = firstSlide;
 
         final JLabel iconLabel = new JLabel();
         final ImageIcon icon = new ImageIcon("res/clouds.jpg");
@@ -113,6 +111,11 @@ public class BaseWindow implements ActionListener, Runnable
         contPane.add(iconLabel, BorderLayout.WEST);
         contPane.add(createButtonPane(), BorderLayout.SOUTH);
         contPane.add(SlidePanel, BorderLayout.EAST);
+    }
+
+    public void setFirstSlide(WizardSlide firstSlide)
+    {
+        curSlide = firstSlide;
     }
 
     private JPanel createButtonPane()
