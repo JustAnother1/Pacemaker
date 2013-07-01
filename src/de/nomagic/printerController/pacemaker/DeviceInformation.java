@@ -99,6 +99,16 @@ public class DeviceInformation
         return res;
     }
 
+    private int readValueOf(int which, String Name) throws IOException
+    {
+        int res = requestInteger(which);
+        if(-1 == res)
+        {
+            log.error("Could not read the {} !", Name);
+        }
+        return res;
+    }
+
     public boolean readDeviceInformationFrom(final Protocol uartProtocol) throws IOException
     {
         this.uartProtocol = uartProtocol;
@@ -137,92 +147,20 @@ public class DeviceInformation
             }
         }
 
-        FirmwareType = requestInteger(Protocol.INFO_FIRMWARE_TYPE);
-        if(-1 == FirmwareType)
-        {
-            log.error("Could not read Firmware Type !");
-            return false;
-        }
-        FirmwareRevisionMajor = requestInteger(Protocol.INFO_FIRMWARE_REVISION_MAJOR);
-        if(-1 == FirmwareRevisionMajor)
-        {
-            log.error("Could not read Firmware Revision Major !");
-            return false;
-        }
-        FirmwareRevisionMinor = requestInteger(Protocol.INFO_FIRMWARE_REVISION_MINOR);
-        if(-1 == FirmwareRevisionMinor)
-        {
-            log.error("Could not read Firmware Revision Minor !");
-            return false;
-        }
-        HardwareType = requestInteger(Protocol.INFO_FIRMWARE_TYPE);
-        if(-1 == HardwareType)
-        {
-            log.error("Could not read Hardware Type !");
-            return false;
-        }
-        HardwareRevision =requestInteger(Protocol.INFO_HARDWARE_REVISION);
-        if(-1 == HardwareRevision)
-        {
-            log.error("Could not read the Hardware Revision !");
-            return false;
-        }
-        NumberSteppers = requestInteger(Protocol.INFO_NUMBER_STEPPERS);
-        if(-1 == NumberSteppers)
-        {
-            log.error("Could not read number of stepper motors !");
-            return false;
-        }
-        NumberHeaters = requestInteger(Protocol.INFO_NUMBER_HEATERS);
-        if(-1 == NumberHeaters)
-        {
-            log.error("Could not read number of Heaters !");
-            return false;
-        }
-        NumberPwmSwitchedOutputs = requestInteger(Protocol.INFO_NUMBER_PWM);
-        if(-1 == NumberPwmSwitchedOutputs)
-        {
-            log.error("Could not read number of PWM switched Outputs !");
-            return false;
-        }
-        NumberTemperatureSensors = requestInteger(Protocol.INFO_NUMBER_TEMP_SENSOR);
-        if(-1 == NumberTemperatureSensors)
-        {
-            log.error("Could not read number of Temperature Sensors !");
-            return false;
-        }
-        NumberSwitches = requestInteger(Protocol.INFO_NUMBER_INPUT);
-        if(-1 == NumberSwitches)
-        {
-            log.error("Could not read number of Switches !");
-            return false;
-        }
-        NumberOutputSignals = requestInteger(Protocol.INFO_NUMBER_OUTPUT);
-        if(-1 == NumberOutputSignals)
-        {
-            log.error("Could not read number of Output Signals !");
-            return false;
-        }
-        numberBuzzer = requestInteger(Protocol.INFO_NUMBER_BUZZER);
-        if(-1 == numberBuzzer)
-        {
-            log.error("Could not read number of buzzers !");
-            return false;
-        }
-
-        OrderQueueTotalSlots = requestInteger(Protocol.INFO_QUEUE_TOTAL_SLOTS);
-        if(-1 == OrderQueueTotalSlots)
-        {
-            log.error("Could not read number of total queue slots !");
-            return false;
-        }
-
-        OrderQueueUsedSlots = requestInteger(Protocol.INFO_QUEUE_USED_SLOTS);
-        if(-1 == OrderQueueUsedSlots)
-        {
-            log.error("Could not read number of used queue slots !");
-            return false;
-        }
+        FirmwareType = readValueOf(Protocol.INFO_FIRMWARE_TYPE, "Firmware Type");
+        FirmwareRevisionMajor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MAJOR, "Firmware Revision Major");
+        FirmwareRevisionMinor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MINOR, "Firmware Revision Minor");
+        HardwareType = readValueOf(Protocol.INFO_FIRMWARE_TYPE, "Hardware Type");
+        HardwareRevision =readValueOf(Protocol.INFO_HARDWARE_REVISION, "Hardware Revision");
+        NumberSteppers = readValueOf(Protocol.INFO_NUMBER_STEPPERS, "number of stepper motors");
+        NumberHeaters = readValueOf(Protocol.INFO_NUMBER_HEATERS, "number of Heaters");
+        NumberPwmSwitchedOutputs = readValueOf(Protocol.INFO_NUMBER_PWM, "number of PWM switched Outputs");
+        NumberTemperatureSensors = readValueOf(Protocol.INFO_NUMBER_TEMP_SENSOR, "number of Temperature Sensors");
+        NumberSwitches = readValueOf(Protocol.INFO_NUMBER_INPUT, "number of Switches");
+        NumberOutputSignals = readValueOf(Protocol.INFO_NUMBER_OUTPUT, "number of Output Signals");
+        numberBuzzer = readValueOf(Protocol.INFO_NUMBER_BUZZER, "number of buzzers");
+        OrderQueueTotalSlots = readValueOf(Protocol.INFO_QUEUE_TOTAL_SLOTS, "number of total queue slots");
+        OrderQueueUsedSlots = readValueOf(Protocol.INFO_QUEUE_USED_SLOTS, "number of used queue slots");
         return true;
     }
 
