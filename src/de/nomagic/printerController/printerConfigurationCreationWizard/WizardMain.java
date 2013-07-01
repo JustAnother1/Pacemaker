@@ -42,6 +42,7 @@ public class WizardMain implements CancelAction
 
     public final static String DS_CONFIGURATION_NAME = "cfg";
     public final static String DS_PRINT_PROCESS_NAME = "pp";
+    public final static String DS_DEVICE_INFORMATION_NAME = "di";
 
     private final JFileChooser fc = new JFileChooser();
     private final BaseWindow ConfigCreator;

@@ -26,6 +26,7 @@ import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.BaseWindow;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
+import de.nomagic.printerController.pacemaker.DeviceInformation;
 import de.nomagic.printerController.printer.Cfg;
 import de.nomagic.printerController.printer.PrintProcess;
 
@@ -77,6 +78,9 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
             {
                 log.trace("connection to client is now open !");
                 connectLog.setText(connectLog.getText() + "\nconnection to client is now open !");
+                DeviceInformation di = pp.getPrinterAbilities();
+                ds.putObject(WizardMain.DS_PRINT_PROCESS_NAME, pp);
+                ds.putObject(WizardMain.DS_DEVICE_INFORMATION_NAME, di);
                 configCreator.setNextAllowed(true);
             }
             else
@@ -86,28 +90,6 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
             }
             // Thread end
         }
-        return ds;
-    }
-
-    @Override
-    public DataStore actionOnClose(DataStore ds)
-    {
-        /*TODO ???
-        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
-        Cfg cfg = null;
-        if(true == obj instanceof Cfg)
-        {
-            cfg = (Cfg)obj;
-        }
-        else
-        {
-            log.error("No Configuration in Data Store ! Creating new Configuration !");
-            cfg = new Cfg();
-        }
-        ds.putObject(WizardMain.DS_CONFIGURATION_NAME, cfg);
-        */
-        ds.putObject(WizardMain.DS_PRINT_PROCESS_NAME, pp);
-        configCreator.setNextAllowed(true);  // in case user leaves using the back button after connect failed
         return ds;
     }
 
