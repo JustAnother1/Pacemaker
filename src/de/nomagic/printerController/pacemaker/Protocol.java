@@ -180,6 +180,14 @@ public class Protocol
         return cc.sendRequest(ORDER_REQ_INFORMATION, request);
     }
 
+    public Reply sendDeviceNameRequest(final byte type, final int index) throws IOException
+    {
+        final byte[] request = new byte[2];
+        request[0] = type;
+        request[1] = (byte)(0xff & index);
+        return cc.sendRequest(ORDER_REQ_DEVICE_NAME, request);
+    }
+
     public DeviceInformation getDeviceInformation()
     {
         final DeviceInformation paceMaker = new DeviceInformation();

@@ -32,11 +32,19 @@ public class DeviceInformation
     private int NumberTemperatureSensors = -1;
     private int NumberSwitches = -1;
     private int NumberOutputSignals = -1;
-    private int numberBuzzer = -1;
+    private int NumberBuzzer = -1;
     private int OrderQueueTotalSlots = -1;
     private int OrderQueueUsedSlots = -1;
 
     private Protocol uartProtocol;
+
+    private String[] stepperNames;
+    private String[] heaterNames;
+    private String[] pwmOutputNames;
+    private String[] tempertureSensorNames;
+    private String[] switchesNames;
+    private String[] outputSignalNames;
+    private String[] buzzerNames;
 
 
 
@@ -93,7 +101,7 @@ public class DeviceInformation
         "Number of Temperature Sensors = " + NumberTemperatureSensors + "\n" +
         "Number of Switches = " + NumberSwitches + "\n" +
         "Number of Output Signals = " + NumberOutputSignals + "\n" +
-        "Number of Buzzers = " + numberBuzzer + "\n" +
+        "Number of Buzzers = " + NumberBuzzer + "\n" +
         "Number of queue slots = " + OrderQueueTotalSlots + "\n" +
         "Number of used queue slots = " + OrderQueueUsedSlots + "\n";
         return res;
@@ -158,10 +166,70 @@ public class DeviceInformation
         NumberTemperatureSensors = readValueOf(Protocol.INFO_NUMBER_TEMP_SENSOR, "number of Temperature Sensors");
         NumberSwitches = readValueOf(Protocol.INFO_NUMBER_INPUT, "number of Switches");
         NumberOutputSignals = readValueOf(Protocol.INFO_NUMBER_OUTPUT, "number of Output Signals");
-        numberBuzzer = readValueOf(Protocol.INFO_NUMBER_BUZZER, "number of buzzers");
+        NumberBuzzer = readValueOf(Protocol.INFO_NUMBER_BUZZER, "number of buzzers");
         OrderQueueTotalSlots = readValueOf(Protocol.INFO_QUEUE_TOTAL_SLOTS, "number of total queue slots");
         OrderQueueUsedSlots = readValueOf(Protocol.INFO_QUEUE_USED_SLOTS, "number of used queue slots");
         return true;
+    }
+
+    public boolean readConnectorNames() throws IOException
+    {
+        if(null == uartProtocol)
+        {
+            return false;
+        }
+        else
+        {
+            if(-1 != NumberSteppers)
+            {
+                stepperNames = getAllNames(NumberSteppers, Protocol.DEVICE_TYPE_STEPPER);
+            }
+            if(-1 != NumberHeaters)
+            {
+                heaterNames = getAllNames(NumberHeaters, Protocol.DEVICE_TYPE_HEATER);
+            }
+            if(-1 != NumberPwmSwitchedOutputs)
+            {
+                pwmOutputNames = getAllNames(NumberPwmSwitchedOutputs, Protocol.DEVICE_TYPE_PWM_OUTPUT);
+            }
+            if(-1 != NumberTemperatureSensors)
+            {
+                tempertureSensorNames = getAllNames(NumberTemperatureSensors, Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR);
+            }
+            if(-1 != NumberSwitches)
+            {
+                switchesNames = getAllNames(NumberSwitches, Protocol.DEVICE_TYPE_INPUT);
+            }
+            if(-1 != NumberOutputSignals)
+            {
+                outputSignalNames = getAllNames(NumberOutputSignals, Protocol.DEVICE_TYPE_OUTPUT);
+            }
+            if(-1 != NumberBuzzer)
+            {
+                buzzerNames = getAllNames(NumberBuzzer, Protocol.DEVICE_TYPE_BUZZER);
+            }
+            return true;
+        }
+    }
+
+    private String[] getAllNames(int Number, byte deviceType) throws IOException
+    {
+        String[] allNames = new String[Number];
+        for(int i = 0; i < Number; i++)
+        {
+            allNames[i] = requestDeviceNameString(deviceType, i);
+        }
+        return allNames;
+    }
+
+    private String requestDeviceNameString(final byte type, final int index) throws IOException
+    {
+        final Reply r = uartProtocol.sendDeviceNameRequest(type, index);
+        if(null == r)
+        {
+            return "";
+        }
+        return r.getParameterAsString(0);
     }
 
     private int requestInteger(final int which) throws IOException
@@ -217,6 +285,89 @@ public class DeviceInformation
         return res;
     }
 
+    public String getStepperConnectorName(int index)
+    {
+        if((-1 < index) &&(index < NumberSteppers))
+        {
+            return stepperNames[index];
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    public String getHeaterConnectorName(int index)
+    {
+        if((-1 < index) &&(index < NumberHeaters))
+        {
+            return heaterNames[index];
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    public String getPwmOutputConnectorName(int index)
+    {
+        if((-1 < index) &&(index < NumberOutputSignals))
+        {
+            return pwmOutputNames[index];
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    public String getTemperatureSensorConnectorName(int index)
+    {
+        if((-1 < index) &&(index < NumberTemperatureSensors))
+        {
+            return tempertureSensorNames[index];
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    public String getSwitchConnectorName(int index)
+    {
+        if((-1 < index) &&(index < NumberSwitches))
+        {
+            return switchesNames[index];
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    public String getOutputConnectorName(int index)
+    {
+        if((-1 < index) &&(index < NumberOutputSignals))
+        {
+            return outputSignalNames[index];
+        }
+        else
+        {
+            return "";
+        }
+    }
+
+    public String getBuzzerConnectorName(int index)
+    {
+        if((-1 < index) &&(index < NumberBuzzer))
+        {
+            return buzzerNames[index];
+        }
+        else
+        {
+            return "";
+        }
+    }
 
     public boolean isProtocolVersionSupported(final int which)
     {
@@ -364,7 +515,7 @@ public class DeviceInformation
 
     public int getNumberBuzzer()
     {
-        return numberBuzzer;
+        return NumberBuzzer;
     }
 
 
