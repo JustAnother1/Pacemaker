@@ -14,7 +14,6 @@
  */
 package de.nomagic.test.pacemaker;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -22,13 +21,10 @@ import java.awt.event.ActionListener;
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import javax.swing.JRootPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.Timer;
 
-import de.nomagic.printerController.gui.ClientPanel;
-import de.nomagic.printerController.gui.DirectControlPanel;
 
 /**
  * @author Lars P&ouml;tter
