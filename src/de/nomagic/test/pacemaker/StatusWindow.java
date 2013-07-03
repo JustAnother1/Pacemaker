@@ -14,28 +14,80 @@
  */
 package de.nomagic.test.pacemaker;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
+import javax.swing.Timer;
+
+import de.nomagic.printerController.gui.ClientPanel;
+import de.nomagic.printerController.gui.DirectControlPanel;
 
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class StatusWindow extends JFrame implements Hardware
+public class StatusWindow extends JFrame implements Hardware, ActionListener
 {
+    private final static String TIMER_ACTION_COMMAND = "timer";
     private static final long serialVersionUID = 1L;
     private final JPanel StatusPanel = new JPanel();
+    private final JPanel ControlPanel = new JPanel();
     private final JTextArea curStatus = new JTextArea("not available");
+
+    private boolean isInStoppedState = true;
+    private Timer timer;
+    private ProtocolClient pc;
 
     public StatusWindow()
     {
         this.setTitle("Pacemaker Status");
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        // Status Panel
+        StatusPanel.setBorder(BorderFactory.createTitledBorder(
+                              BorderFactory.createLineBorder(Color.black),
+                              "Status"));
+        curStatus.setEditable(false);
         StatusPanel.add(curStatus);
-        this.add(StatusPanel);
+        // Control Panel
+        ControlPanel.setBorder(BorderFactory.createTitledBorder(
+                               BorderFactory.createLineBorder(Color.black),
+                               "Control"));
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                                              ControlPanel,
+                                              StatusPanel);
+        this.add(splitPane);
+
+        this.setResizable(true);
         this.pack();
         this.setVisible(true);
+        timer = new Timer(100, this);
+        timer.setInitialDelay(1);
+        timer.setActionCommand(TIMER_ACTION_COMMAND);
+        timer.start();
+    }
+
+    public boolean isInStoppedState()
+    {
+        return isInStoppedState;
+    }
+
+    public void setInStoppedState(boolean isInStoppedState)
+    {
+        this.isInStoppedState = isInStoppedState;
+    }
+
+    public void setProtocolClient(ProtocolClient pc)
+    {
+        this.pc = pc;
     }
 
     @Override
@@ -243,6 +295,42 @@ public class StatusWindow extends JFrame implements Hardware
     public int getNumberBuzzer()
     {
         return 2;
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e)
+    {
+        String cmd = e.getActionCommand();
+        if(true == TIMER_ACTION_COMMAND.equals(cmd))
+        {
+            // update the status
+            String statusText = "";
+            if(true == isInStoppedState)
+            {
+                statusText = statusText + "State: Stopped !\n";
+            }
+            else
+            {
+                statusText = statusText + "State: running !\n";
+            }
+            if(null != pc)
+            {
+                if(true == pc.isConnected())
+                {
+                    statusText = statusText + "Host has connected !\n";
+                }
+                else
+                {
+                    statusText = statusText + "Host not connected !\n";
+                }
+            }
+            else
+            {
+                statusText = statusText + "Host not connected !\n";
+            }
+
+            curStatus.setText(statusText);
+        }
     }
 
 }

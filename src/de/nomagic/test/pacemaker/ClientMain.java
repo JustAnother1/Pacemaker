@@ -20,49 +20,74 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import javax.swing.SwingUtilities;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
 public class ClientMain
 {
-    private final StatusWindow sw = new StatusWindow();
+    private StatusWindow sw;
+    private boolean shouldRun = true;
 
+    public ClientMain() throws IOException
+    {
+    }
 
-    /**
-     * @throws IOException
-     *
-     */
-    public ClientMain(final int port) throws IOException
+    public void startGui()
+    {
+        SwingUtilities.invokeLater(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    sw = new StatusWindow();
+                }
+                catch(final Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+
+    public void startCommunicating(int port) throws IOException
     {
         // create TCP Port and Listen to connections
         System.out.println("Starting to listen on Port " + port);
         final ServerSocket server = new ServerSocket(port);
-        final Socket s = server.accept();
-        System.out.println("Received a Connection !");
-        s.setTcpNoDelay(true);
-        final InputStream in = s.getInputStream();
-        final OutputStream out = s.getOutputStream();
-        final ProtocolClient pc = new ProtocolClient(in, out, sw);
-        pc.communicate();
+        while(true== shouldRun)
+        {
+            final Socket s = server.accept();
+            System.out.println("Received a Connection !");
+            s.setTcpNoDelay(true);
+            final InputStream in = s.getInputStream();
+            final OutputStream out = s.getOutputStream();
+            final ProtocolClient pc = new ProtocolClient(in, out, sw);
+            if(null != sw)
+            {
+                sw.setProtocolClient(pc);
+            }
+            pc.communicate();
+            s.close();
+        }
         server.close();
     }
 
-    /**
-     * @param args
-     * @throws IOException
-     */
     public static void main(final String[] args) throws IOException
     {
         try
         {
-            @SuppressWarnings("unused")
-            final ClientMain cm = new ClientMain(12345);
+            final ClientMain cm = new ClientMain();
+            cm.startGui();
+            cm.startCommunicating(12345);
         }
         catch(final IOException e)
         {
             System.out.println(e.getMessage());
-            // e.printStackTrace();
             System.exit(1);
         }
     }
