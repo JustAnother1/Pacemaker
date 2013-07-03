@@ -17,6 +17,7 @@ package de.nomagic.printerController.gui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -49,6 +50,7 @@ public class DirectControlPanel implements ActionListener
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Direct Control"));
+        myPanel.setLayout(new GridLayout(0,2));
         addButton(XPlusButton, "xplus");
         addButton(XMinusButton, "xplus");
         addButton(YPlusButton, "xplus");
@@ -57,9 +59,9 @@ public class DirectControlPanel implements ActionListener
         addButton(ZMinusButton, "xplus");
         addButton(EPlusButton, "xplus");
         addButton(EMinusButton, "xplus");
-        addButton(MotorsOffButton, "xplus");
         addButton(HeaterOnButton, "xplus");
         addButton(HeaterOffButton, "xplus");
+        addButton(MotorsOffButton, "xplus");
     }
 
     private void addButton(JButton button, String actionCommand)

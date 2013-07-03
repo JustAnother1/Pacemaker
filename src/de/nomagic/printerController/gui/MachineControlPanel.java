@@ -14,9 +14,9 @@
  */
 package de.nomagic.printerController.gui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
@@ -28,6 +28,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JPanel;
@@ -65,19 +66,25 @@ public class MachineControlPanel implements ActionListener
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Printer Control"));
+        myPanel.setLayout(new BoxLayout(myPanel, BoxLayout.PAGE_AXIS));
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.setLayout(new FlowLayout());
         configurationButton.addActionListener(this);
         configurationButton.setActionCommand(ACTION_LOAD_CONFIGURATION);
-        myPanel.add(configurationButton, BorderLayout.NORTH);
+        buttonPanel.add(configurationButton);
         printButton.addActionListener(this);
         printButton.setActionCommand(ACTION_PRINT);
         printButton.setEnabled(false);
-        myPanel.add(printButton, BorderLayout.NORTH);
-        // connection to Client Panel (connect, disconnect,...)
-        clientPane = new ClientPanel(pp, this);
-        myPanel.add(clientPane.getPanel(), BorderLayout.PAGE_END);
+        buttonPanel.add(printButton);
+        myPanel.add(buttonPanel);
+
         // move motors ,control heaters,...
         directControlPane = new DirectControlPanel();
-        myPanel.add(directControlPane.getPanel(), BorderLayout.CENTER);
+        myPanel.add(directControlPane.getPanel());
+
+        // connection to Client Panel (connect, disconnect,...)
+        clientPane = new ClientPanel(pp, this);
+        myPanel.add(clientPane.getPanel());
     }
 
     public Component getPanel()
