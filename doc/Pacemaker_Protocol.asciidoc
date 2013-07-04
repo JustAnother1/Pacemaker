@@ -276,7 +276,7 @@ NOTE: It is expected that the client will need to use I^2^C clock stretching to 
 ==== Protocol Versions
 The current pre-release version of the Pacemaker protocol is 0.1. All current and previous versions of the protocol are listed in the table below along with a summary of the important changes between each version. New Protocol version will be defined in an updated version of this document. Major protocol version numbers indicate breaking changes; minor protocol version numbers indicate non-breaking changes.
 
-.Protocol Extensions
+.Protocol Versions
 [width="50%",options="header", cols="20%,20%,60%"]
 |================================================
 |Major Ver|Minor Ver| Changes
