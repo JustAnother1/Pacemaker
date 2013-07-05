@@ -91,14 +91,16 @@ public class Cfg
 
     public static final int INVALID = -1;
 
-    /**
-     *
-     */
     public Cfg()
     {
         for(int i = 0; i < NUMBER_OF_AXIS; i++)
         {
             axisMapping[i] = new AxisConfiguration();
+        }
+        for(int i = 0; i < NUMBER_OF_HEATERS; i++)
+        {
+            heaterMapping[i] = -1;
+            temperatureSensorMapping[i] = -1;
         }
     }
 
