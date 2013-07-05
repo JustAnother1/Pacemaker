@@ -163,6 +163,16 @@ public class ProtocolClient
             // Execute the Order
             switch(order)
             {
+            case Protocol.ORDER_RESET:
+                System.err.println("Order not implemented !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_RESUME:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
             case Protocol.ORDER_REQ_INFORMATION:
                 handleOrderReqInformation();
                 break;
@@ -170,6 +180,111 @@ public class ProtocolClient
             case Protocol.ORDER_REQ_DEVICE_NAME:
                 handleOrderReqDeviceName();
                 break;
+
+            case Protocol.ORDER_REQ_TEMPERATURE:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_GET_HEATER_CONFIGURATION:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_CONFIGURE_HEATER:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_SET_HEATER_TARGET_TEMPERATURE:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_REQ_INPUT:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_SET_OUTPUT:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_SET_PWM:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_WRITE_FIRMWARE_CONFIGURATION:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_READ_FIRMWARE_CONFIGURATION:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_STOP_PRINT:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+                // Stepper control Extension
+            case Protocol.ORDER_ACTIVATE_STEPPER_CONTROL:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_CONFIGURE_END_STOPS:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_ENABLE_DISABLE_END_STOPS:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_HOME_AXES:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+                // Queued Command Extension
+            case Protocol.ORDER_QUEUE_COMMAND_BLOCKS:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+                // Basic Move Extension
+            case Protocol.ORDER_CONFIGURE_AXIS_MOVEMENT_RATES:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+                // Event Reporting Extension
+            case Protocol.ORDER_RETRIEVE_EVENTS:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_GET_NUMBER_EVENT_FORMAT_IDS:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_GET_EVENT_STRING_FORMAT_ID:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
             // New Orders go here
             default: sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                                Protocol.RESPONSE_UNKNOWN_ORDER);

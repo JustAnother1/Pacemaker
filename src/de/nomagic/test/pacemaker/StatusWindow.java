@@ -235,7 +235,7 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     @Override
     public int[] getListOfSupportedProtocolExtensions()
     {
-        final int[] res = {0, 1, 2};
+        final int[] res = {0, 1, 2, 3};
         return res;
     }
 
