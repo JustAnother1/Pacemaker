@@ -483,7 +483,7 @@ The first byte of the Parameter indicates whether or not the stopped state has b
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Parameter| Meaning
-| 0x0 | Uacknoweledged
+| 0x0 | Unacknoweledged
 | 0x1 | Acknoweledged
 |=============================
 
@@ -573,7 +573,7 @@ This order will attempt to acknowledge and/or clear a stopped client condition. 
 The first byte of the Parameter indicates whether the host wants to query(=0), acknowledge(=1) or clear(=2) the stopped state. Attempting to clear a stopped state will also acknowledge it.
 
 .Replies
-- OK: Error/reset state has been cleared.
+- OK: Error/reset state has been cleared/ acknowleadged.
 - Stopped: The stopped state was not cleared (see Reply Code description).
 
 ==== Request Information (0x01)

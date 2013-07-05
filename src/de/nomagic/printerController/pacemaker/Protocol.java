@@ -35,6 +35,10 @@ public class Protocol
 
     public final static byte ORDER_RESET = (byte)0x7f;
     public final static byte ORDER_RESUME = 0;
+    public final static byte QUERY_STOPPED_STATE = 0;
+    public final static byte ACKNOWLEADGE_STOPPED_STATE = 1;
+    public final static byte CLEAR_STOPPED_STATE = 2;
+
     public final static byte ORDER_REQ_INFORMATION = 1;
 
     public final static int INFO_FIRMWARE_NAME_STRING = 0;
@@ -122,6 +126,20 @@ public class Protocol
     public final static int RESPONSE_FAILED = 7;
 
     public final static byte RESPONSE_STOPPED = 0x12;
+    public final static byte STOPPED_UNACKNOWLEADGED = 0;
+    public final static byte STOPPED_ACKNOWLEADGED = 1;
+    public final static byte RECOVERY_CLEARED = 1;
+    public final static byte RECOVERY_PERSISTS = 2;
+    public final static byte RECOVERY_UNRECOVERABLE = 3;
+    public final static byte CAUSE_RESET = 0;
+    public final static byte CAUSE_END_STOP_HIT = 1;
+    public final static byte CAUSE_MOVEMENT_ERROR = 2;
+    public final static byte CAUSE_TEMPERATURE_ERROR = 3;
+    public final static byte CAUSE_DEVICE_FAULT = 4;
+    public final static byte CAUSE_ELECTRICAL_FAULT = 5;
+    public final static byte CAUSE_FIRMWARE_FAULT = 6;
+    public final static byte CAUSE_OTHER_FAULT = 7;
+
     public final static byte RESPONSE_ORDER_SPECIFIC_ERROR = 0x13;
 
     public final static int RESPONSE_MAX = 0x13;
