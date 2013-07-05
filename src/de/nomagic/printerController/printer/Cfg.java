@@ -21,6 +21,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +40,7 @@ public class Cfg
 
     public final static String COMMENT_START = "#";
 
-    private enum Sect {GENERAL, AXIS, HEATERS, TEMPERATURES, INVALID}
+    private enum Sect {GENERAL, AXIS, HEATERS, TEMPERATURES, FIRMWARE_CONFIGURATION, INVALID}
     public final static String GENERAL_SECTION = "[general]";
     public final static String SETTING_CLIENT_DEVICE_STRING = "CLientDeviceString";
     public final static String AXIS_SECTION = "[axis]";
@@ -60,11 +63,13 @@ public class Cfg
     public final static String SETTING_EXTRUDER_ONE_TEMP_SENSOR_STRING = "extruder one temperature sensor";
     public final static String SETTING_EXTRUDER_TWO_TEMP_SENSOR_STRING = "extruder two temperature sensor";
     public final static String SETTING_EXTRUDER_THREE_TEMP_SENSOR_STRING = "extruder three temperature sensor";
+    public final static String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
 
     private String ClientDeviceString = null;
     private final AxisConfiguration[] axisMapping = new AxisConfiguration[NUMBER_OF_AXIS];
     private final int[] temperatureSensorMapping = new int[NUMBER_OF_HEATERS];
     private final int[] heaterMapping = new int[NUMBER_OF_HEATERS];
+    private HashMap<String,String> firmwareCfg = new HashMap<String,String>();
 
     public final static int POS_X = 0;
     public final static int POS_Y = 1;
@@ -129,6 +134,19 @@ public class Cfg
                 ow.write(axisNames[i] + " " + SETTING_STEPPER_TWO + " = " + axisMapping[i].getSecondStepper() + "\n");
             }
 
+            if(false == firmwareCfg.isEmpty())
+            {
+                ow.write(FIRMWARE_CONFIGURATION_SECTION + "\n");
+                Set<String> keys = firmwareCfg.keySet();
+                Iterator<String> it = keys.iterator();
+                while(true == it.hasNext())
+                {
+                    String name = it.next();
+                    String value = firmwareCfg.get(name);
+                    ow.write(name + " = " + value + "\n");
+                }
+            }
+
             ow.flush();
             ow.close();
             return true;
@@ -170,6 +188,10 @@ public class Cfg
                         else if(true == TEMPERATURES_SECTION.equals(curLine))
                         {
                             curSection = Sect.TEMPERATURES;
+                        }
+                        else if(true == FIRMWARE_CONFIGURATION_SECTION.equals(curLine))
+                        {
+                            curSection = Sect.FIRMWARE_CONFIGURATION;
                         }
                     }
                     else
@@ -271,6 +293,13 @@ public class Cfg
                             }
                             break;
 
+                        case FIRMWARE_CONFIGURATION:
+                            if(true == curLine.contains("="))
+                            {
+                                firmwareCfg.put(getKeyFrom(curLine), getValueFrom(curLine));
+                            }
+                            break;
+
                         default:
                             log.error("Found Text in Invalid Section ! ");
                             break;
@@ -302,6 +331,11 @@ public class Cfg
         {
             return aLine.trim();
         }
+    }
+
+    private String getKeyFrom(final String line)
+    {
+        return (line.substring(0, line.indexOf('='))).trim();
     }
 
     private String getValueFrom(final String line)
@@ -346,6 +380,17 @@ public class Cfg
     public int[] getHeaterMapping()
     {
         return heaterMapping;
+    }
+
+    public String getFirmwareSetting(String Name)
+    {
+        return firmwareCfg.get(Name);
+    }
+
+    public String[] getAllFirmwareKeys()
+    {
+        Set<String> keys = firmwareCfg.keySet();
+        return keys.toArray(new String[0]);
     }
 
 }

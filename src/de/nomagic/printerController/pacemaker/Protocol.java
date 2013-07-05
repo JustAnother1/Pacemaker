@@ -15,6 +15,7 @@
 package de.nomagic.printerController.pacemaker;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Vector;
 
 import org.slf4j.Logger;
@@ -510,8 +511,33 @@ public class Protocol
     public boolean applyConfigurationToClient()
     {
         // TODO Configure heater (Heater-Temperature sensor mapping)
-        // TODO send all Firmware configuration Values to the Client
+        // send all Firmware configuration Values to the Client
+        String[] keys = cfg.getAllFirmwareKeys();
+        for(int i = 0; i < keys.length; i++)
+        {
+            writeFirmwareConfigurationValue(keys[i], cfg.getFirmwareSetting(keys[i]));
+        }
         return true;
+    }
+
+    private void writeFirmwareConfigurationValue(String name, String value)
+    {
+        byte[] nameBuf = name.getBytes(Charset.forName("UTF-8"));
+        byte[] valueBuf = value.getBytes(Charset.forName("UTF-8"));
+        byte[] parameter = new byte[nameBuf.length + valueBuf.length + 1];
+        parameter[0] = (byte)nameBuf.length;
+        for(int i = 0; i < nameBuf.length; i++)
+        {
+            parameter[i+1] = nameBuf[i];
+        }
+        for(int i = 0; i < valueBuf.length; i++)
+        {
+            parameter[i+nameBuf.length] = valueBuf[i];
+        }
+        if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter))
+        {
+            log.error("Failed to write Fimrware Setting {} = {} !", name, value);
+        }
     }
 
 }
