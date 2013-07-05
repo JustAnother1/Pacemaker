@@ -171,18 +171,22 @@ public class Protocol
     private AxisConfiguration[] axisCfg;
     private int[] temperatureSensors;
     private int[] heaters;
+    private Cfg cfg;
 
     public Protocol()
     {
     }
 
-    public void ConnectToChannel(final ClientConnection cc)
+    public boolean ConnectToChannel(final ClientConnection cc)
     {
         this.cc = cc;
+        // take client out of Stopped Mode
+        return sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
     }
 
     public void setCfg(final Cfg cfg)
     {
+        this.cfg = cfg;
         axisCfg = cfg.getAxisMapping();
         temperatureSensors = cfg.getTemperatureSensorMapping();
         heaters = cfg.getHeaterMapping();
@@ -223,6 +227,13 @@ public class Protocol
             e.printStackTrace();
         }
         return null;
+    }
+
+    public boolean sendOrderExpectOK(final byte order, final byte parameter)
+    {
+        byte[] help = new byte[1];
+        help[0] = parameter;
+        return sendOrderExpectOK(order, help);
     }
 
     public boolean sendOrderExpectOK(final byte order, final byte[] parameter)
@@ -494,6 +505,13 @@ public class Protocol
         return sendOrderExpectOK(Protocol.ORDER_ENQUEUE_DELAY, param);
         */
         return false;
+    }
+
+    public boolean applyConfigurationToClient()
+    {
+        // TODO Configure heater (Heater-Temperature sensor mapping)
+        // TODO send all Firmware configuration Values to the Client
+        return true;
     }
 
 }

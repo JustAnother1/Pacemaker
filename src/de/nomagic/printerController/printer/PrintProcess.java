@@ -55,7 +55,16 @@ public class PrintProcess
         {
             proto = new Protocol();
             proto.setCfg(cfg);
-            proto.ConnectToChannel(cc);
+            if(false == proto.ConnectToChannel(cc))
+            {
+                return false;
+            }
+            // else Connection established successfully !
+            if(false == proto.applyConfigurationToClient())
+            {
+                return false;
+            }
+            // else Client configured successfully !
             plan = new Planner(proto);
             decoder = new GCodeDecoder(plan);
             ClientisConnected = true;
