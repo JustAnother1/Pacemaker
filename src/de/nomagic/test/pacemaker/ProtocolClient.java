@@ -98,7 +98,7 @@ public class ProtocolClient
                         final int h = getAByte();
                         parameter[i] = h;
                     }
-                    final int checksum = getAByte();
+                    final int checksum = 0xff & getAByte();
                     if(checksum != calculateChecksum(order, length, control, parameter))
                     {
                         System.err.println("BAD CRC ! (" +checksum + " - " + calculateChecksum(order, length, control, parameter) + ") !" );
@@ -563,7 +563,7 @@ public class ProtocolClient
             data[i + 4] = (byte)parameter[i];
         }
         System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data));
-        return ClientConnection.getCRCfor(data);
+        return 0xff & ClientConnection.getCRCfor(data);
     }
 
 }
