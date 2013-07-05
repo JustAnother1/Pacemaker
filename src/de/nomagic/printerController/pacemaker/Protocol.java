@@ -504,7 +504,27 @@ public class Protocol
 
     public boolean applyConfigurationToClient()
     {
-        // TODO Configure heater (Heater-Temperature sensor mapping)
+        // Configure heater (Heater-Temperature sensor mapping)
+        int[] heaters = cfg.getHeaterMapping();
+        int[] sensors = cfg.getTemperatureSensorMapping();
+        byte[] parameter = new byte[2];
+        for(int i = 0; i < Cfg.NUMBER_OF_HEATERS; i++)
+        {
+            int heaterNum = heaters[i];
+            int sensorNum = sensors[i];
+            if((-1 < heaterNum) && (-1 < sensorNum))
+            {
+                parameter[0] = (byte)heaterNum;
+                parameter[1] = (byte)sensorNum;
+                if(false == sendOrderExpectOK(ORDER_CONFIGURE_HEATER, parameter))
+                {
+                    log.error("Failed to configure Heater {} to use Temperature sensor {} !", heaterNum, sensorNum);
+                    return false;
+                }
+            }
+            // else invalid configuration -> skip
+        }
+
         // send all Firmware configuration Values to the Client
         String[] keys = cfg.getAllFirmwareKeys();
         for(int i = 0; i < keys.length; i++)
