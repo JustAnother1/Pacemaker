@@ -288,7 +288,7 @@ The current pre-release version of the Pacemaker protocol is 0.1. All current an
 A Pacemaker client is only expected to implement a single protocol version. A Pacemaker host may (or may not) support a range of different client protocol versions.
 
 The Pacemaker host should ignore extra Reply Parameter bytes when the client version mismatches only by a minor version.
-The Pacemaker client should ignore extra Order Parameter bytes (the Host should not try to use a client with a mismatched majr version).
+The Pacemaker client should ignore extra Order Parameter bytes (the Host should not try to use a client with a mismatched major version).
 Both the Pacemaker client and host should return an error if insufficient Parameter bytes are received (additional Parameter content should be marked as optional when extending a command with a minor version change).
 
 ==== Protocol Extensions
@@ -408,7 +408,6 @@ It is expected that retransmission of an Order which received a Frame Receipt Er
 ==== Experimental/Unapproved Reply Codes
 
 The Reply Code range 0x08-0x0f is reserved for experimental or unapproved transport Reply Code values.
-
 
 === Standard Application Layer Reply Codes
 
@@ -867,10 +866,10 @@ This command sends a configuration name and value to the firmware. The host shou
 | Length in Bytes | Parameter Contents
 | 1 | length of configuration name [==M]
 | M | name of configuration (utf8 string)
-| any | value of configuration to set
+| any | value of configuration to set (utf8 string)
 |================================================
 
-The supported names and the expected values are firmware dependent. All configuration value names are encoded as utf8 strings. If the parameter name is unrecognized or the value is malformed then a Bad Parameter Command Error is returned.
+The supported names and the expected values are firmware dependent. All configuration names and value are encoded as utf8 strings. If the parameter name is unrecognized or the value is malformed then a Bad Parameter Command Error is returned.
 
 .Example
 Setting the configuration named "Power" to "on" would result in this parameter value:
@@ -941,8 +940,7 @@ An emergency stop must be accepted at any time; an ordered stop is only accepted
 - Incorrect mode: Order received when stepper control is not activated.
 
 ==== Experimental & Unapproved Orders
-Experimental or unapproved orders must user order codes from the range 0x80 to 0xfe.
-Experimental or unapproved orders that need new order specific Reply Codes should use Reply Code values of 0x80-0xfe.
+Experimental or unapproved orders must use order codes from the range 0x80 to 0xfe. Experimental or unapproved orders that need additional order-specific Reply Codes should use Reply Code values of 0x80-0xfe.
 
 == Stepper Control Extension
 
@@ -962,7 +960,7 @@ c. disable the end-stop whenever the carriage needs to move all the way to the e
 
 === End-stop behavior
 
-End-stops are always used for homing, but the host can control when halting on end-stop detection is enabled or disabled for normal movement.
+End-stops are always used for homing, but the host can control whether halting on end-stop detection is enabled or disabled for normal movement.
 
 If end-stop halting is enabled, then the client should enter the "End-stop hit" Stopped state if:
 
@@ -1020,6 +1018,7 @@ If a Parameter is provided the first byte will contain the stepper motors Number
 
 This order will configure the switches which are used as end-stops for movement and homing.
 
+.Parameter
 [width="50%",options="header", cols="30%,70%"]
 |================================================
 | Length in Bytes | Parameter Contents
@@ -1134,22 +1133,22 @@ The Parameter contains the sequence of command blocks.
 [width="50%",options="header", cols="35%,65%"]
 |============================
 | Length in bytes | Content
+| 1 | Length of block 0 in bytes (N)
 | 1 | Control byte for block 0
-| n | block 0 data (length is movement block-type specific)
+| N-1 | block 0 data
+| 1 | Length of block 1 in bytes (M)
 | 1 | Control byte for block 1
-| m | block 1 data
+| M-1 | block 1 data
 |  .. | ..
 |============================
 
-Each block begins with a control byte which indicates the queue command block type. The currently defined movement block types are described in the next section (along with the associated extension).
-
-The length of the movement block data is specific to the movement block and described in the movement block definition.
+Each block begins with a length byte and a control byte: the length byte indicates the number of following bytes in the block (including the control byte) and the control byte indicates the command block type. The currently defined movement block types are described in the next section (along with the associated extension).
 
 If an empty Parameter is sent then no orders are queued but the Order Queued reply is sent as usual (and can be used to monitor print progress).
 
 NOTE: if a queued command blocks is currently being executed, then this is treated as still being in the queue for the purposes of counting available queue slots and completed command blocks.
 
-NOTE: the count of executed command blocks does not include command blocks which failed validation (and therefore not inserted in the queue) or were flushed from the queue before execution but it does include all executed commands regardless of whether they were successful.
+NOTE: the count of executed command blocks does not include command blocks which failed validation (and therefore not inserted in the queue) or were flushed from the queue before execution but it does include all executed commands regardless of whether or not they were successful.
 
 .Replies
 - OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply Parameter indicates the number of move block queue slots are available. Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed command blocks since last Resume.
@@ -1220,9 +1219,8 @@ Orders supporting queuing should not expect to fail and cannot return informatio
 |=============================
 |Length In Bytes | Content
 | 1 | Control Byte (0b00000001)
-| 1 | Block Length
 | 1 | Order Code
-| N-1 | Order Parameter data
+| N-2 | Order Parameter data (where N is the value in the length byte for the block)
 |=============================
 
 ==== Delay (0b00000010)
@@ -1238,7 +1236,7 @@ This command block will enqueue a delay.
 | 2 | delay (LSB)
 |=============================
 
-The Delay command block has 2 bytes of block content containing an integer indicating the time to delay. This delay is measured in units of 10us. The client does not need to implement a high-accuracy timer but must ensure that it delays at least this long.
+The Delay command block has 2 bytes of additional block content containing an integer indicating the time to delay. This delay is measured in units of 10us. The client does not need to implement a high-accuracy timer but must ensure that it delays at least this long.
 
 == Basic Move Extension
 
@@ -1276,6 +1274,11 @@ There are two recommended approaches for implementing these type of machine conf
 
 - Another approach is that the client simply presents itself to the host as a cartesian machine and then performs all conversion to polar or delta co-ordinate systems within the firmware.
 
+==== What about non-linear extruder advance algorithms?
+Some printers use extruder advance algorithms to non-linearly modify the extrusion rate based on parameters like toolhead speed.
+
+The Pacemaker framework has been specifically optimized to allow non-linear behaviors to be efficiently implemented using sequences of short linear segments. Similarly to implementing non-linear movement in the XYZ axes (for delta or polar bots), this technique can also be used for implementing non-linear advance algorithms in the extruder axes. The advantage of this approach is that the client requires no additional logic to implement an arbitrary advance scheme.
+
 ==== What happens if the communication is disrupted during movement?
 A movement wind-down algorithm can be implemented to limit the maximum speed when a disruption is anticipated, i.e., a limited number of movement blocks are queued with a non-zero end speed on the final block. This ensures that missed steps do not occur as the result of a queue underrun.
 
@@ -1296,12 +1299,10 @@ This order configures the maximum speed and deceleration used for each axis.
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
-|Byte Number | Content
-| 0 | stepper motor number
-| 1 | max Steps per second(MSB)
-| 1 | max Steps per second(LSB)
-| 1 | max deceleration (MSB)
-| 1 | max deceleration (LSB)
+| Length In Bytes | Content
+| 1 | stepper motor number
+| 2 | max steps per second
+| 2 | max deceleration
 |=============================
 
 Byte 1 of the Parameter is the stepper number.
