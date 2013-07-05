@@ -301,7 +301,7 @@ The following extensions are currently defined:
 |================================================
 |Value| Extension
 |   0 | Stepper Control
-|   1 | Queued Command Extension
+|   1 | Queued Command
 |   2 | Basic Move
 |   3 | Event Reporting
 | 0x80-0xfe | Experimental/unapproved protocol extensions

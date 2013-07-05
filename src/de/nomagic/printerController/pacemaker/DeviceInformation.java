@@ -33,8 +33,6 @@ public class DeviceInformation
     private int NumberSwitches = -1;
     private int NumberOutputSignals = -1;
     private int NumberBuzzer = -1;
-    private int OrderQueueTotalSlots = -1;
-    private int OrderQueueUsedSlots = -1;
 
     private Protocol uartProtocol;
 
@@ -46,12 +44,9 @@ public class DeviceInformation
     private String[] outputSignalNames;
     private String[] buzzerNames;
 
-
-
     public DeviceInformation()
     {
     }
-
 
     @Override
     public String toString()
@@ -101,9 +96,7 @@ public class DeviceInformation
         "Number of Temperature Sensors = " + NumberTemperatureSensors + "\n" +
         "Number of Switches = " + NumberSwitches + "\n" +
         "Number of Output Signals = " + NumberOutputSignals + "\n" +
-        "Number of Buzzers = " + NumberBuzzer + "\n" +
-        "Number of queue slots = " + OrderQueueTotalSlots + "\n" +
-        "Number of used queue slots = " + OrderQueueUsedSlots + "\n";
+        "Number of Buzzers = " + NumberBuzzer + "\n";
         return res;
     }
 
@@ -167,8 +160,6 @@ public class DeviceInformation
         NumberSwitches = readValueOf(Protocol.INFO_NUMBER_INPUT, "number of Switches");
         NumberOutputSignals = readValueOf(Protocol.INFO_NUMBER_OUTPUT, "number of Output Signals");
         NumberBuzzer = readValueOf(Protocol.INFO_NUMBER_BUZZER, "number of buzzers");
-        OrderQueueTotalSlots = readValueOf(Protocol.INFO_QUEUE_TOTAL_SLOTS, "number of total queue slots");
-        OrderQueueUsedSlots = readValueOf(Protocol.INFO_QUEUE_USED_SLOTS, "number of used queue slots");
         return true;
     }
 
@@ -470,64 +461,44 @@ public class DeviceInformation
         return NumberOutputSignals;
     }
 
-
     public String getBoardName()
     {
         return BoardName;
     }
-
 
     public String getGivenName()
     {
         return givenName;
     }
 
-
     public int getMinorVersionSupportedUpTo()
     {
         return minorVersionSupportedUpTo;
     }
-
 
     public boolean hasExtensionEventReporting()
     {
         return hasExtensionEventReporting;
     }
 
-
     public int getFirmwareRevisionMajor()
     {
         return FirmwareRevisionMajor;
     }
-
 
     public int getFirmwareRevisionMinor()
     {
         return FirmwareRevisionMinor;
     }
 
-
     public int getNumberPwmSwitchedOutputs()
     {
         return NumberPwmSwitchedOutputs;
     }
 
-
     public int getNumberBuzzer()
     {
         return NumberBuzzer;
-    }
-
-
-    public int getOrderQueueTotalSlots()
-    {
-        return OrderQueueTotalSlots;
-    }
-
-
-    public int getOrderQueueUsedSlots()
-    {
-        return OrderQueueUsedSlots;
     }
 
 }

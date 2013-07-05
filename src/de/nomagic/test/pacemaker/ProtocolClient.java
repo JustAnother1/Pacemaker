@@ -142,19 +142,6 @@ public class ProtocolClient
                                     case Protocol.INFO_NUMBER_INPUT:sendByte(hw.getNumberInput()); break;
                                     case Protocol.INFO_NUMBER_OUTPUT:sendByte(hw.getNumberOutput()); break;
                                     case Protocol.INFO_NUMBER_BUZZER:sendByte(hw.getNumberBuzzer()); break;
-                                    case Protocol.INFO_QUEUE_TOTAL_SLOTS:sendI16(totalSlots); break;
-                                    case Protocol.INFO_QUEUE_USED_SLOTS:
-                                        int usedSlots = -1;
-                                        if(lastWritenSlot >= lastExecutedSlot)
-                                        {
-                                            usedSlots = lastWritenSlot  - lastExecutedSlot;
-                                        }
-                                        else
-                                        {
-                                            usedSlots = (lastWritenSlot + totalSlots) - lastExecutedSlot;
-                                        }
-                                        sendI16(usedSlots);
-                                        break;
                                     default:
                                         sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                                                   Protocol.RESPONSE_BAD_PARAMETER_VALUE);

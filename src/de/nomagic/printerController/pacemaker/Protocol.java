@@ -33,7 +33,7 @@ public class Protocol
 // Host
     public final static int START_OF_HOST_FRAME = 0x23;
 
-    public final static byte ORDER_RESET = (byte)0xff;
+    public final static byte ORDER_RESET = (byte)0x7f;
     public final static byte ORDER_RESUME = 0;
     public final static byte ORDER_REQ_INFORMATION = 1;
 
@@ -46,8 +46,9 @@ public class Protocol
     public final static int INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS = 6;
 
     public final static int INFO_PROTOCOL_EXTENSION_STEPPER_CONTROL = 0;
-    public final static int INFO_PROTOCOL_EXTENSION_BASIC_MOVE = 1;
-    public final static int INFO_PROTOCOL_EXTENSION_EVENT_REPORTING = 2;
+    public final static int INFO_PROTOCOL_EXTENSION_QUEUED_COMMAND = 1;
+    public final static int INFO_PROTOCOL_EXTENSION_BASIC_MOVE = 2;
+    public final static int INFO_PROTOCOL_EXTENSION_EVENT_REPORTING = 3;
 
     public final static int INFO_FIRMWARE_TYPE = 7;
     public final static int INFO_FIRMWARE_REVISION_MAJOR = 8;
@@ -61,44 +62,44 @@ public class Protocol
     public final static int INFO_NUMBER_INPUT = 16;
     public final static int INFO_NUMBER_OUTPUT = 17;
     public final static int INFO_NUMBER_BUZZER = 18;
-    public final static int INFO_QUEUE_TOTAL_SLOTS = 19;
-    public final static int INFO_QUEUE_USED_SLOTS = 20;
 
     public final static byte ORDER_REQ_DEVICE_NAME = 2;
     public final static byte ORDER_REQ_TEMPERATURE = 3;
-    public final static byte ORDER_SET_HEATER_TARGET_TEMPERATURE = 4;
-    public final static byte ORDER_REQ_INPUT = 5;
+    public final static byte ORDER_GET_HEATER_CONFIGURATION = 4;
+    public final static byte ORDER_CONFIGURE_HEATER = 5;
+    public final static byte ORDER_SET_HEATER_TARGET_TEMPERATURE = 6;
+    public final static byte ORDER_REQ_INPUT = 7;
     public final static byte INPUT_HIGH = 1;
     public final static byte INPUT_LOW = 0;
-    public final static byte ORDER_SET_OUTPUT = 6;
-    public final static byte ORDER_SET_PWM = 7;
-    public final static byte ORDER_ENQUEUE_DELAY = 8;
-    public final static double DELAY_TICK_LENGTH = 0.00002;
-    public final static byte ORDER_WRITE_FIRMWARE_CONFIGURATION = 9;
-    public final static byte ORDER_READ_FIRMWARE_CONFIGURATION = 0x0a;
-
-    // Extension: Stepper control TODO: codes
-    public final static byte ORDER_ACTIVATE_STEPPER_CONTROL = 0x0A;
-    public final static byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS = 0x0B;
+    public final static byte ORDER_SET_OUTPUT = 8;
+    public final static byte ORDER_SET_PWM = 9;
+    public final static byte ORDER_WRITE_FIRMWARE_CONFIGURATION = 0x0A;
+    public final static byte ORDER_READ_FIRMWARE_CONFIGURATION = 0x0B;
     public final static byte ORDER_STOP_PRINT = 0x0C;
+    public final static byte ORDERED_STOP = 0;
     public final static byte EMERGENCY_STOP = 1;
-    public final static byte ORDER_CONFIGURE_END_STOPS = 0x0C;
-    public final static byte ORDER_ENABLE_DISABLE_END_STOPS = 0x0C;
-    public final static byte ORDER_HOME_AXES = 0x0D;
+
+    // Extension Stepper Control
+    public final static byte ORDER_ACTIVATE_STEPPER_CONTROL = 0x0D;
+    public final static byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS = 0x0E;
+    public final static byte ORDER_CONFIGURE_END_STOPS = 0x0F;
+    public final static byte ORDER_ENABLE_DISABLE_END_STOPS = 0x10;
+    public final static byte ORDER_HOME_AXES = 0x11;
     public final static int DIRECTION_INCREASING = 1;
     public final static int DIRECTION_DECREASING = 0;
 
+    // Extension Queue Command
+    public final static byte ORDER_QUEUE_COMMAND_BLOCKS = 0x12;
+
     // Extension: basic move
-    public final static byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES = 0x0E;
-    public final static byte ORDER_SET_ACTIVE_TOOLHEAD = 0x0E;
-    public final static byte ORDER_ENQUEUE_MOVEMENT_BLOCKS = 0x0E;
+    public final static byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES = 0x13;
 
     // Extension: Event Reporting
-    public final static byte ORDER_RETRIEVE_EVENTS = 0x0E;
-    public final static byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS = 0x0E;
-    public final static byte ORDER_GET_EVENT_STRING_FORMAT_ID = 0x0E;
+    public final static byte ORDER_RETRIEVE_EVENTS = 0x14;
+    public final static byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS = 0x15;
+    public final static byte ORDER_GET_EVENT_STRING_FORMAT_ID = 0x16;
 
-    public final static byte ORDER_MAX_ORDER = 0x0F;
+    public final static byte ORDER_MAX_ORDER = 0x16;
 
 // Client
     public final static int START_OF_CLIENT_FRAME = 0x42;
@@ -108,10 +109,8 @@ public class Protocol
     public final static int RESPONSE_BAD_ERROR_CHECK_CODE = 1;
     public final static int RESPONSE_UNABLE_TO_ACCEPT_FRAME = 2;
 
-    public final static byte RESPONSE_OK = 8;
-    public final static byte RESPONSE_ORDER_QUEUED = 9;
-    public final static byte RESPONSE_QUEUE_FULL = 0x0a;
-    public final static byte RESPONSE_GENERIC_APPLICATION_ERROR = 0x0b;
+    public final static byte RESPONSE_OK = 0x10;
+    public final static byte RESPONSE_GENERIC_APPLICATION_ERROR = 0x11;
 
     public final static int RESPONSE_UNKNOWN_ORDER = 0;
     public final static int RESPONSE_BAD_PARAMETER_FORMAT = 1;
@@ -122,11 +121,10 @@ public class Protocol
     public final static int RESPONSE_BUSY = 6;
     public final static int RESPONSE_FAILED = 7;
 
-    public final static byte RESPONSE_ORDER_SPECIFIC_ERROR = 0x0c;
-    public final static byte RESPONSE_STOPPED = 0x0d;
+    public final static byte RESPONSE_STOPPED = 0x12;
+    public final static byte RESPONSE_ORDER_SPECIFIC_ERROR = 0x13;
 
-
-    public final static int RESPONSE_MAX = 0x0d;
+    public final static int RESPONSE_MAX = 0x13;
 
     public final static byte DEVICE_TYPE_UNUSED = 0;
     public final static byte DEVICE_TYPE_INPUT = 1;
@@ -135,8 +133,7 @@ public class Protocol
     public final static byte DEVICE_TYPE_STEPPER = 4;
     public final static byte DEVICE_TYPE_HEATER = 5;
     public final static byte DEVICE_TYPE_TEMPERATURE_SENSOR = 6;
-    // public final static byte DEVICE_TYPE_SERVO = 7;
-    public final static byte DEVICE_TYPE_BUZZER = 8;
+    public final static byte DEVICE_TYPE_BUZZER = 7;
 
     ////////////////////////////////////////////////////////////////////////////
     // end of Magic Number from Protocol Definition
@@ -470,12 +467,15 @@ public class Protocol
 
     public boolean addPauseToQueue(final Double seconds)
     {
+        /*
         final Double ticks = seconds / DELAY_TICK_LENGTH;
         final int tick = ticks.intValue();
         final byte[] param = new byte[2];
         param[0] = (byte)(0xff & (tick/256));
         param[1] = (byte)(tick & 0xff);
         return sendOrderExpectOK(Protocol.ORDER_ENQUEUE_DELAY, param);
+        */
+        return false;
     }
 
 }
