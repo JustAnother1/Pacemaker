@@ -272,6 +272,11 @@ public class BaseWindow implements ActionListener, Runnable
         }
     }
 
+    public void addSlide(WizardSlide slide)
+    {
+        addSlide(slide.getComponent(), slide.getName());
+    }
+
     public void addSlide(Component slide, String Name)
     {
         SlidePanel.add(slide, Name);

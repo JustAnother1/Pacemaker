@@ -56,10 +56,13 @@ public class WizardMain implements CancelAction
 
         //1. create the slides
         hello = new WelcomeSlide(t);
+        // Client Interface
         InterfaceTypeSelectionSlide interfaceSelect= new InterfaceTypeSelectionSlide(t);
         InterfaceTypeUartSlide iUart = new InterfaceTypeUartSlide(t);
         InterfaceTypeExperimental iExperimental = new InterfaceTypeExperimental(t);
         InterfaceConnectSlide iConnect = new InterfaceConnectSlide(t, ConfigCreator);
+        // Temperature Sensors
+        TemperatureSensorSelectionSlide tempSensorSlide = new TemperatureSensorSelectionSlide(t);
         // more slides created here
 
         //2. Link the Slides
@@ -68,15 +71,17 @@ public class WizardMain implements CancelAction
         interfaceSelect.addInterfaceTypeSlide(t.t("Interface_Type_Name_Experimental"), iExperimental);
         iUart.addNextSlide(iConnect);
         iExperimental.addNextSlide(iConnect);
+        iConnect.addNextSlide(tempSensorSlide);
         // more linking here
 
         //3. register the Slides
         ConfigCreator.setFirstSlide(hello);
-        ConfigCreator.addSlide(hello.getComponent(), hello.getName());
-        ConfigCreator.addSlide(interfaceSelect.getComponent(), interfaceSelect.getName());
-        ConfigCreator.addSlide(iUart.getComponent(), iUart.getName());
-        ConfigCreator.addSlide(iExperimental.getComponent(), iExperimental.getName());
-        ConfigCreator.addSlide(iConnect.getComponent(), iConnect.getName());
+        ConfigCreator.addSlide(hello);
+        ConfigCreator.addSlide(interfaceSelect);
+        ConfigCreator.addSlide(iUart);
+        ConfigCreator.addSlide(iExperimental);
+        ConfigCreator.addSlide(iConnect);
+        ConfigCreator.addSlide(tempSensorSlide);
         // more slides connected here
     }
 
