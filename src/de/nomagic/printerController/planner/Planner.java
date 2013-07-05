@@ -42,6 +42,9 @@ public class Planner
     private final double[] heatersTargetTemperatures = new double[Cfg.NUMBER_OF_HEATERS];
     private int currentExtruder = 0;
 
+    // allowed difference to target temperature in degree Celsius.
+    private final double ACCEPTED_TEMPERATURE_DEVIATION = 0.1;
+
 
     public Planner(final Protocol proto)
     {
@@ -200,7 +203,10 @@ public class Planner
     {
         if(true == setCurrentExtruderTemperatureNoWait(temperature))
         {
-            proto.waitForHeaterInLimits(currentExtruder, heatersTargetTemperatures[currentExtruder]);
+            double targetTemp = heatersTargetTemperatures[currentExtruder];
+            proto.waitForHeaterInLimits(currentExtruder,
+                    targetTemp - ACCEPTED_TEMPERATURE_DEVIATION,
+                    targetTemp + ACCEPTED_TEMPERATURE_DEVIATION);
             return true;
         }
         else
@@ -216,7 +222,10 @@ public class Planner
         {
             if(true == activeHeaters[i])
             {
-                proto.waitForHeaterInLimits(i, heatersTargetTemperatures[i]);
+                double targetTemp = heatersTargetTemperatures[i];
+                proto.waitForHeaterInLimits(i,
+                        targetTemp - ACCEPTED_TEMPERATURE_DEVIATION,
+                        targetTemp + ACCEPTED_TEMPERATURE_DEVIATION);
             }
         }
         return true;
@@ -236,7 +245,10 @@ public class Planner
     {
         if(true == setTemperatureNoWait(temperature, Cfg.PRINT_BED))
         {
-            proto.waitForHeaterInLimits(Cfg.PRINT_BED,  heatersTargetTemperatures[Cfg.PRINT_BED]);
+            double targetTemp = heatersTargetTemperatures[Cfg.PRINT_BED];
+            proto.waitForHeaterInLimits(Cfg.PRINT_BED,
+                    targetTemp - ACCEPTED_TEMPERATURE_DEVIATION,
+                    targetTemp + ACCEPTED_TEMPERATURE_DEVIATION);
             return true;
         }
         else

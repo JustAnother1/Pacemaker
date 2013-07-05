@@ -164,14 +164,8 @@ public class Protocol
     // time between two polls in milliseconds.
     private final int POLLING_TIME_MS = 100;
 
-    // allowed difference to target temperature in 1/10 degree Celsius.
-    private final int ACCEPTED_TEMPERATURE_DEVIATION = 10;
-
-
     private ClientConnection cc;
     private AxisConfiguration[] axisCfg;
-    private int[] temperatureSensors;
-    private int[] heaters;
     private Cfg cfg;
 
     public Protocol()
@@ -189,8 +183,6 @@ public class Protocol
     {
         this.cfg = cfg;
         axisCfg = cfg.getAxisMapping();
-        temperatureSensors = cfg.getTemperatureSensorMapping();
-        heaters = cfg.getHeaterMapping();
     }
 
     public Reply sendInformationRequest(final int which) throws IOException
@@ -348,7 +340,9 @@ public class Protocol
         return false;
     }
 
-    public void waitForHeaterInLimits(final int heaterNumber, final Double temperature)
+    public void waitForHeaterInLimits(final int heaterNumber,
+                                      final Double temperature_min,
+                                      final Double temperature_max)
     {
         /*
         if(Cfg.INVALID == heaterNumber)
