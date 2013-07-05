@@ -80,7 +80,7 @@ public class DeviceInformation
         }
         if(true == hasExtensionQueuedCommand)
         {
-            res = res + "Queued Command ";
+            res = res + "Queued_Command ";
         }
         if(true == hasExtensionBasicMove)
         {
@@ -88,7 +88,7 @@ public class DeviceInformation
         }
         if(true == hasExtensionEventReporting)
         {
-            res = res + "Event Reporting ";
+            res = res + "Event_Reporting ";
         }
         res = res + "\n" +
         "Firmware Type = " + FirmwareType + "\n" +
