@@ -18,6 +18,7 @@ public class DeviceInformation
     private int minorVersionSupportedUpTo = -1;
     // Extensions
     private boolean hasExtensionStepperControl= false;
+    private boolean hasExtensionQueuedCommand= false;
     private boolean hasExtensionBasicMove = false;
     private boolean hasExtensionEventReporting = false;
 
@@ -76,6 +77,10 @@ public class DeviceInformation
         if(true == hasExtensionStepperControl)
         {
             res = res + "Stepper_control ";
+        }
+        if(true == hasExtensionQueuedCommand)
+        {
+            res = res + "Queued Command ";
         }
         if(true == hasExtensionBasicMove)
         {
@@ -139,6 +144,11 @@ public class DeviceInformation
             case Protocol.INFO_PROTOCOL_EXTENSION_STEPPER_CONTROL:
                 hasExtensionStepperControl = true;
                 break;
+
+            case Protocol.INFO_PROTOCOL_EXTENSION_QUEUED_COMMAND:
+                hasExtensionQueuedCommand = true;
+                break;
+
             case Protocol.INFO_PROTOCOL_EXTENSION_BASIC_MOVE:
                 hasExtensionBasicMove = true;
                 break;
@@ -479,6 +489,11 @@ public class DeviceInformation
     public boolean hasExtensionEventReporting()
     {
         return hasExtensionEventReporting;
+    }
+
+    public boolean hasExtensionQueuedCommand()
+    {
+        return hasExtensionQueuedCommand;
     }
 
     public int getFirmwareRevisionMajor()
