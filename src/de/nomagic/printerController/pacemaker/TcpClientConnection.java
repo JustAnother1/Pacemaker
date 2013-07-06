@@ -59,12 +59,12 @@ public class TcpClientConnection extends ClientConnection
     }
 
     @Override
-    public Reply sendRequest(final byte Order, final byte[] parameter, final boolean cached)
+    public Reply sendRequest(final byte Order, final byte[] parameter, int offset, int length, final boolean cached)
     {
-        final byte[] buf = new byte[parameter.length + 5];
+        final byte[] buf = new byte[length + 5];
         buf[0] = Protocol.START_OF_HOST_FRAME;
         buf[1] = Order;
-        buf[2] = (byte)(parameter.length + 1);
+        buf[2] = (byte)(length + 1);
         incrementSequenceNumber();
         if(true == cached)
         {
@@ -74,12 +74,12 @@ public class TcpClientConnection extends ClientConnection
         {
             buf[3] = (byte)(0x08 | sequenceNumber);
         }
-        for(int i = 0; i < parameter.length; i++)
+        for(int i = 0; i < length; i++)
         {
-            buf[4 + i] = parameter[i];
+            buf[4 + i] = parameter[i + offset];
         }
-        // log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(buf, 4 + parameter.length));
-        buf[4 + parameter.length] = getCRCfor(buf, 4 + parameter.length);
+        // log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(buf, 4 + length));
+        buf[4 + length] = getCRCfor(buf, 4 + length);
         try
         {
             out.write(buf);

@@ -100,17 +100,19 @@ public abstract class ClientConnection
 
     public Reply sendRequest(final byte order, final byte[] parameter)
     {
-        return sendRequest(order, parameter, true);
+        return sendRequest(order, parameter, 0, parameter.length, true);
     }
 
     /** sends a request frame to the client.
      *
      * @param order The Order byte.
      * @param parameter the parameter data.
+     * @param offset parameter starts at this offset in the buffer.
+     * @param length send only this many bytes.
      * @param cached true= client may send cached result; false= client must execute the order. no cached reply.
      * @return true= success false = no reply received - timeout
      */
-    public abstract Reply sendRequest(byte order, byte[] parameter, boolean cached);
+    public abstract Reply sendRequest(byte order, byte[] parameter, int offset, int length, boolean cached);
 
 
     public static byte getCRCfor(final byte[] buf)
