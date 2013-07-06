@@ -1080,6 +1080,7 @@ This command is only allowed if the stepper control has been activated! The comm
 This command will only be accepted when the system is not currently moving the stepper motors or is about to move stepper motors (e.g., the movement queue is empty). However, if the queued command extension is supported, then this Order can be queued. This allows the host to monitor the completion of the activity by polling the state of the queue.
 
 .Replies
+- OK: No parameter data.
 - Bad Parameter Value: If end-stop switch hasn't been configured for stepper.
 - Stopped: Order rejected because client is in stopped stated.
 - Incorrect mode: Order received when stepper control is not activated.
