@@ -21,6 +21,7 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.Tool;
 import de.nomagic.printerController.planner.AxisConfiguration;
 import de.nomagic.printerController.printer.Cfg;
 
@@ -95,6 +96,9 @@ public class Protocol
 
     // Extension Queue Command
     public final static byte ORDER_QUEUE_COMMAND_BLOCKS = 0x12;
+    public final static byte MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER = 0x01;
+    public final static byte MOVEMENT_BLOCK_TYPE_DELAY = 0x02;
+    public final static byte MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD = 0x03;
 
     // Extension: basic move
     public final static byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES = 0x13;
@@ -163,11 +167,22 @@ public class Protocol
 
     // time between two polls in milliseconds.
     private final int POLLING_TIME_MS = 100;
+    // resolution of Delay : 10us
+    private final double DELAY_TICK_LENGTH = 0.00001;
+    // the client needs at lest this(in milliseconds) time to free up one slot in the Queue
+    private final long QUEUE_POLL_DELAY = 10;
+    // blocking command will try not more than MAX_ENQUEUE_DELAY times to enqueue the block
+    private final int MAX_ENQUEUE_DELAY = 100;
 
     private ClientConnection cc;
     private AxisConfiguration[] axisCfg;
     private Cfg cfg;
     private DeviceInformation di = new DeviceInformation();
+
+    private final static int QUEUE_SEND_BUFFER_SIZE = 200;
+    public int ClientQueueFreeSlots = 0;
+    public int ClientExecutedJobs = 0;
+    public int CommandsSendToClient = 0;
 
     public Protocol()
     {
@@ -493,15 +508,230 @@ public class Protocol
 
     public boolean addPauseToQueue(final Double seconds)
     {
-        /*
-        final Double ticks = seconds / DELAY_TICK_LENGTH;
-        final int tick = ticks.intValue();
-        final byte[] param = new byte[2];
-        param[0] = (byte)(0xff & (tick/256));
-        param[1] = (byte)(tick & 0xff);
-        return sendOrderExpectOK(Protocol.ORDER_ENQUEUE_DELAY, param);
-        */
-        return false;
+        if(true == di.hasExtensionQueuedCommand())
+        {
+            final Double ticks = seconds / DELAY_TICK_LENGTH;
+            final int tick = ticks.intValue();
+            final byte[] param = new byte[3];
+            param[0] = MOVEMENT_BLOCK_TYPE_DELAY;
+            param[1] = (byte)(0xff & (tick/256));
+            param[2] = (byte)(tick & 0xff);
+            return enqueueCommandBlocking(param);
+        }
+        else
+        {
+            // no Queue - no chance to add to it.
+            return false;
+        }
+    }
+
+
+    Vector<byte[]> sendQueue = new Vector<byte[]>();
+
+
+    /** Enqueues the data for _one_ command into the Queue.
+     *
+     * CAUTION: All data that can not be send out stays in Memory. So if this
+     * function fails repeatedly the memory consumption increases with every
+     * call. If in this situation try calling enqueueCommandBlocking() !
+     *
+     * @param param Data of only one command !
+     * @return true = success; false= command could not be put in the queue but
+     * will be send with the next command that shall be enqueued.
+     */
+    private boolean enqueueCommand(byte[] param)
+    {
+        if(false == sendQueue.isEmpty())
+        {
+            // add the new command, and...
+            sendQueue.add(param);
+            // try to get the Queue empty again.
+            if(0 == ClientQueueFreeSlots)
+            {
+                // send only the first command from the command queue
+                byte[] firstCommand = sendQueue.get(0);
+                final Reply r = cc.sendRequest(ORDER_QUEUE_COMMAND_BLOCKS, firstCommand);
+                if(null == r)
+                {
+                    return false;
+                }
+                if(true == r.isOKReply())
+                {
+                    byte[] reply = r.getParameter();
+                    ClientQueueFreeSlots = (reply[0] * 256) + reply[1];
+                    ClientExecutedJobs = (reply[2] * 256) + reply[3];
+                    CommandsSendToClient ++;
+                    sendQueue.remove(0);
+                    return true;
+                }
+                else
+                {
+                    // error -> try again later
+                    return false;
+                }
+            }
+            else
+            {
+                byte[] sendBuffer = new byte[QUEUE_SEND_BUFFER_SIZE];
+                int writePos = 0;
+                int idx = 0;
+                int numBlocksInBuffer = 0;
+                for(int i = 0; i < ClientQueueFreeSlots; i++)
+                {
+                    // add a block to the send buffer until
+                    // either send Buffer if full
+                    // or all commands have been put in the buffer
+                    byte[] buf = sendQueue.get(idx);
+                    if(null != buf)
+                    {
+                        if(buf.length < QUEUE_SEND_BUFFER_SIZE - writePos)
+                        {
+                            for(int j = 0; j < buf.length; j++)
+                            {
+                                sendBuffer[writePos + j] = buf[j];
+                            }
+                            writePos = writePos + buf.length;
+                            numBlocksInBuffer ++;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
+                    idx++;
+                }
+                // or the loop ends
+                // then send them
+                final Reply r = cc.sendRequest(ORDER_QUEUE_COMMAND_BLOCKS,
+                                               sendBuffer, // data
+                                               0, // offset
+                                               writePos, // length
+                                               false // not cached
+                                               );
+                // and see what happens.
+                if(null == r)
+                {
+                    return false;
+                }
+                if(true == r.isOKReply())
+                {
+                    byte[] reply = r.getParameter();
+                    ClientQueueFreeSlots = (reply[0] * 256) + reply[1];
+                    ClientExecutedJobs = (reply[2] * 256) + reply[3];
+                    CommandsSendToClient = CommandsSendToClient + numBlocksInBuffer;
+                    for(int i = 0; i < numBlocksInBuffer; i++)
+                    {
+                        sendQueue.remove(0);
+                    }
+                    return true;
+                }
+                else if(RESPONSE_ORDER_SPECIFIC_ERROR == r.getReplyCode())
+                {
+                    // Order Specific Error
+                    byte[] response = r.getParameter();
+                    // partly Queued
+                    int numberOfQueued = response[1];
+                    for(int i = 0; i < numberOfQueued; i++)
+                    {
+                        sendQueue.remove(0);
+                    }
+                    ClientQueueFreeSlots = (response[2] * 256) + response[3];
+                    ClientExecutedJobs = (response[4] * 256) + response[5];
+                    if(0x01 != response[0])
+                    {
+                        // Error caused by bad Data !
+                        log.error("Could not Queue Block as Client Reports invalid Data !");
+                        log.error("Send Data: {} !", Tool.fromByteBufferToHexString(sendBuffer, writePos));
+                        log.error("Received : {} !", Tool.fromByteBufferToHexString(response));
+                        log.error("Can not recover !");
+                        System.exit(1);
+                        // what else can I do ?
+                    }
+                    // else queue full so try next time
+                    return false;
+                }
+                else
+                {
+                    // error -> send commands later
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            // Fast lane. Just send it out.
+            final Reply r = cc.sendRequest(ORDER_QUEUE_COMMAND_BLOCKS, param);
+            if(null == r)
+            {
+                return false;
+            }
+            if(true == r.isOKReply())
+            {
+                byte[] reply = r.getParameter();
+                ClientQueueFreeSlots = (reply[0] * 256) + reply[1];
+                ClientExecutedJobs = (reply[2] * 256) + reply[3];
+                CommandsSendToClient ++;
+                return true;
+            }
+            else
+            {
+                // error -> send command later
+                sendQueue.add(param);
+                return false;
+            }
+        }
+    }
+
+
+    /** Enqueues the data for _one_ command into the Queue.
+     *
+     * If the Queue is full this function waits until a free spot becomes
+     * available again.
+     *
+     * @param param Data of only one command !
+     * @return true = success; false= command could not be put in the queue.
+     */
+    private boolean enqueueCommandBlocking(byte[] param)
+    {
+        // prepare data
+        if(null == param)
+        {
+            log.error("Tried To enque without data !");
+            return false;
+        }
+        if(1 < param.length)
+        {
+            log.error("Tried To enque with too few bytes !");
+            return false;
+        }
+        if(false == enqueueCommand(param))
+        {
+            int delayCounter = 0;
+            do
+            {
+                if((delayCounter < MAX_ENQUEUE_DELAY))
+                {
+                    try
+                    {
+                        Thread.sleep(QUEUE_POLL_DELAY);
+                    }
+                    catch(InterruptedException e)
+                    {
+                    }
+                    delayCounter++;
+                }
+                else
+                {
+                    return false;
+                }
+            }while(false == enqueueCommand(null));
+        }
+        // else sending succeeded !
+        return true;
     }
 
     public boolean applyConfigurationToClient()
@@ -516,6 +746,7 @@ public class Protocol
             }
         }
         // else no extension- no support for command
+
         // Configure heater (Heater-Temperature sensor mapping)
         int[] heaters = cfg.getHeaterMapping();
         int[] sensors = cfg.getTemperatureSensorMapping();
