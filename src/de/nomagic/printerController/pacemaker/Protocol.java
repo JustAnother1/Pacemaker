@@ -403,14 +403,14 @@ public class Protocol
      */
     public boolean setFanSpeedfor(final int fan, final int speed)
     {
-        /* TODO
-        if((-1 < fan) && (fan < printerAbilities.getNumberPwmFan()))
+        if((-1 < fan) && (fan < di.getNumberPwmSwitchedOutputs()))
         {
-            final byte[] param = new byte[3];
-            param[0] = (byte) fan;
-            param[1] = (byte) speed;
-            param[2] = 0;
-            if(false == sendOrderExpectOK(Protocol.ORDER_SET_FAN_PWM, param))
+            final byte[] param = new byte[4];
+            param[0] = DEVICE_TYPE_PWM_OUTPUT;
+            param[1] = (byte)fan;
+            param[2] = (byte)(speed/256);
+            param[3] = (byte)(0xff & speed);
+            if(false == sendOrderExpectOK(ORDER_SET_PWM, param))
             {
                 log.error("Falied to enable the Steppers !");
                 return false;
@@ -425,8 +425,6 @@ public class Protocol
             log.warn("Client does not have the Fan {} !", fan);
             return true;
         }
-        */
-        return false;
     }
 
     /** only needed to implement M17
