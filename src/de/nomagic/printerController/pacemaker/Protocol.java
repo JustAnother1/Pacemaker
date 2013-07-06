@@ -429,43 +429,57 @@ public class Protocol
         return false;
     }
 
+    /** only needed to implement M17
+     *
+     * @return
+     */
     public boolean enableAllStepperMotors()
     {
-        /* TODO
-        final int numSteppers = printerAbilities.getNumberSteppers();
-        final byte[] parameter = new byte[numSteppers * 2];
-        for(int i = 0; i < numSteppers; i++)
+        if(true == cfg.shouldUseSteppers())
         {
-            parameter[2 * i] = (byte)i;
-            parameter[(2 * i) + 1] = (byte)Protocol.ENABLED;
-        }
-        if(false == proto.sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter))
-        {
-            log.error("Falied to enable the Steppers !");
-            return false;
+            final int numSteppers = di.getNumberSteppers();
+            byte[] parameter = new byte[2];
+            parameter[1] = 0x01; // Enabled
+            for(int i = 0; i < numSteppers; i++)
+            {
+                parameter[0] = (byte)i;
+                if(false == sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter))
+                {
+                    log.error("Falied to enable the Steppers !");
+                    return false;
+                }
+            }
+            return true;
         }
         else
         {
-            return true;
+            // TODO alternative to Stepper Control Extension
+            log.error("Found Enable Stepper Command but Client is not allowed to use the Steppers !");
+            return false;
         }
-        */
-        return false;
+
     }
 
     public boolean disableAllStepperMotors()
     {
-        /* TODO
-        if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS))
+        if(true == cfg.shouldUseSteppers())
         {
-            log.error("Falied to disable the Steppers !");
-            return false;
+            if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, null))
+            {
+                log.error("Falied to disable the Steppers !");
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
         else
         {
-            return true;
+            // TODO alternative to Stepper Control Extension
+            log.error("Found disable Stepper Command but Client is not allowed to use the Steppers !");
+            return false;
         }
-        */
-        return false;
     }
 
     public void startHomeOnAxes(final Vector<Integer> listOfHomeAxes)
