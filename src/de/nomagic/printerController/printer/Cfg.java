@@ -43,14 +43,13 @@ public class Cfg
     private enum Sect {GENERAL, AXIS, HEATERS, TEMPERATURES, FIRMWARE_CONFIGURATION, INVALID}
     public final static String GENERAL_SECTION = "[general]";
     public final static String SETTING_CLIENT_DEVICE_STRING = "CLientDeviceString";
+    public final static String SETTING_USE_STEPPER_CONTROL = "control stepper motors";
     public final static String AXIS_SECTION = "[axis]";
     public final static String SETTING_STEPS_PER_MILLIMETER = "steps per millimeter";
     public final static String SETTING_MIN_SWITCH = "index of minimal switch";
     public final static String SETTING_MAX_SWITCH = "index of maximal switch";
     public final static String SETTING_STEPPER_ONE = "index of stepper motor";
     public final static String SETTING_STEPPER_TWO = "index of second stepper motor";
-
-
     public final static String HEATERS_SECTION = "[heaters]";
     public final static String SETTING_CHAMBER_HEATER_STRING = "chamber heater";
     public final static String SETTING_PRINT_BED_HEATER_STRING = "print bed heater";
@@ -66,6 +65,7 @@ public class Cfg
     public final static String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
 
     private String ClientDeviceString = null;
+    private boolean useSteppers = false;
     private final AxisConfiguration[] axisMapping = new AxisConfiguration[NUMBER_OF_AXIS];
     private final int[] temperatureSensorMapping = new int[NUMBER_OF_HEATERS];
     private final int[] heaterMapping = new int[NUMBER_OF_HEATERS];
@@ -111,7 +111,7 @@ public class Cfg
         {
             ow.write(GENERAL_SECTION + "\n");
             ow.write(SETTING_CLIENT_DEVICE_STRING + " = " + ClientDeviceString + "\n");
-
+            ow.write(SETTING_USE_STEPPER_CONTROL + " = " + useSteppers + "\n");
             ow.write(HEATERS_SECTION + "\n");
             ow.write(SETTING_CHAMBER_HEATER_STRING + " = " + heaterMapping[CHAMBER] + "\n");
             ow.write(SETTING_PRINT_BED_HEATER_STRING + " = " + heaterMapping[PRINT_BED] + "\n");
@@ -204,6 +204,10 @@ public class Cfg
                             if(true == curLine.startsWith(SETTING_CLIENT_DEVICE_STRING))
                             {
                                 ClientDeviceString = getValueFrom(curLine);
+                            }
+                            else if(true == curLine.startsWith(SETTING_USE_STEPPER_CONTROL))
+                            {
+                                useSteppers = getBooleanValueFrom(curLine);
                             }
                             break;
 
@@ -359,6 +363,13 @@ public class Cfg
         return Double.parseDouble(hlp);
     }
 
+    private boolean getBooleanValueFrom(String line)
+    {
+        String hlp = line.substring(line.indexOf('=') + 1);
+        hlp = hlp.trim();
+        return Boolean.valueOf(hlp);
+    }
+
     public void setClientDeviceString(final String ClientDeviceString)
     {
         this.ClientDeviceString = ClientDeviceString;
@@ -393,6 +404,16 @@ public class Cfg
     {
         Set<String> keys = firmwareCfg.keySet();
         return keys.toArray(new String[0]);
+    }
+
+    public boolean shouldUseSteppers()
+    {
+        return useSteppers;
+    }
+
+    public void setUseSteppers(boolean useSteppers)
+    {
+        this.useSteppers = useSteppers;
     }
 
 }

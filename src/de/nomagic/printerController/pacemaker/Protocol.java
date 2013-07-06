@@ -167,6 +167,7 @@ public class Protocol
     private ClientConnection cc;
     private AxisConfiguration[] axisCfg;
     private Cfg cfg;
+    private DeviceInformation di = new DeviceInformation();
 
     public Protocol()
     {
@@ -208,6 +209,7 @@ public class Protocol
             if(true == paceMaker.readDeviceInformationFrom(this))
             {
                 log.info(paceMaker.toString());
+                di = paceMaker;
                 return paceMaker;
             }
             else
@@ -504,6 +506,16 @@ public class Protocol
 
     public boolean applyConfigurationToClient()
     {
+        // use or not use the "Stepper Control Extension"
+        if((true == cfg.shouldUseSteppers()) && (true == di.hasExtensionStepperControl()))
+        {
+            if(false == sendOrderExpectOK(ORDER_ACTIVATE_STEPPER_CONTROL, (byte)0x01))
+            {
+                log.error("Failed to activate Stepper Control Extension !");
+                return false;
+            }
+        }
+        // else no extension- no support for command
         // Configure heater (Heater-Temperature sensor mapping)
         int[] heaters = cfg.getHeaterMapping();
         int[] sensors = cfg.getTemperatureSensorMapping();
