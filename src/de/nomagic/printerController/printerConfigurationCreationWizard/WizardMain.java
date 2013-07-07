@@ -30,6 +30,7 @@ import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.BaseWindow;
 import de.nomagic.WizardDialog.CancelAction;
 import de.nomagic.WizardDialog.DataStore;
+import de.nomagic.printerController.pacemaker.ClientConnection;
 import de.nomagic.printerController.printer.Cfg;
 
 /**
@@ -41,8 +42,12 @@ public class WizardMain implements CancelAction
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     public final static String DS_CONFIGURATION_NAME = "cfg";
-    public final static String DS_PRINT_PROCESS_NAME = "pp";
+    public final static String DS_PROTOCOL_NAME = "proto";
     public final static String DS_DEVICE_INFORMATION_NAME = "di";
+    public static final String DS_G_CODE_DECODER_NAME = "decoder";
+    public static final String DS_PLANNER_NAME = "plan";
+    public static final String DS_CLIENT_CONNECTION_NAME = "cc";
+    public static final String DS_ACTIVE_TEMPERATURE_SENSORS_NAME = "activeTempSensors";
 
     private final JFileChooser fc = new JFileChooser();
     private final BaseWindow ConfigCreator;
@@ -130,6 +135,7 @@ public class WizardMain implements CancelAction
     @Override
     public void userClickedCancel(DataStore ds)
     {
+        // If there is a Configuration then save it.
         Object obj = ds.getObject(DS_CONFIGURATION_NAME);
         if(true == obj instanceof Cfg)
         {
@@ -147,6 +153,13 @@ public class WizardMain implements CancelAction
                     e.printStackTrace();
                 }
             }
+        }
+        // If there is a connection then we close it.
+        obj = ds.getObject(DS_CLIENT_CONNECTION_NAME);
+        if(true == obj instanceof ClientConnection)
+        {
+            ClientConnection cc = (ClientConnection)obj;
+            cc.close();
         }
     }
 

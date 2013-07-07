@@ -26,9 +26,13 @@ import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.BaseWindow;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
+import de.nomagic.printerController.gcode.GCodeDecoder;
+import de.nomagic.printerController.pacemaker.ClientConnection;
+import de.nomagic.printerController.pacemaker.ClientConnectionFactory;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
+import de.nomagic.printerController.pacemaker.Protocol;
+import de.nomagic.printerController.planner.Planner;
 import de.nomagic.printerController.printer.Cfg;
-import de.nomagic.printerController.printer.PrintProcess;
 
 /**
  * @author Lars P&ouml;tter
@@ -42,7 +46,6 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
     private JPanel slide = new JPanel();
     private JTextArea connectLog = new JTextArea();
     private BaseWindow configCreator;
-    private final PrintProcess pp = new PrintProcess();
 
     public InterfaceConnectSlide(Translator t, BaseWindow configCreator)
     {
@@ -65,30 +68,66 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
     @Override
     public DataStore actionOnShow(DataStore ds)
     {
+        // If already connected then close connection
+        Object obj = ds.getObject(WizardMain.DS_CLIENT_CONNECTION_NAME);
+        if(true == obj instanceof ClientConnection)
+        {
+            ClientConnection cc = (ClientConnection)obj;
+            cc.close();
+            cc = null;
+        }
         connectLog.setText("trying to connect to Client,..");
         configCreator.setNextAllowed(false);
-        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
         Cfg cfg = null;
         if(true == obj instanceof Cfg)
         {
             cfg = (Cfg)obj;
             // TODO Thread Start:
-            pp.setCfg(cfg);
-            if(true == pp.connectToPacemaker())
+            Protocol proto = new Protocol();
+            proto.setCfg(cfg);
+            ClientConnection cc = ClientConnectionFactory.establishConnectionTo(cfg);
+            if(null == cc)
             {
-                log.trace("connection to client is now open !");
-                connectLog.setText(connectLog.getText() + "\nconnection to client is now open !");
-                DeviceInformation di = pp.getPrinterAbilities();
-                ds.putObject(WizardMain.DS_PRINT_PROCESS_NAME, pp);
-                ds.putObject(WizardMain.DS_DEVICE_INFORMATION_NAME, di);
-                configCreator.setNextAllowed(true);
-            }
-            else
-            {
+                log.error("Could not establish the connection !");
                 log.info("connection failed !");
                 connectLog.setText(connectLog.getText() + "\nconnection failed !");
+                return ds;
             }
+            if(false == proto.ConnectToChannel(cc))
+            {
+                log.error("Could not establish the connection !");
+                log.info("connection failed !");
+                connectLog.setText(connectLog.getText() + "\nconnection failed !");
+                return ds;
+            }
+            // else Connection established successfully !
+            if(false == proto.applyConfigurationToClient())
+            {
+                log.error("Could not establish the connection !");
+                log.info("connection failed !");
+                connectLog.setText(connectLog.getText() + "\nconnection failed !");
+                return ds;
+            }
+            // else Client configured successfully !
+            Planner plan = new Planner(proto);
+            GCodeDecoder decoder = new GCodeDecoder(plan);
+
+            log.trace("connection to client is now open !");
+            connectLog.setText(connectLog.getText() + "\nconnection to client is now open !");
+            DeviceInformation di = plan.getPrinterAbilities();
+            ds.putObject(WizardMain.DS_CLIENT_CONNECTION_NAME, cc);
+            ds.putObject(WizardMain.DS_PROTOCOL_NAME, proto);
+            ds.putObject(WizardMain.DS_PLANNER_NAME, plan);
+            ds.putObject(WizardMain.DS_G_CODE_DECODER_NAME, decoder);
+            ds.putObject(WizardMain.DS_DEVICE_INFORMATION_NAME, di);
+            configCreator.setNextAllowed(true);
+
             // Thread end
+        }
+        else
+        {
+            log.error("Configuration Object missing from Data Store !");
         }
         return ds;
     }

@@ -406,7 +406,7 @@ public class Protocol
         // else heater is not active -> already in limit
     }
 
-    private double readTemperatureFrom(int sensorNumber)
+    public double readTemperatureFrom(int sensorNumber)
     {
         byte[] param = new byte[2];
         param[0] = DEVICE_TYPE_TEMPERATURE_SENSOR;
@@ -419,6 +419,11 @@ public class Protocol
         if(true == r.isOKReply())
         {
             byte[] reply = r.getParameter();
+            if(2 > reply.length)
+            {
+                // The return did not have the data
+                return -4;
+            }
             int reportedTemp = (reply[0] * 256) + reply[1];
             if(SENSOR_PROBLEM == reportedTemp)
             {
@@ -426,7 +431,7 @@ public class Protocol
             }
             else
             {
-                return reportedTemp * 10;
+                return reportedTemp / 10;
             }
         }
         else

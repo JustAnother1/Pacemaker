@@ -15,6 +15,7 @@
 package de.nomagic.printerController.printerConfigurationCreationWizard;
 
 import java.awt.Component;
+import java.util.Vector;
 
 import javax.swing.BoxLayout;
 import javax.swing.JLabel;
@@ -22,11 +23,15 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
 import de.nomagic.WizardDialog.SlideTableModel;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
+import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
  * @author Lars P&ouml;tter
@@ -35,6 +40,12 @@ import de.nomagic.printerController.pacemaker.DeviceInformation;
  */
 public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
+    public final static double MIN_TEMPERATURE = 15.0;
+    public final static double MAX_TEMPERATURE = 600.0;
+    private final static int SENSOR_ACTIVE_COLUMN = 3;
+
     private JPanel slide = new JPanel();
     private SlideTableModel tableData = new SlideTableModel();
 
@@ -59,7 +70,7 @@ public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
     @Override
     public String getName()
     {
-        return "Temperature Sensor Slecetion";
+        return "Temperature Sensor Selection";
     }
 
     @Override
@@ -76,15 +87,36 @@ public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
         if(true == obj instanceof DeviceInformation)
         {
             di = (DeviceInformation)obj;
-            // TODO Thread Start:
-            for(int i = 0; i < di.getNumberTemperatureSensors(); i++)
+            obj = ds.getObject(WizardMain.DS_PROTOCOL_NAME);
+            if(true == obj instanceof Protocol)
             {
-                tableData.setValueAt(new Integer(i), i, 0);
-                tableData.setValueAt("Temp1", i, 1); // TODO
-                tableData.setValueAt("24.1 °C", i, 2); // TODO
-                tableData.setValueAt(new Boolean(true), i, 3);
+                Protocol proto = (Protocol) obj;
+                // TODO Thread Start:
+                for(int i = 0; i < di.getNumberTemperatureSensors(); i++)
+                {
+                    tableData.setValueAt(new Integer(i), i, 0);
+                    tableData.setValueAt(di.getTemperatureSensorConnectorName(i), i, 1);
+                    double measuredTemp = proto.readTemperatureFrom(i);
+                    tableData.setValueAt(String.format("%3.1f °C", measuredTemp) , i, 2);
+                    if((MIN_TEMPERATURE < measuredTemp) && (MAX_TEMPERATURE > measuredTemp))
+                    {
+                        tableData.setValueAt(new Boolean(true), i, SENSOR_ACTIVE_COLUMN);
+                    }
+                    else
+                    {
+                        tableData.setValueAt(new Boolean(false), i, SENSOR_ACTIVE_COLUMN);
+                    }
+                }
+                // Thread end
             }
-            // Thread end
+            else
+            {
+                log.error("Protocol Object missing from Data Store !");
+            }
+        }
+        else
+        {
+            log.error("DeviceInformation Object missing from Data Store !");
         }
         return ds;
     }
@@ -92,7 +124,16 @@ public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
     @Override
     public DataStore actionOnClose(DataStore ds)
     {
-
+        Vector<Integer> activeTempSensors = new Vector<Integer>();
+        for(int i = 0; i < tableData.getRowCount(); i++)
+        {
+            Boolean active = (Boolean)tableData.getValueAt(i, SENSOR_ACTIVE_COLUMN);
+            if(true == active.booleanValue())
+            {
+                activeTempSensors.add(i);
+            }
+        }
+        ds.putObject(WizardMain.DS_ACTIVE_TEMPERATURE_SENSORS_NAME, activeTempSensors);
         return ds;
     }
 

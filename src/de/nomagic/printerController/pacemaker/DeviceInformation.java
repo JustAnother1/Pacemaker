@@ -288,7 +288,9 @@ public class DeviceInformation
 
     public String getStepperConnectorName(int index)
     {
-        if((-1 < index) &&(index < NumberSteppers))
+        if(   (null != tempertureSensorNames)
+           && (-1 < index)
+           && (index < NumberSteppers) )
         {
             return stepperNames[index];
         }
@@ -300,7 +302,9 @@ public class DeviceInformation
 
     public String getHeaterConnectorName(int index)
     {
-        if((-1 < index) &&(index < NumberHeaters))
+        if(   (null != tempertureSensorNames)
+           && (-1 < index)
+           && (index < NumberHeaters) )
         {
             return heaterNames[index];
         }
@@ -312,7 +316,9 @@ public class DeviceInformation
 
     public String getPwmOutputConnectorName(int index)
     {
-        if((-1 < index) &&(index < NumberOutputSignals))
+        if(   (null != tempertureSensorNames)
+           && (-1 < index)
+           && (index < NumberOutputSignals) )
         {
             return pwmOutputNames[index];
         }
@@ -324,7 +330,9 @@ public class DeviceInformation
 
     public String getTemperatureSensorConnectorName(int index)
     {
-        if((-1 < index) &&(index < NumberTemperatureSensors))
+        if(   (null != tempertureSensorNames)
+           && (-1 < index)
+           && (index < NumberTemperatureSensors) )
         {
             return tempertureSensorNames[index];
         }
@@ -336,7 +344,9 @@ public class DeviceInformation
 
     public String getSwitchConnectorName(int index)
     {
-        if((-1 < index) &&(index < NumberSwitches))
+        if(   (null != tempertureSensorNames)
+           && (-1 < index)
+           && (index < NumberSwitches) )
         {
             return switchesNames[index];
         }
@@ -348,7 +358,9 @@ public class DeviceInformation
 
     public String getOutputConnectorName(int index)
     {
-        if((-1 < index) &&(index < NumberOutputSignals))
+        if(   (null != tempertureSensorNames)
+           && (-1 < index)
+           &&(index < NumberOutputSignals) )
         {
             return outputSignalNames[index];
         }
@@ -360,7 +372,9 @@ public class DeviceInformation
 
     public String getBuzzerConnectorName(int index)
     {
-        if((-1 < index) &&(index < NumberBuzzer))
+        if(   (null != tempertureSensorNames)
+           && (-1 < index)
+           && (index < NumberBuzzer) )
         {
             return buzzerNames[index];
         }
