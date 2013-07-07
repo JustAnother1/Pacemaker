@@ -16,6 +16,7 @@ Implemented Codes:
 - M92
 - M104
 - M106
+- M107
 - M109
 - M112
 - M116
@@ -124,7 +125,6 @@ Missing features if compared to RepRapWiki(http://reprap.org/wiki/G-code):
 - M102
 - M103
 - M105
-- M107
 - M108
 - M110
 - M111

@@ -105,6 +105,17 @@ public class GCodeDecoder
         case 104: // Set Extruder Temperature - no wait
             return plan.setCurrentExtruderTemperatureNoWait(code.getWordValue('S'));
 
+        case 107: // Fan off - deprecated
+            log.warn("G-Code M107 is deprecated! Use M106 S0 instead.");
+            if(true == code.hasWord('P'))
+            {
+                return plan.setFanSpeedfor(code.getWordValue('P').intValue(), 0);
+            }
+            else
+            {
+                return plan.setFanSpeedfor(0, 0);
+            }
+
         case 106: // set Fan Speed
             if(true == code.hasWord('P'))
             {
