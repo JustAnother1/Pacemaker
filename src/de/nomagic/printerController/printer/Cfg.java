@@ -50,6 +50,7 @@ public class Cfg
     public final static String SETTING_MAX_SWITCH = "index of maximal switch";
     public final static String SETTING_STEPPER_ONE = "index of stepper motor";
     public final static String SETTING_STEPPER_TWO = "index of second stepper motor";
+    public final static String SETTING_HOMING_DIRECTION = "direction of homing is decreasing";
     public final static String HEATERS_SECTION = "[heaters]";
     public final static String SETTING_CHAMBER_HEATER_STRING = "chamber heater";
     public final static String SETTING_PRINT_BED_HEATER_STRING = "print bed heater";
@@ -134,6 +135,7 @@ public class Cfg
                 ow.write(axisNames[i] + " " + SETTING_MAX_SWITCH + " = " + axisMapping[i].getMaxSwitch() + "\n");
                 ow.write(axisNames[i] + " " + SETTING_STEPPER_ONE + " = " + axisMapping[i].getStepperNumber() + "\n");
                 ow.write(axisNames[i] + " " + SETTING_STEPPER_TWO + " = " + axisMapping[i].getSecondStepper() + "\n");
+                ow.write(axisNames[i] + " " + SETTING_HOMING_DIRECTION + " = " + axisMapping[i].isHomingDecreasing() + "\n");
             }
 
             if(false == firmwareCfg.isEmpty())
@@ -250,6 +252,11 @@ public class Cfg
                                 {
                                     axisMapping[axisIdx].setSecondStepperNumber((byte)getIntValueFrom(axissettingLine));
                                 }
+                                else if(true == axissettingLine.startsWith(SETTING_HOMING_DIRECTION))
+                                {
+                                    axisMapping[axisIdx].setHomingIsDecreasing(getBooleanValueFrom(axissettingLine));
+                                }
+
                             }
                             break;
 

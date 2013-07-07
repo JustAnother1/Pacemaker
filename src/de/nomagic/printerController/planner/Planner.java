@@ -150,8 +150,7 @@ public class Planner
         {
             if(true == homingAxis[i])
             {
-                // homing will be done at 0, 0, 0
-                proto.waitForEndSwitchTriggered(i, Protocol.DIRECTION_DECREASING);
+                proto.waitForEndSwitchTriggered(i);
             }
         }
         log.info("Homing completed !");

@@ -27,6 +27,7 @@ public class AxisConfiguration
     private int stepperNumber = -1;
     private int secondStepperNumber = -1;
     private double stepsPerMillimeter = -1;
+    private boolean homingIsDecreasing = true;
 
     public AxisConfiguration()
     {
@@ -112,6 +113,16 @@ public class AxisConfiguration
     public void setMaxInverted(final boolean maxInverted)
     {
         this.maxInverted = maxInverted;
+    }
+
+    public boolean isHomingDecreasing()
+    {
+        return homingIsDecreasing;
+    }
+
+    public void setHomingIsDecreasing(boolean homingIsDecreasing)
+    {
+        this.homingIsDecreasing = homingIsDecreasing;
     }
 
 }

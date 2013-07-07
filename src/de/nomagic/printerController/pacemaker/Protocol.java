@@ -146,7 +146,7 @@ public class Protocol
     public final static byte CAUSE_OTHER_FAULT = 7;
 
     public final static byte RESPONSE_ORDER_SPECIFIC_ERROR = 0x13;
-
+    public final static int SENSOR_PROBLEM = 0x7fff;
     public final static int RESPONSE_MAX = 0x13;
 
     public final static byte DEVICE_TYPE_UNUSED = 0;
@@ -165,8 +165,10 @@ public class Protocol
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    // time between two polls in milliseconds.
-    private final int POLLING_TIME_MS = 100;
+    // time between two Temperature polls in milliseconds.
+    private final int POLLING_TIME_HEATER_MS = 100;
+ // time between two end Switch polls in milliseconds.
+    private final int POLLING_TIME_END_SWITCH_MS = 1;
     // resolution of Delay : 10us
     private final double DELAY_TICK_LENGTH = 0.00001;
     // the client needs at lest this(in milliseconds) time to free up one slot in the Queue
@@ -176,10 +178,13 @@ public class Protocol
 
     private ClientConnection cc;
     private AxisConfiguration[] axisCfg;
+    private int[] heaters;
+    private int[] temperatureSensors;
     private Cfg cfg;
     private DeviceInformation di = new DeviceInformation();
 
     private final static int QUEUE_SEND_BUFFER_SIZE = 200;
+    private final Vector<byte[]> sendQueue = new Vector<byte[]>();
     public int ClientQueueFreeSlots = 0;
     public int ClientExecutedJobs = 0;
     public int CommandsSendToClient = 0;
@@ -198,6 +203,8 @@ public class Protocol
     public void setCfg(final Cfg cfg)
     {
         this.cfg = cfg;
+        heaters = cfg.getHeaterMapping();
+        temperatureSensors = cfg.getTemperatureSensorMapping();
         axisCfg = cfg.getAxisMapping();
     }
 
@@ -324,15 +331,24 @@ public class Protocol
         }
     }
 
-    public void waitForEndSwitchTriggered(final int axis, final int direction)
+    public void waitForEndSwitchTriggered(final int axis)
     {
         log.info("Waiting for homing of axis {} !", axis);
+        int direction = DIRECTION_DECREASING;
+        if(true == axisCfg[axis].isHomingDecreasing())
+        {
+            direction = DIRECTION_DECREASING;
+        }
+        else
+        {
+            direction = DIRECTION_INCREASING;
+        }
         boolean isTriggered = isEndSwitchTriggered(axis, direction);
         while(false == isTriggered)
         {
             try
             {
-                Thread.sleep(POLLING_TIME_MS);
+                Thread.sleep(POLLING_TIME_END_SWITCH_MS);
             }
             catch (final InterruptedException e)
             {
@@ -342,46 +358,41 @@ public class Protocol
         }
     }
 
-    public boolean setTemperature(final int heaterNum, final Double temperature)
+    public boolean setTemperature(final int heaterNum, Double temperature)
     {
-        /* TODO
-        temperature = temperature * 10;
+        temperature = temperature * 10; // Client expects Temperature in 0.1 degree units.
         final int tempi = temperature.intValue();
-        final byte[] param = new byte[4];
-        param[0] = (byte)heaters[heaterNum];
+        final byte[] param = new byte[3];
+        param[0] = (byte) heaters[heaterNum];
         param[1] = (byte)(0xff & (tempi/256));
         param[2] = (byte)(tempi & 0xff);
-        param[3] = (byte)temperatureSensors[heaterNum];
         return sendOrderExpectOK(Protocol.ORDER_SET_HEATER_TARGET_TEMPERATURE, param);
-        */
-        return false;
     }
 
     public void waitForHeaterInLimits(final int heaterNumber,
                                       final Double temperature_min,
                                       final Double temperature_max)
     {
-        /*
         if(Cfg.INVALID == heaterNumber)
         {
             log.warn("Ignoring waiting for reaching the temperature on a missing Heater !");
             return;
         }
-        if(0.0 < temperature)
+        if(0.0 < temperature_min)
         {
-            log.info("waiting for Temperature to reach {} on heater {}", temperature, heaterNumber);
+            log.info("waiting for Temperature to reach {} on heater {}", temperature_min, heaterNumber);
             if(Cfg.INVALID == temperatureSensors[heaterNumber])
             {
                 log.error("No Temperature Sensor available for Heater {} !", heaterNumber);
                 return;
             }
-            int curTemp = readTemperatureFrom(temperatureSensors[heaterNumber]);
-            while(   (curTemp < (temperature - ACCEPTED_TEMPERATURE_DEVIATION))
-                  || (curTemp > (temperature + ACCEPTED_TEMPERATURE_DEVIATION)) )
+            double curTemp = readTemperatureFrom(temperatureSensors[heaterNumber]);
+            while(   (curTemp < (temperature_min))
+                  || (curTemp > (temperature_max)) )
             {
                 try
                 {
-                    Thread.sleep(POLLING_TIME_MS);
+                    Thread.sleep(POLLING_TIME_HEATER_MS);
                 }
                 catch (final InterruptedException e)
                 {
@@ -389,11 +400,40 @@ public class Protocol
                 }
                 curTemp = readTemperatureFrom(temperatureSensors[heaterNumber]);
                 log.info("cur Temperature is {}", curTemp);
+                //TODO If the temperature does not change for too long then the heater heats somewhere else and we must shut him off, right?
             }
         }
         // else heater is not active -> already in limit
-        return;
-        */
+    }
+
+    private double readTemperatureFrom(int sensorNumber)
+    {
+        byte[] param = new byte[2];
+        param[0] = DEVICE_TYPE_TEMPERATURE_SENSOR;
+        param[1] = (byte) sensorNumber;
+        final Reply r = cc.sendRequest(ORDER_REQ_TEMPERATURE, param);
+        if(null == r)
+        {
+            return -3;
+        }
+        if(true == r.isOKReply())
+        {
+            byte[] reply = r.getParameter();
+            int reportedTemp = (reply[0] * 256) + reply[1];
+            if(SENSOR_PROBLEM == reportedTemp)
+            {
+                return -1;
+            }
+            else
+            {
+                return reportedTemp * 10;
+            }
+        }
+        else
+        {
+            // error -> try again later
+            return -2;
+        }
     }
 
     /** sets the speed of the Fan ( Fan 0 = Fan that cools the printed part).
@@ -486,7 +526,7 @@ public class Protocol
         {
             return;
         }
-        final byte[] param = new byte[6 * listOfHomeAxes.size()];
+        final byte[] param = new byte[3 * listOfHomeAxes.size()];
         for(int i = 0; i < listOfHomeAxes.size(); i++)
         {
             final int axis = listOfHomeAxes.get(i);
@@ -501,10 +541,25 @@ public class Protocol
                 log.error("Tried to home an axis with invalid stepper motor! ");
                 return;
             }
-            param[(i*6) + 0] = stepNum;
-            // TODO
-        }
+            byte secondStepNum = (byte)axisCfg[axis].getSecondStepper();
+            if(Cfg.INVALID == secondStepNum)
+            {
+                secondStepNum = (byte) 0xff;
+            }
 
+            byte direction = DIRECTION_DECREASING;
+            if(true == axisCfg[axis].isHomingDecreasing())
+            {
+                direction = DIRECTION_DECREASING;
+            }
+            else
+            {
+                direction = DIRECTION_INCREASING;
+            }
+            param[(i*3) +0] = stepNum;
+            param[(i*3) +1] = direction;
+            param[(i*3) +2] = secondStepNum;
+        }
         if(false == sendOrderExpectOK(Protocol.ORDER_HOME_AXES, param))
         {
             log.error("Falied to Home the Axis !");
@@ -536,10 +591,6 @@ public class Protocol
             return false;
         }
     }
-
-
-    Vector<byte[]> sendQueue = new Vector<byte[]>();
-
 
     /** Enqueues the data for _one_ command into the Queue.
      *
