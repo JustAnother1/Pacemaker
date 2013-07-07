@@ -35,7 +35,7 @@ public class PrinterStatusPanel
     private final static String OFFLINE_MESSAGE = "Status Information not available !";
 
     private final JPanel myPanel = new JPanel();
-    private final JTextArea statusText = new JTextArea();
+    private final JTextArea statusText = new JTextArea(20, 50);
     private final JScrollPane scrollPane = new JScrollPane(statusText);
     private final PrintProcess pp;
 
