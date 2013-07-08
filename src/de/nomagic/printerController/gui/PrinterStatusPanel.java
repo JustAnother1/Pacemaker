@@ -22,6 +22,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.text.DefaultCaret;
 
 import de.nomagic.printerController.pacemaker.DeviceInformation;
 import de.nomagic.printerController.printer.PrintProcess;
@@ -36,7 +37,7 @@ public class PrinterStatusPanel
 
     private final JPanel myPanel = new JPanel();
     private final JTextArea statusText = new JTextArea(20, 50);
-    private final JScrollPane scrollPane = new JScrollPane(statusText);
+    private final JScrollPane scrollPane = new JScrollPane();
     private final PrintProcess pp;
 
     public PrinterStatusPanel(PrintProcess pp)
@@ -47,6 +48,9 @@ public class PrinterStatusPanel
                 "Printer Status"));
         statusText.setText(OFFLINE_MESSAGE);
         statusText.setEditable(false);
+        DefaultCaret caret = (DefaultCaret)statusText.getCaret();
+        caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+        scrollPane.setViewportView(statusText);
         myPanel.add(scrollPane, BorderLayout.CENTER);
     }
 

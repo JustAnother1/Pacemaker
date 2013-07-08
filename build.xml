@@ -14,7 +14,7 @@
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.ControllerMain" />
-                <attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar"/>
+                <attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar lib/jna.jar lib/purejavacomm.jar"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
@@ -38,7 +38,7 @@
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.printerConfigurationCreationWizard.WizardMain" />
-                <attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar . "/>
+                <attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar lib/jna.jar lib/purejavacomm.jar . "/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
