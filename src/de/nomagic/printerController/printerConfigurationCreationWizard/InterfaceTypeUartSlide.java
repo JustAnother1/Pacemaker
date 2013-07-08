@@ -27,10 +27,16 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import purejavacomm.CommPortIdentifier;
 import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
+import de.nomagic.printerController.pacemaker.ClientConnectionFactory;
+import de.nomagic.printerController.pacemaker.UartClientConnection;
+import de.nomagic.printerController.printer.Cfg;
 
 /** Ask user for parameters of UART Interface.
  *
@@ -40,21 +46,21 @@ import de.nomagic.WizardDialog.OneNextWizardSlide;
  */
 public class InterfaceTypeUartSlide extends OneNextWizardSlide
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     private JPanel slide = new JPanel();
 
     // ComPort Name,
+    private Vector<String> portList = new Vector<String>();
     private JComboBox<String> portName;
     // Baudrate : any number - Exception if rate not supported
     private JTextField baudInput = new JTextField("115200");
     // databits: 5,6,7,8
-    private String[] bits = {"5", "6", "7", "8"};
-    private JComboBox<String> dataBitsUsed = new JComboBox<String>(bits);
+    private JComboBox<String> dataBitsUsed = new JComboBox<String>(UartClientConnection.bits);
     // stop bits: 1, 1.5, 2
-    private String[] stop = {"1", "1 1/2", "2"};
-    private JComboBox<String> stopBits = new JComboBox<String>(stop);
+    private JComboBox<String> stopBits = new JComboBox<String>(UartClientConnection.stop);
     // parity: None, even, odd mark, space
-    private String[] parityOptions = {"None", "Even", "Odd", "Mark", "Space"};
-    private JComboBox<String> parityUsed = new JComboBox<String>(parityOptions);
+    private JComboBox<String> parityUsed = new JComboBox<String>(UartClientConnection.parityOptions);
     // Flowcontrol: none, RTS/CTS IN, RTS/CTS OUT, Xon/Xoff IN, Xon/Xoff OUT ( Bitmask !)
     private JCheckBox rts_cts_in = new JCheckBox("RTS/CTS IN");
     private JCheckBox rts_cts_out = new JCheckBox("RTS/CTS OUT");
@@ -68,7 +74,6 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
         JLabel portLabel = new JLabel(t.t("Interface_uart_port"));
         @SuppressWarnings("rawtypes")
         Enumeration ports = CommPortIdentifier.getPortIdentifiers();
-        Vector<String> portList = new Vector<String>();
         while (ports.hasMoreElements())
         {
           CommPortIdentifier port = (CommPortIdentifier)ports.nextElement();
@@ -125,13 +130,63 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
     @Override
     public DataStore actionOnShow(DataStore ds)
     {
+        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        Cfg cfg = null;
+        if(true == obj instanceof Cfg)
+        {
+            cfg = (Cfg)obj;
+            String configuredConnection = cfg.getClientDeviceString();
+            if(true == configuredConnection.startsWith(ClientConnectionFactory.UART_PREFIX))
+            {
+                final String data = configuredConnection.substring(ClientConnectionFactory.UART_PREFIX.length());
+                String pn = UartClientConnection.getPortNameFromDescriptor(data);
+                int idx = portList.indexOf(pn);
+                if(0 > idx)
+                {
+                    // Port is not in the list so select the first in the list,...
+                    idx = 0;
+                }
+                portName.setSelectedIndex(idx);
+                baudInput.setText("" + UartClientConnection.getBaudrateFromDescriptor(data));
+                dataBitsUsed.setSelectedIndex(UartClientConnection.getDataBitIdxFromDescriptor(data));
+                parityUsed.setSelectedIndex(UartClientConnection.getParityIdxFromDescriptor(data));
+                stopBits.setSelectedIndex(UartClientConnection.getStopBitIdxFromDescriptor(data));
+                rts_cts_in.setSelected(UartClientConnection.getRtsCtsInFromDescriptor(data));
+                rts_cts_out.setSelected(UartClientConnection.getRtsCtsOutFromDescriptor(data));
+                xon_xoff_in.setSelected(UartClientConnection.getXonXoffInFromDescriptor(data));
+                xon_xoff_out.setSelected(UartClientConnection.getXonXoffOutFromDescriptor(data));
+            }
+            // else a different connection type was in the configuration
+        }
         return ds;
     }
 
     @Override
     public DataStore actionOnClose(DataStore ds)
     {
-        // TODO Auto-generated method stub
+        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        Cfg cfg = null;
+        if(true == obj instanceof Cfg)
+        {
+            cfg = (Cfg)obj;
+        }
+        else
+        {
+            log.error("No Configuration in Data Store ! Creating new Configuration !");
+            cfg = new Cfg();
+        }
+        cfg.setClientDeviceString(ClientConnectionFactory.UART_PREFIX
+                + UartClientConnection.getDescriptorFor(
+                (String)portName.getSelectedItem(),
+                Integer.parseInt(baudInput.getText()),
+                dataBitsUsed.getSelectedIndex(),
+                parityUsed.getSelectedIndex(),
+                stopBits.getSelectedIndex(),
+                rts_cts_in.isSelected(),
+                rts_cts_out.isSelected(),
+                xon_xoff_in.isSelected(),
+                xon_xoff_out.isSelected() ));
+        ds.putObject(WizardMain.DS_CONFIGURATION_NAME, cfg);
         return ds;
     }
 

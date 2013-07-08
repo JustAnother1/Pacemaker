@@ -14,10 +14,6 @@
  */
 package de.nomagic.printerController.pacemaker;
 
-import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,9 +48,18 @@ public class ClientConnectionFactory
         }
         if(true == connectionDescription.startsWith(UART_PREFIX))
         {
-            // TODO
-            log.error("Not Implemented !");
-            return null;
+            if(connectionDescription.length() < UART_PREFIX.length())
+            {
+                log.error("Description({}) too short !", connectionDescription);
+                return null;
+            }
+            final String data = connectionDescription.substring(UART_PREFIX.length());
+            if(false == data.contains(":"))
+            {
+                log.error("Description({}) has no : !", connectionDescription);
+                return null;
+            }
+            return UartClientConnection.establishConnectionTo(data);
         }
         else if(true == connectionDescription.startsWith(TCP_PREFIX))
         {
@@ -64,47 +69,9 @@ public class ClientConnectionFactory
                 return null;
             }
             final String data = connectionDescription.substring(TCP_PREFIX.length());
-            if(false == data.contains(":"))
-            {
-                log.error("Description({}) has no : !", connectionDescription);
-                return null;
-            }
-            final String host = data.substring(0, data.indexOf(':'));
-            final String port = data.substring(data.indexOf(':') + 1);
-            return establishTcpConnectionTo(host, Integer.parseInt(port));
+            return TcpClientConnection.establishConnectionTo(data);
         }
         log.error("Description({}) has unknown prefix !", connectionDescription);
-        return null;
-    }
-
-    private static ClientConnection establishTcpConnectionTo(final String host, final int port)
-    {
-        // connecting to Pacemaker using TCP
-        log.info("Connecting to Pacemaker at {}:{} !", host, port);
-        try
-        {
-            final Socket pms = new Socket(host, port);
-            if(true == pms.isConnected())
-            {
-                return new TcpClientConnection(pms);
-            }
-            else
-            {
-                pms.close();
-                log.error("Could not connect !");
-                return null;
-            }
-        }
-        catch (final UnknownHostException e)
-        {
-            log.error("Unknown Host " + host + " !");
-            e.printStackTrace();
-        }
-        catch (final IOException e)
-        {
-            log.error("IOException !");
-            e.printStackTrace();
-        }
         return null;
     }
 }

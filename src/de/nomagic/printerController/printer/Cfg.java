@@ -65,7 +65,7 @@ public class Cfg
     public final static String SETTING_EXTRUDER_THREE_TEMP_SENSOR_STRING = "extruder three temperature sensor";
     public final static String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
 
-    private String ClientDeviceString = null;
+    private String ClientDeviceString = "";
     private boolean useSteppers = false;
     private final AxisConfiguration[] axisMapping = new AxisConfiguration[NUMBER_OF_AXIS];
     private final int[] temperatureSensorMapping = new int[NUMBER_OF_HEATERS];
@@ -384,7 +384,14 @@ public class Cfg
 
     public String getClientDeviceString()
     {
-        return ClientDeviceString;
+        if(null == ClientDeviceString)
+        {
+            return "";
+        }
+        else
+        {
+            return ClientDeviceString;
+        }
     }
 
     public AxisConfiguration[] getAxisMapping()
