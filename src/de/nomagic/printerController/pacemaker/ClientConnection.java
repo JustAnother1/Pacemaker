@@ -29,6 +29,8 @@ public abstract class ClientConnection
 {
     private final static Logger log = LoggerFactory.getLogger("ClientConnection");
 
+    public final static int MAX_MS_BETWEEN_TWO_BYTES = 100;
+
     protected InputStream in;
     protected OutputStream out;
     protected byte sequenceNumber = 0;
@@ -178,9 +180,28 @@ public abstract class ClientConnection
          return crc;
     }
 
-
     protected int getAByte() throws IOException
     {
+        if(1 > in.available())
+        {
+            int timeoutCounter = 0;
+            do{
+                try
+                {
+                    Thread.sleep(1);
+                }
+                catch(InterruptedException e)
+                {
+                }
+                timeoutCounter++;
+                if(MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter)
+                {
+                    log.error("Timeout !");
+                    throw new TimeoutException();
+                }
+            }while(1 > in.available());
+        }
+        // else a byte is already available
         final int res =  in.read();
         if(-1 == res)
         {
