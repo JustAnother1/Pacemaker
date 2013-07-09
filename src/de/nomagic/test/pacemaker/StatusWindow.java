@@ -32,6 +32,9 @@ import javax.swing.Timer;
  */
 public class StatusWindow extends JFrame implements Hardware, ActionListener
 {
+    public final static int NUMBER_OF_TEMPERATURE_SENSORS = 4;
+    public final static int NUMBER_OF_HEATERS = 3;
+
     private final static String TIMER_ACTION_COMMAND = "timer";
     private static final long serialVersionUID = 1L;
     private final JPanel StatusPanel = new JPanel();
@@ -41,6 +44,10 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     private boolean isInStoppedState = true;
     private Timer timer;
     private ProtocolClient pc;
+
+    private int[] temperature = new int[NUMBER_OF_TEMPERATURE_SENSORS];
+    private int[] heaterTargetTemperature = new int[NUMBER_OF_HEATERS];
+    private int[] mappedTemperatureSensor = new int[NUMBER_OF_HEATERS];
 
     public StatusWindow()
     {
@@ -127,12 +134,13 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     @Override
     public String getNameOfHeater(int idx)
     {
-        switch(idx)
+        if((-1 < idx) & (idx < NUMBER_OF_HEATERS))
         {
-        case 0: return "Heater_1";
-        case 1: return "Heater_2";
-        case 2: return "Heater_3";
-        default: return "Invalid Heater";
+            return "Heater " + (idx + 1);
+        }
+        else
+        {
+            return "Invalid Heater";
         }
     }
 
@@ -151,13 +159,13 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     @Override
     public String getNameOfTemperatureSensor(int idx)
     {
-        switch(idx)
+        if((-1 < idx) & (idx < NUMBER_OF_TEMPERATURE_SENSORS))
         {
-        case 0: return "Temp_1";
-        case 1: return "Temp_2";
-        case 2: return "Temp_3";
-        case 3: return "Temp_4";
-        default: return "Invalid Temperature Sensor";
+            return "Temp " + (idx + 1);
+        }
+        else
+        {
+            return "Invalid Temperature Sensor";
         }
     }
 
@@ -327,6 +335,65 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
 
             curStatus.setText(statusText);
         }
+    }
+
+    @Override
+    public void reset()
+    {
+        isInStoppedState = true;
+        for(int i = 0; i < heaterTargetTemperature.length; i++)
+        {
+            heaterTargetTemperature[i] = 0;
+        }
+
+        for(int i = 0; i < mappedTemperatureSensor.length; i++)
+        {
+            mappedTemperatureSensor[i] = 0xff; // not mapped
+        }
+    }
+
+    @Override
+    public int getTemperatureFromSensor(int idx)
+    {
+        if((-1 < idx) & (idx < NUMBER_OF_TEMPERATURE_SENSORS))
+        {
+            return temperature[idx];
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    @Override
+    public byte[] getConfigurationOfHeater(int heaterIdx)
+    {
+        byte[] res = new byte[2];
+        res[0] = 0; // No internal Sensor
+        res[2] = (byte)mappedTemperatureSensor[heaterIdx];
+        return res;
+    }
+
+    @Override
+    public void setConfigurationOfHeater(int heaterIdx, int tempSensor)
+    {
+        mappedTemperatureSensor[heaterIdx] = tempSensor;
+    }
+
+    @Override
+    public void setTargetTemperatureOfHeater(int idx, int targetTemp)
+    {
+        if((-1 < idx) & (idx < NUMBER_OF_TEMPERATURE_SENSORS))
+        {
+            heaterTargetTemperature[idx] = targetTemp;
+            // Fake heating:
+            int tempSensorIdx = mappedTemperatureSensor[idx];
+            if((-1 < tempSensorIdx) && (tempSensorIdx < temperature.length))
+            {
+                temperature[tempSensorIdx] = targetTemp;
+            }
+        }
+        // else ignore
     }
 
 }

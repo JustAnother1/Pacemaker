@@ -164,7 +164,7 @@ public class ProtocolClient
             switch(order)
             {
             case Protocol.ORDER_RESET:
-                System.err.println("Order not implemented !");
+                hw.reset();
                 sendOK();
                 break;
 
@@ -182,23 +182,19 @@ public class ProtocolClient
                 break;
 
             case Protocol.ORDER_REQ_TEMPERATURE:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleOrderRequestTemperature();
                 break;
 
             case Protocol.ORDER_GET_HEATER_CONFIGURATION:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleOrderGetHeaterConfiguration();
                 break;
 
             case Protocol.ORDER_CONFIGURE_HEATER:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleOrderConfigureHeater();
                 break;
 
             case Protocol.ORDER_SET_HEATER_TARGET_TEMPERATURE:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleOrderSetHeaterTargetTemperature();
                 break;
 
             case Protocol.ORDER_REQ_INPUT:
@@ -289,6 +285,77 @@ public class ProtocolClient
             default: sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                                Protocol.RESPONSE_UNKNOWN_ORDER);
             }
+        }
+    }
+
+    private void handleOrderSetHeaterTargetTemperature() throws IOException
+    {
+        int devIdx = parameter[0];
+        int targetTemp = parameter[1] * 256 + parameter[2];
+        if((-1 < devIdx) &&(devIdx < hw.getNumberHeaters()))
+        {
+            hw.setTargetTemperatureOfHeater(devIdx, targetTemp);
+            sendOK();
+        }
+        else
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+        }
+    }
+
+    private void handleOrderConfigureHeater() throws IOException
+    {
+        int devIdx = parameter[0];
+        int tempSensor = parameter[1];
+        if((-1 < devIdx) &&(devIdx < hw.getNumberHeaters()))
+        {
+            hw.setConfigurationOfHeater(devIdx, tempSensor);
+            sendOK();
+        }
+        else
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+        }
+    }
+
+    private void handleOrderGetHeaterConfiguration() throws IOException
+    {
+        int devIdx = parameter[0];
+        if((-1 < devIdx) &&(devIdx < hw.getNumberHeaters()))
+        {
+            byte[] cfg = hw.getConfigurationOfHeater(devIdx);
+            sendByteArray(cfg);
+        }
+        else
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+        }
+    }
+
+    private void handleOrderRequestTemperature() throws IOException
+    {
+        int devType = parameter[0];
+        int devIdx = parameter[1];
+        if(Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR == devType)
+        {
+            if((-1 < devIdx) &&(devIdx < hw.getNumberTempSensor()))
+            {
+                int temperature = hw.getTemperatureFromSensor(devIdx);
+                sendI16(temperature);
+            }
+            else
+            {
+                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                          Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+            }
+        }
+        else //TODO Heaters may report Temperatures (included Sensors)
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_INVALID_DEVICE_TYPE);
         }
     }
 
@@ -480,6 +547,18 @@ public class ProtocolClient
         response[4] = (byte)((parameterInt >>8) & 0xff);
         response[5] = (byte)(0xff & parameterInt);
         addChecksumControlAndSend(5);
+    }
+
+    private void sendByteArray(final byte[] list) throws IOException
+    {
+        response[1] = Protocol.RESPONSE_OK;
+        response[2] = (byte)(list.length + 1);
+        // 3 = control
+        for(int i = 0; i < list.length; i++)
+        {
+            response[4 + i] = list[i];
+        }
+        addChecksumControlAndSend(list.length + 3);
     }
 
     private void sendByteArray(final int[] list) throws IOException

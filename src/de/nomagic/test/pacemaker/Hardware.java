@@ -45,4 +45,9 @@ public interface Hardware
     String getNameOfStepper(int idx);
     String getNameOfHeater(int idx);
     String getNameOfTemperatureSensor(int idx);
+    void reset();
+    int getTemperatureFromSensor(int devIdx);
+    byte[] getConfigurationOfHeater(int heaterIdx);
+    void setConfigurationOfHeater(int heaterIdx, int tempSensor);
+    void setTargetTemperatureOfHeater(int heaterIdx, int targetTemp);
 }
