@@ -52,16 +52,16 @@ public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
     public TemperatureSensorSelectionSlide(Translator t)
     {
         //Columns
-        tableData.addColumn("Sensor", false, Integer.class);
-        tableData.addColumn("Name", false, String.class);
-        tableData.addColumn("current Temperature", false, String.class);
-        tableData.addColumn("use Sensor", true, Boolean.class);
+        tableData.addColumn(t.t("TemperatureSensor_sensor"), false, Integer.class);
+        tableData.addColumn(t.t("TemperatureSensor_name"), false, String.class);
+        tableData.addColumn(t.t("TemperatureSensor_cur_temp"), false, String.class);
+        tableData.addColumn(t.t("TemperatureSensor_use"), true, Boolean.class);
 
         JTable tab = new JTable(tableData);
         JScrollPane tabelePane = new JScrollPane(tab);
         tab.setFillsViewportHeight(true);
 
-        JLabel Instruction = new JLabel("Please tick all Sensors that shall be used.");
+        JLabel Instruction = new JLabel(t.t("TemperatureSensor_select"));
         slide.setLayout(new BoxLayout(slide, BoxLayout.PAGE_AXIS));
         slide.add(Instruction);
         slide.add(tabelePane);
