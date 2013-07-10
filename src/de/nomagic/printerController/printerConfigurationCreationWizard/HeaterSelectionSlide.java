@@ -25,15 +25,17 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableColumnModel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
 import de.nomagic.WizardDialog.SlideTableModel;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
-import de.nomagic.printerController.pacemaker.Protocol;
+import de.nomagic.printerController.printer.Cfg;
 
 /**
  * @author Lars P&ouml;tter
@@ -44,37 +46,47 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
+    private final static int USED_COLUMN = 2;
     private final static int USED_FOR_COLUMN = 3;
     private final static int USED_SENSOR_COLUMN = 4;
 
     private JPanel slide = new JPanel();
     private SlideTableModel tableData = new SlideTableModel();
     private JTable tab;
+    private String unknown;
 
-    public HeaterSelectionSlide()
+    private String[] functionNames = new String[Cfg.NUMBER_OF_HEATER_FUNCTIONS];
+
+    public HeaterSelectionSlide(Translator t)
     {
         //Columns
-        tableData.addColumn("Heater", false, Integer.class);
-        tableData.addColumn("Name", false, String.class);
-        tableData.addColumn("use it?", false, Boolean.class);
-        tableData.addColumn("used for", true, String.class);
-        tableData.addColumn("used Sensor", true, String.class);
+        tableData.addColumn(t.t("HeaterSelector_heater"), false, Integer.class);
+        tableData.addColumn(t.t("HeaterSelector_name"), false, String.class);
+        tableData.addColumn(t.t("HeaterSelector_use"), true, Boolean.class);
+        tableData.addColumn(t.t("HeaterSelector_used_for"), true, String.class);
+        tableData.addColumn(t.t("HeaterSelector_sensor"), true, String.class);
 
-        JTable tab = new JTable(tableData);
+        functionNames[Cfg.CHAMBER] = t.t("HeaterSelector_func_chamber");
+        functionNames[Cfg.PRINT_BED] = t.t("HeaterSelector_func_bed");
+        functionNames[Cfg.EXTRUDER_1] = t.t("HeaterSelector_func_e1");
+        functionNames[Cfg.EXTRUDER_2] = t.t("HeaterSelector_func_e2");
+        functionNames[Cfg.EXTRUDER_3] = t.t("HeaterSelector_func_e3");
+
+        tab = new JTable(tableData);
         TableColumn usageColumn = tab.getColumnModel().getColumn(USED_FOR_COLUMN);
         JComboBox<String> usageBox = new JComboBox<String>();
-        usageBox.addItem("unknown");
-        usageBox.addItem("chamber");
-        usageBox.addItem("print bed");
-        usageBox.addItem("extruder one");
-        usageBox.addItem("extruder two");
-        usageBox.addItem("extruder three");
+        unknown = t.t("HeaterSelector_unknown");
+        usageBox.addItem(unknown);
+        for(int i = 0; i< functionNames.length; i++)
+        {
+            usageBox.addItem(functionNames[i]);
+        }
         usageColumn.setCellEditor(new DefaultCellEditor(usageBox));
 
         JScrollPane tabelePane = new JScrollPane(tab);
         tab.setFillsViewportHeight(true);
 
-        JLabel Instruction = new JLabel("Please tick all Heaters that shall be used.");
+        JLabel Instruction = new JLabel(t.t("HeaterSelector_select"));
         slide.setLayout(new BoxLayout(slide, BoxLayout.PAGE_AXIS));
         slide.add(Instruction);
         slide.add(tabelePane);
@@ -106,13 +118,12 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
                 @SuppressWarnings("unchecked")
                 Vector<Integer> activeTempSensors = (Vector<Integer>) obj;
                 // TODO Thread Start:
-                int firstSensor = 0;
                 if(activeTempSensors.size() > 0)
                 {
-                    firstSensor = activeTempSensors.get(0);
-                    TableColumn sensorColumn = tab.getColumnModel().getColumn(USED_SENSOR_COLUMN);
+                    TableColumnModel tcm = tab.getColumnModel();
+                    TableColumn sensorColumn = tcm.getColumn(USED_SENSOR_COLUMN);
                     JComboBox<String> sensorBox = new JComboBox<String>();
-                    sensorBox.addItem("unknown");
+                    sensorBox.addItem(unknown);
                     for(int i = 0; i < activeTempSensors.size(); i++)
                     {
                         int sensorIdx = activeTempSensors.get(i);
@@ -124,9 +135,9 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
                 {
                     tableData.setValueAt(new Integer(i), i, 0);
                     tableData.setValueAt(di.getHeaterConnectorName(i), i, 1);
-                    tableData.setValueAt(new Boolean(true), i, 2);
-                    tableData.setValueAt("unknown", i, USED_FOR_COLUMN);
-                    tableData.setValueAt("" + firstSensor, i, USED_SENSOR_COLUMN);
+                    tableData.setValueAt(new Boolean(true), i, USED_COLUMN);
+                    tableData.setValueAt(unknown, i, USED_FOR_COLUMN);
+                    tableData.setValueAt(unknown, i, USED_SENSOR_COLUMN);
                 }
                 // Thread end
             }
@@ -145,18 +156,46 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
     @Override
     public DataStore actionOnClose(DataStore ds)
     {
-        /*
-        Vector<Integer> activeTempSensors = new Vector<Integer>();
-        for(int i = 0; i < tableData.getRowCount(); i++)
+        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        Cfg cfg = null;
+        if(true == obj instanceof Cfg)
         {
-            Boolean active = (Boolean)tableData.getValueAt(i, SENSOR_ACTIVE_COLUMN);
-            if(true == active.booleanValue())
+            cfg = (Cfg)obj;
+            Vector<Integer> activeHeaters = new Vector<Integer>();
+            for(int i = 0; i < tableData.getRowCount(); i++)
             {
-                activeTempSensors.add(i);
+                Boolean active = (Boolean)tableData.getValueAt(i, USED_COLUMN);
+                if(true == active.booleanValue())
+                {
+                    activeHeaters.add(i);
+                    String function = (String)tableData.getValueAt(i, USED_FOR_COLUMN);
+                    for(int j = 0; j < functionNames.length; j++)
+                    {
+                        if(true == function.equals(functionNames[j]))
+                        {
+                            cfg.mapHeaterToFunction(i, j);
+                            // if we can map the function then we can also map the sensor if the sensor is given
+                            String Sensor = (String)tableData.getValueAt(i, USED_SENSOR_COLUMN);
+                            try
+                            {
+                                int sensorIdx = Integer.parseInt(Sensor);
+                                cfg.mapTemperatureSensorToHeaterFunction(j, sensorIdx);
+                            }
+                            catch(NumberFormatException e)
+                            {
+                                // unknown sensor -> no mapping
+                            }
+                            break;
+                        }
+                    }
+                }
             }
+            ds.putObject(WizardMain.DS_ACTIVE_HEATERS_NAME, activeHeaters);
         }
-        ds.putObject(WizardMain.DS_ACTIVE_TEMPERATURE_SENSORS_NAME, activeTempSensors);
-        */
+        else
+        {
+            log.error("Configuration Object missing from Data Store !");
+        }
         return ds;
     }
 

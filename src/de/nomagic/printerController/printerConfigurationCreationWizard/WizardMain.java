@@ -48,6 +48,7 @@ public class WizardMain implements CancelAction
     public static final String DS_PLANNER_NAME = "plan";
     public static final String DS_CLIENT_CONNECTION_NAME = "cc";
     public static final String DS_ACTIVE_TEMPERATURE_SENSORS_NAME = "activeTempSensors";
+    public static final String DS_ACTIVE_HEATERS_NAME = "activeHeaters";
 
     private final JFileChooser fc = new JFileChooser();
     private final BaseWindow ConfigCreator;
@@ -68,6 +69,8 @@ public class WizardMain implements CancelAction
         InterfaceConnectSlide iConnect = new InterfaceConnectSlide(t, ConfigCreator);
         // Temperature Sensors
         TemperatureSensorSelectionSlide tempSensorSlide = new TemperatureSensorSelectionSlide(t);
+        // Heaters
+        HeaterSelectionSlide heatSelectSlide = new HeaterSelectionSlide(t);
         // more slides created here
 
         //2. Link the Slides
@@ -77,6 +80,7 @@ public class WizardMain implements CancelAction
         iUart.addNextSlide(iConnect);
         iExperimental.addNextSlide(iConnect);
         iConnect.addNextSlide(tempSensorSlide);
+        tempSensorSlide.addNextSlide(heatSelectSlide);
         // more linking here
 
         //3. register the Slides
@@ -87,6 +91,7 @@ public class WizardMain implements CancelAction
         ConfigCreator.addSlide(iExperimental);
         ConfigCreator.addSlide(iConnect);
         ConfigCreator.addSlide(tempSensorSlide);
+        ConfigCreator.addSlide(heatSelectSlide);
         // more slides connected here
     }
 

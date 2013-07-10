@@ -416,7 +416,10 @@ public class Cfg
 
     public void mapHeaterToFunction(int heater, int function)
     {
-
+        if((-1 < function) && (function < NUMBER_OF_HEATER_FUNCTIONS))
+        {
+            heaterMapping[function] = heater;
+        }
     }
 
     public String getFirmwareSetting(String Name)

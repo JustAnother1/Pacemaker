@@ -15,6 +15,7 @@
 package de.nomagic.printerController.printerConfigurationCreationWizard;
 
 import java.awt.Component;
+import java.io.IOException;
 
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -86,6 +87,7 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
             // TODO Thread Start:
             Protocol proto = new Protocol();
             proto.setCfg(cfg);
+            connectLog.append("\ncreate chanel,...");
             ClientConnection cc = ClientConnectionFactory.establishConnectionTo(cfg);
             if(null == cc)
             {
@@ -94,6 +96,7 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
                 connectLog.setText(connectLog.getText() + "\nconnection failed !");
                 return ds;
             }
+            connectLog.append("\nconnect to channel,...");
             if(false == proto.ConnectToChannel(cc))
             {
                 log.error("Could not establish the connection !");
@@ -102,6 +105,7 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
                 return ds;
             }
             // else Connection established successfully !
+            connectLog.append("\napply configuration to client,...");
             if(false == proto.applyConfigurationToClient())
             {
                 log.error("Could not establish the connection !");
@@ -112,17 +116,34 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
             // else Client configured successfully !
             Planner plan = new Planner(proto);
             GCodeDecoder decoder = new GCodeDecoder(plan);
-
+            DeviceInformation di = plan.getPrinterAbilities();
+            try
+            {
+                connectLog.append("\nread connector names,...");
+                if(false == di.readConnectorNames())
+                {
+                    log.error("Could not establish the connection !");
+                    log.info("connection failed !");
+                    connectLog.setText(connectLog.getText() + "\nconnection failed !");
+                    return ds;
+                }
+            }
+            catch(IOException e)
+            {
+                e.printStackTrace();
+                log.error("Could not establish the connection !");
+                log.info("connection failed !");
+                connectLog.setText(connectLog.getText() + "\nconnection failed !");
+                return ds;
+            }
             log.trace("connection to client is now open !");
             connectLog.setText(connectLog.getText() + "\nconnection to client is now open !");
-            DeviceInformation di = plan.getPrinterAbilities();
             ds.putObject(WizardMain.DS_CLIENT_CONNECTION_NAME, cc);
             ds.putObject(WizardMain.DS_PROTOCOL_NAME, proto);
             ds.putObject(WizardMain.DS_PLANNER_NAME, plan);
             ds.putObject(WizardMain.DS_G_CODE_DECODER_NAME, decoder);
             ds.putObject(WizardMain.DS_DEVICE_INFORMATION_NAME, di);
             configCreator.setNextAllowed(true);
-
             // Thread end
         }
         else
