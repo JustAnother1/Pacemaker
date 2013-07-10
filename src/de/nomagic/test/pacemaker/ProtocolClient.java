@@ -371,7 +371,7 @@ public class ProtocolClient
             switch(parameter[0])
             {
             case Protocol.DEVICE_TYPE_INPUT:
-                if(hw.getNumberSteppers() < parameter[1])
+                if(hw.getNumberInput() > parameter[1])
                 {
                     sendString(hw.getNameOfInput(parameter[1]));
                 }
@@ -383,7 +383,7 @@ public class ProtocolClient
                 break;
 
             case Protocol.DEVICE_TYPE_OUTPUT:
-                if(hw.getNumberSteppers() < parameter[1])
+                if(hw.getNumberOutput() > parameter[1])
                 {
                     sendString(hw.getNameOfOutput(parameter[1]));
                 }
@@ -395,7 +395,7 @@ public class ProtocolClient
                 break;
 
             case Protocol.DEVICE_TYPE_PWM_OUTPUT:
-                if(hw.getNumberSteppers() < parameter[1])
+                if(hw.getNumberPwm() > parameter[1])
                 {
                     sendString(hw.getNameOfPwm(parameter[1]));
                 }
@@ -407,7 +407,7 @@ public class ProtocolClient
                 break;
 
             case Protocol.DEVICE_TYPE_STEPPER:
-                if(hw.getNumberSteppers() < parameter[1])
+                if(hw.getNumberSteppers() > parameter[1])
                 {
                     sendString(hw.getNameOfStepper(parameter[1]));
                 }
@@ -419,7 +419,7 @@ public class ProtocolClient
                 break;
 
             case Protocol.DEVICE_TYPE_HEATER:
-                if(hw.getNumberSteppers() < parameter[1])
+                if(hw.getNumberHeaters() > parameter[1])
                 {
                     sendString(hw.getNameOfHeater(parameter[1]));
                 }
@@ -431,9 +431,21 @@ public class ProtocolClient
                 break;
 
             case Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR:
-                if(hw.getNumberSteppers() < parameter[1])
+                if(hw.getNumberTempSensor() > parameter[1])
                 {
                     sendString(hw.getNameOfTemperatureSensor(parameter[1]));
+                }
+                else
+                {
+                    sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                              Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+                }
+                break;
+
+            case Protocol.DEVICE_TYPE_BUZZER:
+                if(hw.getNumberBuzzer() > parameter[1])
+                {
+                    sendString(hw.getNameOfBuzzer(parameter[1]));
                 }
                 else
                 {

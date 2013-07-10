@@ -50,4 +50,5 @@ public interface Hardware
     byte[] getConfigurationOfHeater(int heaterIdx);
     void setConfigurationOfHeater(int heaterIdx, int tempSensor);
     void setTargetTemperatureOfHeater(int heaterIdx, int targetTemp);
+    String getNameOfBuzzer(int idx);
 }

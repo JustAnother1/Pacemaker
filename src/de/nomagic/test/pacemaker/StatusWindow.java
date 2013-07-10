@@ -120,18 +120,6 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     }
 
     @Override
-    public String getNameOfPwm(int idx)
-    {
-        switch(idx)
-        {
-        case 0: return "PWM_1";
-        case 1: return "PWM_2";
-        case 2: return "PWM_3";
-        default: return "Invalid PWM Output";
-        }
-    }
-
-    @Override
     public String getNameOfHeater(int idx)
     {
         if((-1 < idx) & (idx < NUMBER_OF_HEATERS))
@@ -148,6 +136,18 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     public int getNumberPwm()
     {
         return 1;
+    }
+
+    @Override
+    public String getNameOfPwm(int idx)
+    {
+        switch(idx)
+        {
+        case 0: return "PWM_1";
+        case 1: return "PWM_2";
+        case 2: return "PWM_3";
+        default: return "Invalid PWM Output";
+        }
     }
 
     @Override
@@ -218,6 +218,25 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
         case 10: return "Output_11";
         case 11: return "Output_12";
         case 12: return "Output_13";
+        default: return "Invalid Output";
+        }
+    }
+
+
+    @Override
+    public int getNumberBuzzer()
+    {
+        return 2;
+    }
+
+
+    @Override
+    public String getNameOfBuzzer(int idx)
+    {
+        switch(idx)
+        {
+        case 0: return "Buzzer_1";
+        case 1: return "Buzzer_2";
         default: return "Invalid Output";
         }
     }
@@ -293,12 +312,6 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     public int getFirmwareRevisionMinor()
     {
         return 3;
-    }
-
-    @Override
-    public int getNumberBuzzer()
-    {
-        return 2;
     }
 
     @Override
