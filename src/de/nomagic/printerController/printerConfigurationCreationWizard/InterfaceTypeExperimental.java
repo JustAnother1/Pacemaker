@@ -71,6 +71,13 @@ public class InterfaceTypeExperimental extends OneNextWizardSlide
             cfg = (Cfg)obj;
             desscriptionField.setText(cfg.getClientDeviceString());
         }
+        String text = desscriptionField.getText();
+        if(1 > text.length())
+        {
+            // Simulator on same PC as default.
+            desscriptionField.setText("TCP:127.0.0.1:12345");
+        }
+        desscriptionField.requestFocus();
         return ds;
     }
 
