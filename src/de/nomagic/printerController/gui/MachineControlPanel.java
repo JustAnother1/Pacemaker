@@ -79,7 +79,7 @@ public class MachineControlPanel implements ActionListener
         myPanel.add(buttonPanel);
 
         // move motors ,control heaters,...
-        directControlPane = new DirectControlPanel();
+        directControlPane = new DirectControlPanel(pp);
         myPanel.add(directControlPane.getPanel());
 
         // connection to Client Panel (connect, disconnect,...)
@@ -102,6 +102,7 @@ public class MachineControlPanel implements ActionListener
             pp.closeClientConnection();
             clientPane.updateButtons();
             printerStatusPanel.setToOffline();
+            directControlPane.setToOffline();
             printButton.setEnabled(false);
         }
         else if(ClientPanel.ACTION_OPEN_CLIENT_CONNECTION.equals(e.getActionCommand()))
@@ -115,6 +116,7 @@ public class MachineControlPanel implements ActionListener
                 log.trace("connection to client is now open !");
                 clientPane.updateButtons();
                 printerStatusPanel.setToOnline();
+                directControlPane.setToOnline();
                 printButton.setEnabled(true);
             }
             else
