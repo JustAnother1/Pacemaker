@@ -820,7 +820,7 @@ public class Protocol
         int[] heaters = cfg.getHeaterMapping();
         int[] sensors = cfg.getTemperatureSensorMapping();
         byte[] parameter = new byte[2];
-        for(int i = 0; i < Cfg.NUMBER_OF_HEATERS; i++)
+        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
         {
             int heaterNum = heaters[i];
             int sensorNum = sensors[i];

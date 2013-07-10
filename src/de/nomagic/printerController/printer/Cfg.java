@@ -38,13 +38,13 @@ public class Cfg
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    // Heaters
+    // Heater functions
     public final static int CHAMBER    = 0;
     public final static int PRINT_BED  = 1;
     public final static int EXTRUDER_1 = 2;
     public final static int EXTRUDER_2 = 3;
     public final static int EXTRUDER_3 = 4;
-    public final static int NUMBER_OF_HEATERS = 5;
+    public final static int NUMBER_OF_HEATER_FUNCTIONS = 5;
 
     public static final int INVALID = -1;
 
@@ -78,8 +78,8 @@ public class Cfg
     private String ClientDeviceString = "";
     private boolean useSteppers = false;
     private final AxisConfiguration[] axisMapping = new AxisConfiguration[NUMBER_OF_AXIS];
-    private final int[] temperatureSensorMapping = new int[NUMBER_OF_HEATERS];
-    private final int[] heaterMapping = new int[NUMBER_OF_HEATERS];
+    private final int[] temperatureSensorMapping = new int[NUMBER_OF_HEATER_FUNCTIONS];
+    private final int[] heaterMapping = new int[NUMBER_OF_HEATER_FUNCTIONS];
     private HashMap<String,String> firmwareCfg = new HashMap<String,String>();
 
     public final static int POS_X = 0;
@@ -98,7 +98,7 @@ public class Cfg
         {
             axisMapping[i] = new AxisConfiguration();
         }
-        for(int i = 0; i < NUMBER_OF_HEATERS; i++)
+        for(int i = 0; i < NUMBER_OF_HEATER_FUNCTIONS; i++)
         {
             heaterMapping[i] = -1;
             temperatureSensorMapping[i] = -1;

@@ -38,8 +38,8 @@ public class Planner
 
     private final double[] stepsPerMM = new double[Cfg.NUMBER_OF_AXIS];
     private final boolean[] homingAxis = new boolean[Cfg.NUMBER_OF_AXIS];
-    private final boolean[] activeHeaters = new boolean[Cfg.NUMBER_OF_HEATERS];
-    private final double[] heatersTargetTemperatures = new double[Cfg.NUMBER_OF_HEATERS];
+    private final boolean[] activeHeaters = new boolean[Cfg.NUMBER_OF_HEATER_FUNCTIONS];
+    private final double[] heatersTargetTemperatures = new double[Cfg.NUMBER_OF_HEATER_FUNCTIONS];
     private int currentExtruder = 0;
 
     // allowed difference to target temperature in degree Celsius.
@@ -54,7 +54,7 @@ public class Planner
         }
         this.proto = proto;
         currentExtruder = Cfg.EXTRUDER_1;
-        for(int i = 0; i < Cfg.NUMBER_OF_HEATERS; i++)
+        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
         {
             activeHeaters[i] = false;
             heatersTargetTemperatures[i] = 0;
@@ -83,7 +83,7 @@ public class Planner
 
     public boolean doImmediateShutDown()
     {
-        for(int i = 0; i < Cfg.NUMBER_OF_HEATERS; i++)
+        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
         {
             activeHeaters[i] = false;
             heatersTargetTemperatures[i] = 0;
@@ -217,7 +217,7 @@ public class Planner
     /** waits until all heaters created the required Temperatures. */
     public boolean waitForEverythingInLimits()
     {
-        for(int i = 0; i < Cfg.NUMBER_OF_HEATERS; i++)
+        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
         {
             if(true == activeHeaters[i])
             {
