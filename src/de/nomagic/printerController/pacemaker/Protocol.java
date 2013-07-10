@@ -258,6 +258,7 @@ public class Protocol
         final Reply r = cc.sendRequest(order, parameter);
         if(null == r)
         {
+            log.error("Received no Reply !");
             return false;
         }
         return r.isOKReply();

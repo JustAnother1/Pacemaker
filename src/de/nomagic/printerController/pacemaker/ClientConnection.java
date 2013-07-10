@@ -155,6 +155,7 @@ public abstract class ClientConnection
         {
             e.printStackTrace();
         }
+        log.error("Failed to send Request - Exception !");
         return null;
     }
 
@@ -298,6 +299,7 @@ public abstract class ClientConnection
         {
             e.printStackTrace();
         }
+        log.error("Failed to read Reply - Exception !");
         return null;
     }
 
