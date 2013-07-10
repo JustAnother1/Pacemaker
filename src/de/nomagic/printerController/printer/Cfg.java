@@ -38,6 +38,16 @@ public class Cfg
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
+    // Heaters
+    public final static int CHAMBER    = 0;
+    public final static int PRINT_BED  = 1;
+    public final static int EXTRUDER_1 = 2;
+    public final static int EXTRUDER_2 = 3;
+    public final static int EXTRUDER_3 = 4;
+    public final static int NUMBER_OF_HEATERS = 5;
+
+    public static final int INVALID = -1;
+
     public final static String COMMENT_START = "#";
 
     private enum Sect {GENERAL, AXIS, HEATERS, TEMPERATURES, FIRMWARE_CONFIGURATION, INVALID}
@@ -81,16 +91,6 @@ public class Cfg
     public final static int POS_E = 6;
     public final static int NUMBER_OF_AXIS = 7; // X, Y, Z, A, B, C (from RS274/NGC) and E
     public final static Character[] axisNames = {'X', 'Y', 'Z', 'A', 'B', 'C', 'E'};
-
-    // Heaters
-    public final static int CHAMBER    = 0;
-    public final static int PRINT_BED  = 1;
-    public final static int EXTRUDER_1 = 2;
-    public final static int EXTRUDER_2 = 3;
-    public final static int EXTRUDER_3 = 4;
-    public final static int NUMBER_OF_HEATERS = 5;
-
-    public static final int INVALID = -1;
 
     public Cfg()
     {
@@ -404,9 +404,19 @@ public class Cfg
         return temperatureSensorMapping;
     }
 
+    public void mapTemperatureSensorToHeaterFunction(int HeaterFunction, int Sensor)
+    {
+        temperatureSensorMapping[HeaterFunction] = Sensor;
+    }
+
     public int[] getHeaterMapping()
     {
         return heaterMapping;
+    }
+
+    public void mapHeaterToFunction(int heater, int function)
+    {
+
     }
 
     public String getFirmwareSetting(String Name)
