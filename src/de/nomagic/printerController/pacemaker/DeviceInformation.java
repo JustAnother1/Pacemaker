@@ -231,7 +231,6 @@ public class DeviceInformation
             log.error("Device Name Request Failed !");
             return "";
         }
-        log.info("Received Device Name : " + r.getParameterAsString(0));
         return r.getParameterAsString(0);
     }
 
@@ -308,14 +307,10 @@ public class DeviceInformation
            && (-1 < index)
            && (index < NumberHeaters) )
         {
-            log.info("Requested Heater connector Name with index {} that is {}!", index, heaterNames[index]);
             return heaterNames[index];
         }
         else
         {
-            log.error("heaternames[0] =  {}", heaterNames[0]);
-            log.error("Number Heaters = {}", NumberHeaters);
-
             log.error("Requested invalid Heater connector Name with index {} !", index);
             return "";
         }
