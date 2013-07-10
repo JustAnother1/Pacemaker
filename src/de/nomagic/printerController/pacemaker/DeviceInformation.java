@@ -288,7 +288,7 @@ public class DeviceInformation
 
     public String getStepperConnectorName(int index)
     {
-        if(   (null != tempertureSensorNames)
+        if(   (null != stepperNames)
            && (-1 < index)
            && (index < NumberSteppers) )
         {
@@ -302,7 +302,7 @@ public class DeviceInformation
 
     public String getHeaterConnectorName(int index)
     {
-        if(   (null != tempertureSensorNames)
+        if(   (null != heaterNames)
            && (-1 < index)
            && (index < NumberHeaters) )
         {
@@ -316,7 +316,7 @@ public class DeviceInformation
 
     public String getPwmOutputConnectorName(int index)
     {
-        if(   (null != tempertureSensorNames)
+        if(   (null != pwmOutputNames)
            && (-1 < index)
            && (index < NumberOutputSignals) )
         {
@@ -344,7 +344,7 @@ public class DeviceInformation
 
     public String getSwitchConnectorName(int index)
     {
-        if(   (null != tempertureSensorNames)
+        if(   (null != switchesNames)
            && (-1 < index)
            && (index < NumberSwitches) )
         {
@@ -358,7 +358,7 @@ public class DeviceInformation
 
     public String getOutputConnectorName(int index)
     {
-        if(   (null != tempertureSensorNames)
+        if(   (null != outputSignalNames)
            && (-1 < index)
            &&(index < NumberOutputSignals) )
         {
@@ -372,7 +372,7 @@ public class DeviceInformation
 
     public String getBuzzerConnectorName(int index)
     {
-        if(   (null != tempertureSensorNames)
+        if(   (null != buzzerNames)
            && (-1 < index)
            && (index < NumberBuzzer) )
         {
