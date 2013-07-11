@@ -572,6 +572,13 @@ public class Protocol
         }
     }
 
+    public boolean doStopPrint()
+    {
+        final byte[] param = new byte[1];
+        param[0] = ORDERED_STOP;
+        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param);
+    }
+
     public boolean doEmergencyStopPrint()
     {
         final byte[] param = new byte[1];

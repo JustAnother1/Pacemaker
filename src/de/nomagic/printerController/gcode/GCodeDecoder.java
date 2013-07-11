@@ -79,6 +79,9 @@ public class GCodeDecoder
         final int num = Number.intValue();
         switch(num)
         {
+        case 0: // Stop Print
+            return plan.dohutDown();
+
         case 17: // Enable/Power all stepper motors
             return plan.enableAllStepperMotors();
 

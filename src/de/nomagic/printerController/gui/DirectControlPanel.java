@@ -44,6 +44,9 @@ public class DirectControlPanel implements ActionListener
     private final static String ACTION_COMMAND_E_PLUS = "eplus";
     private final static String ACTION_COMMAND_E_MINUS = "eminus";
     private final static String ACTION_COMMAND_MOTORS_OFF = "motoroff";
+    private final static String ACTION_COMMAND_STOP_PRINT = "stop";
+    private final static String ACTION_COMMAND_EMERGENCY_STOP = "emergency";
+    private final static String ACTION_COMMAND_HOME = "home";
 
     private final JButton XPlusButton = new JButton("Xplus");
     private final JButton XMinusButton = new JButton("Xminus");
@@ -54,6 +57,9 @@ public class DirectControlPanel implements ActionListener
     private final JButton EPlusButton = new JButton("Eplus");
     private final JButton EMinusButton = new JButton("Eminus");
     private final JButton MotorsOffButton = new JButton("Motors off");
+    private final JButton StopPrintButton = new JButton("Stop Print");
+    private final JButton EmergencyStopButton = new JButton("Emergency Stop");
+    private final JButton HomeButton = new JButton("Home");
 
     public DirectControlPanel(PrintProcess pp)
     {
@@ -71,6 +77,11 @@ public class DirectControlPanel implements ActionListener
         addButton(EPlusButton, ACTION_COMMAND_E_PLUS);
         addButton(EMinusButton, ACTION_COMMAND_E_MINUS);
         addButton(MotorsOffButton, ACTION_COMMAND_MOTORS_OFF);
+        addButton(StopPrintButton, ACTION_COMMAND_STOP_PRINT);
+        addButton(EmergencyStopButton, ACTION_COMMAND_EMERGENCY_STOP);
+        addButton(HomeButton, ACTION_COMMAND_HOME);
+        // TODO change Temperatures (preheat/ change during printing)
+        // TODO control Fans
     }
 
     public void setToOnline()
@@ -84,6 +95,9 @@ public class DirectControlPanel implements ActionListener
         EPlusButton.setEnabled(true);
         EMinusButton.setEnabled(true);
         MotorsOffButton.setEnabled(true);
+        StopPrintButton.setEnabled(false);
+        EmergencyStopButton.setEnabled(false);
+        HomeButton.setEnabled(false);
     }
 
     public void setToOffline()
@@ -97,6 +111,9 @@ public class DirectControlPanel implements ActionListener
         EPlusButton.setEnabled(false);
         EMinusButton.setEnabled(false);
         MotorsOffButton.setEnabled(false);
+        StopPrintButton.setEnabled(false);
+        EmergencyStopButton.setEnabled(false);
+        HomeButton.setEnabled(false);
     }
 
     private void addButton(JButton button, String actionCommand)
@@ -111,7 +128,15 @@ public class DirectControlPanel implements ActionListener
     public void actionPerformed(ActionEvent e)
     {
         String cmd = e.getActionCommand();
-        if(true == ACTION_COMMAND_X_PLUS.equals(cmd))
+        if(true == ACTION_COMMAND_EMERGENCY_STOP.equals(cmd))
+        {
+            pp.executeGCode("M112");
+        }
+        else if(true == ACTION_COMMAND_STOP_PRINT.equals(cmd))
+        {
+            pp.executeGCode("M0");
+        }
+        else if(true == ACTION_COMMAND_X_PLUS.equals(cmd))
         {
             pp.executeGCode("G91"); // relative Positioning
             pp.executeGCode("G1 X1");
@@ -154,6 +179,10 @@ public class DirectControlPanel implements ActionListener
         else if(true == ACTION_COMMAND_MOTORS_OFF.equals(cmd))
         {
             pp.executeGCode("M18");
+        }
+        else if(true == ACTION_COMMAND_HOME.equals(cmd))
+        {
+            pp.executeGCode("G28");
         }
         // else unknown action -> ignore
     }

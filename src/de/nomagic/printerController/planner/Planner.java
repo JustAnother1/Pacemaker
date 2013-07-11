@@ -81,6 +81,30 @@ public class Planner
         return printerAbilities;
     }
 
+
+    public boolean dohutDown()
+    {
+        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
+        {
+            activeHeaters[i] = false;
+            heatersTargetTemperatures[i] = 0;
+        }
+        for(int i = 0; i < Cfg.NUMBER_OF_AXIS; i++)
+        {
+            homingAxis[i] = false;
+        }
+        if(false == proto.doStopPrint())
+        {
+            log.error("Falied to Stop the Print !");
+            disableAllStepperMotors();
+            return false;
+        }
+        else
+        {
+            return disableAllStepperMotors();
+        }
+    }
+
     public boolean doImmediateShutDown()
     {
         for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
