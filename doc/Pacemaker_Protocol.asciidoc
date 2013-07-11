@@ -856,6 +856,7 @@ This order can also be queued using the Queue Command Wrapper if the queued comm
 
 .Replies
 - OK: No Parameter data (used when immediate execution is requested).
+- Invalid Device Type: This is returned if any specified device does not support this order.
 
 ==== Write Firmware Configuration Value (0x0A)
 
