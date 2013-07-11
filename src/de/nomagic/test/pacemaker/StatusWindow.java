@@ -409,4 +409,23 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
         // else ignore
     }
 
+    @Override
+    public int getInputValue(int devIdx)
+    {
+        // TODO add to GUI so that user can change this
+        return 0;
+    }
+
+    @Override
+    public void setOutputTo(int devIdx, int state)
+    {
+        // TODO add to GUI so that user sees the change
+    }
+
+    @Override
+    public void setPwmTo(int devIdx, int pwm)
+    {
+        // TODO add to GUI so that user sees the change
+    }
+
 }

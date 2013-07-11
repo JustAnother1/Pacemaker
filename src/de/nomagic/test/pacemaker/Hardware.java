@@ -51,4 +51,7 @@ public interface Hardware
     void setConfigurationOfHeater(int heaterIdx, int tempSensor);
     void setTargetTemperatureOfHeater(int heaterIdx, int targetTemp);
     String getNameOfBuzzer(int idx);
+    int getInputValue(int devIdx);
+    void setOutputTo(int devIdx, int state);
+    void setPwmTo(int devIdx, int pwm);
 }

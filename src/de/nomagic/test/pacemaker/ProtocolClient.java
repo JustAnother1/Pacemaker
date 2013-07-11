@@ -106,6 +106,7 @@ public class ProtocolClient
                     }
                     else
                     {
+                        // TODO check Length
                         if(true == inStoppedState)
                         {
                             handleStoppedStateFrame();
@@ -198,18 +199,15 @@ public class ProtocolClient
                 break;
 
             case Protocol.ORDER_REQ_INPUT:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleOrderRequestInput();
                 break;
 
             case Protocol.ORDER_SET_OUTPUT:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleOrderSetOutput();
                 break;
 
             case Protocol.ORDER_SET_PWM:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleOrderSetPwm();
                 break;
 
             case Protocol.ORDER_WRITE_FIRMWARE_CONFIGURATION:
@@ -288,6 +286,83 @@ public class ProtocolClient
         }
     }
 
+    private void handleOrderSetPwm() throws IOException
+    {
+        // TODO handle more than one pwm at once
+        int devType = parameter[0];
+        int devIdx = parameter[1];
+        int pwm = (parameter[2] * 256) + parameter[3];
+        if(Protocol.DEVICE_TYPE_OUTPUT == devType)
+        {
+            if((-1 < devIdx) && (devIdx < hw.getNumberPwm()))
+            {
+                hw.setPwmTo(devIdx, pwm);
+                sendOK();
+            }
+            else
+            {
+                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                          Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+            }
+        }
+        else
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_INVALID_DEVICE_TYPE);
+        }
+    }
+
+    private void handleOrderSetOutput() throws IOException
+    {
+        // TODO handle more than one output at once
+        int devType = parameter[0];
+        int devIdx = parameter[1];
+        int state = parameter[2];
+        if(Protocol.DEVICE_TYPE_OUTPUT == devType)
+        {
+            if((-1 < devIdx) && (devIdx < hw.getNumberOutput()))
+            {
+                hw.setOutputTo(devIdx, state);
+                sendOK();
+            }
+            else
+            {
+                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                          Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+            }
+        }
+        else
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_INVALID_DEVICE_TYPE);
+        }
+    }
+
+    private void handleOrderRequestInput() throws IOException
+    {
+        // TODO handle more than one switch reading at once
+        int devType = parameter[0];
+        int devIdx = parameter[1];
+        if(Protocol.DEVICE_TYPE_INPUT == devType)
+        {
+            if((-1 < devIdx) && (devIdx < hw.getNumberInput()))
+            {
+                int value = hw.getInputValue(devIdx);
+                sendByte(value);
+            }
+            else
+            {
+                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                          Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+            }
+        }
+        else
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_INVALID_DEVICE_TYPE);
+        }
+    }
+
     private void handleOrderSetHeaterTargetTemperature() throws IOException
     {
         int devIdx = parameter[0];
@@ -337,6 +412,7 @@ public class ProtocolClient
 
     private void handleOrderRequestTemperature() throws IOException
     {
+        // TODO handle more than one temperature requested
         int devType = parameter[0];
         int devIdx = parameter[1];
         if(Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR == devType)
