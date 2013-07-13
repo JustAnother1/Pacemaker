@@ -30,6 +30,7 @@ public abstract class ClientConnection
     private final static Logger log = LoggerFactory.getLogger("ClientConnection");
 
     public final static int MAX_MS_BETWEEN_TWO_BYTES = 100;
+    public final static int MAX_TRANSMISSIONS = 4;
 
     protected InputStream in;
     protected OutputStream out;
@@ -127,36 +128,64 @@ public abstract class ClientConnection
      */
     public Reply sendRequest(final byte Order, final byte[] parameter, int offset, int length, final boolean cached)
     {
-        final byte[] buf = new byte[length + 5];
-        buf[0] = Protocol.START_OF_HOST_FRAME;
-        buf[1] = Order;
-        buf[2] = (byte)(length + 1);
-        incrementSequenceNumber();
-        if(true == cached)
+        Reply r = null;
+        int numberOfTransmissions = 0;
+        boolean needsToRetransmitt = false;
+        do
         {
-            buf[3] = sequenceNumber;
-        }
-        else
-        {
-            buf[3] = (byte)(0x08 | sequenceNumber);
-        }
-        for(int i = 0; i < length; i++)
-        {
-            buf[4 + i] = parameter[i + offset];
-        }
-        // log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(buf, 4 + length));
-        buf[4 + length] = getCRCfor(buf, 4 + length);
-        try
-        {
-            out.write(buf);
-            return getReply();
-        }
-        catch (final IOException e)
-        {
-            e.printStackTrace();
-        }
-        log.error("Failed to send Request - Exception !");
-        return null;
+            final byte[] buf = new byte[length + 5];
+            buf[0] = Protocol.START_OF_HOST_FRAME;
+            buf[1] = Order;
+            buf[2] = (byte)(length + 1);
+            if(false == needsToRetransmitt)
+            {
+                incrementSequenceNumber();
+            }
+            // else retransmission due to communications error
+            if(true == cached)
+            {
+                buf[3] = sequenceNumber;
+            }
+            else
+            {
+                buf[3] = (byte)(0x08 | sequenceNumber);
+            }
+            for(int i = 0; i < length; i++)
+            {
+                buf[4 + i] = parameter[i + offset];
+            }
+            // log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(buf, 4 + length));
+            buf[4 + length] = getCRCfor(buf, 4 + length);
+            try
+            {
+                out.write(buf);
+                numberOfTransmissions++;
+                r =  getReply();
+            }
+            catch (final IOException e)
+            {
+                e.printStackTrace();
+                log.error("Failed to send Request - Exception !");
+                return null;
+            }
+            if(null == r)
+            {
+                needsToRetransmitt = true;
+            }
+            else
+            {
+                // Transport error -> Retransmission ?
+                if((-1 < r.getReplyCode()) && (0x10 > r.getReplyCode()))
+                {
+                    needsToRetransmitt = true;
+                }
+                else
+                {
+                    needsToRetransmitt = false;
+                }
+            }
+        } while((true == needsToRetransmitt) && (numberOfTransmissions < MAX_TRANSMISSIONS));
+        return r;
     }
 
     public static byte getCRCfor(final byte[] buf)
@@ -239,7 +268,6 @@ public abstract class ClientConnection
                 isSynced = true;
             }
             } while (false == isSynced);
-            // log.traceSystem.out.print("Sync-");
 
             // Reply Code
             final byte reply =  (byte)getAByte();
@@ -249,7 +277,6 @@ public abstract class ClientConnection
                 log.error("Invalid reply code !");
                 return null;
             }
-            // log.traceSystem.out.print("Order-");
 
             // Length
             final int replyLength = getAByte();
@@ -259,7 +286,6 @@ public abstract class ClientConnection
                 log.error("Invalid length !");
                 return null;
             }
-            // log.traceSystem.out.print("Length(" + replyLength + ")-");
 
             final byte[] buf = new byte[4 + replyLength];
             buf[0] = Protocol.START_OF_CLIENT_FRAME;
@@ -274,7 +300,6 @@ public abstract class ClientConnection
                 log.error("Wrong Sequence Number !");
                 return null;
             }
-            // log.traceSystem.out.println("Control-");
 
             // Parameter
             for(int i = 0; i < (replyLength - 1);i++)
@@ -282,17 +307,14 @@ public abstract class ClientConnection
                 buf[4 + i] = (byte)getAByte();
                 // log.traceSystem.out.print(" " + i);
             }
-            // log.traceSystem.out.print("Parameter bytes-");
 
             // Error Check Code (CRC-8)
             buf[3 + replyLength] = (byte)getAByte();
             if(getCRCfor(buf, replyLength + 3) != buf[3 + replyLength])
             {
-                // TODO Retransmit
                 log.error("Wrong CRC !");
                 return null;
             }
-            // log.traceSystem.out.println("CRC !");
             return new Reply(buf);
         }
         catch (final IOException e)
