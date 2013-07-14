@@ -428,4 +428,12 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
         // TODO add to GUI so that user sees the change
     }
 
+    @Override
+    public boolean isAllowedToControlSteppers()
+    {
+        // true = has Stepper control Extension;
+        // false = does not have that extension
+        return true;
+    }
+
 }

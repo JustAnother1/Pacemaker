@@ -42,10 +42,11 @@ public class ProtocolClient
     private int order =  -1;
     private int length = -1;
     private int control = -1;
-    private final boolean hasEvent = false;
+    private boolean hasEvent = false;
+    private boolean StepperControlActive = false;
     private final int totalSlots = 500;
-    private final int lastWritenSlot = -1;
-    private final int lastExecutedSlot = -1;
+    private int lastWritenSlot = -1;
+    private int lastExecutedSlot = -1;
     private final Slot[] orderQueue = new Slot[totalSlots];
     private boolean isConnected = false;
     private boolean inStoppedState = true;
@@ -227,13 +228,11 @@ public class ProtocolClient
 
                 // Stepper control Extension
             case Protocol.ORDER_ACTIVATE_STEPPER_CONTROL:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleActivateStepperControl();
                 break;
 
             case Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                handleOrderEnableDisableStepperMotors();
                 break;
 
             case Protocol.ORDER_CONFIGURE_END_STOPS:
@@ -283,6 +282,61 @@ public class ProtocolClient
             default: sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                                Protocol.RESPONSE_UNKNOWN_ORDER);
             }
+        }
+    }
+
+    private void handleOrderEnableDisableStepperMotors() throws IOException
+    {
+        if(true == StepperControlActive)
+        {
+            sendOK();
+        }
+        else
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_INCORRECT_MODE);
+        }
+    }
+
+    private void handleActivateStepperControl() throws IOException
+    {
+        if(0 == parameter[0])
+        {
+            // turn off Stepper control
+            if(true == StepperControlActive)
+            {
+                if(lastWritenSlot == lastExecutedSlot)
+                {
+                    // Queue is empty -> ok
+                }
+                else
+                {
+                    // busy
+                    sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                              Protocol.RESPONSE_BUSY);
+                }
+            }
+            StepperControlActive = false;
+            sendOK();
+        }
+        else if(1 == parameter[0])
+        {
+            // activate Stepper control
+            if(true ==hw.isAllowedToControlSteppers())
+            {
+                StepperControlActive = true;
+                sendOK();
+            }
+            else
+            {
+                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                          Protocol.RESPONSE_UNKNOWN_ORDER);
+            }
+        }
+        else
+        {
+            sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                      Protocol.RESPONSE_BAD_PARAMETER_VALUE);
         }
     }
 
