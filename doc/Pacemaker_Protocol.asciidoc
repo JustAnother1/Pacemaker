@@ -918,27 +918,30 @@ Reading the configuration named "Power" would result in this parameter value:
 - OK: Successful read. Parameter contains value.
 - Bad Parameter Value: Bad configuration name
 
+==== Emergency Stop (0x0C)
 
-==== Stop Print (0x0C)
-
-This order allows the client's motion to be stopped and order queue flushed either immediately or after the current operation completes.
+This Order causes the client to stop the print as fast as possible. All
+heaters will be turned of. PWM signals will be off (0% on cycle). Output
+signals will be off (= 0 = Low). If the firmware controls the motion (Stepper Control/Queued Command/Basic Move Extensions) then it must also stop all motion
+and remove all entries from the Queue. Stepper motors can be disabled.
+This will only happen if the firmware controls the stepper motors.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Byte Number | Content
-| 0 | type (0 = ordered stop, 1 = emergency stop)
+| n/a | This command has no Parameter
 |=============================
 
-The Order takes a single byte parameter. A value of 0 indicates an ordered stop, a value of 1 requests an emergency stop. For an ordered stop, the current movement block or command can finish and the fans and heaters can remain active; for an emergency stop, all motors & heaters should be stopped immediately, all other outputs should reset to their power on state.
+A Reset order is different to an emergency stop because a reset does not
+necessarily de-energise everything before resetting; whereas an
+emergency stop de-energises everything immediately.
 
-A Reset order is different to an emergency stop because a reset does not necessarily de-energize everything before resetting; whereas an empergency stop de-energizes everything immediately.
-
-An emergency stop must be accepted at any time; an ordered stop is only accepted when an extension that controls movement is supported.
+An emergency stop must be accepted at any time.
 
 .Replies
 - OK: No Parameter data.
-- Incorrect mode: Order received when stepper control is not activated.
+
 
 ==== Experimental & Unapproved Orders
 Experimental or unapproved orders must use order codes from the range 0x80 to 0xfe. Experimental or unapproved orders that need additional order-specific Reply Codes should use Reply Code values of 0x80-0xfe.
@@ -1120,6 +1123,37 @@ If the operation requested by the Order might not be successful (as opposed to t
 Before command blocks are queued, the client should perform reasonable validation of the command block data. For instance, if a "Switch Output" Order is received (using Queue Command Wrapper) where one of the requested devices is invalid, then this command block should generate an "Invalid Device Number Specified" error before being enqueued rather than when it is executed off the enter of the queue.
 
 === Extension Orders
+
+==== clear Command Block Queue (0x17)
+
+This order flushes the order queue. If a queued command is currently executing then it is allowed to continue execution.
+
+The replies to this order contain a count of the executed command blocks
+since the last Resume order. This rolling 16-bit value can be used to
+determine the state of the system after this command is issued or a
+Stopped state entered. For the purposes of this count, each movement
+block counts as one command. All other queued orders also count as 1
+command.
+
+.Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Byte Number | Content
+| n/a | This command has no Parameter
+|=============================
+
+NOTE: the count of executed command blocks does not include command
+blocks which failed validation (and therefore not inserted in the queue)
+or were flushed from the queue before execution but it does include all
+executed commands regardless of whether or not they were successful.
+
+.Replies
+- OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply
+Parameter indicates the number of move block queue slots are available.
+Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed
+command blocks since last Resume.
+- Incorrect mode: Order received when stepper control is not activated.
+
 
 ==== Queue Command Blocks (0x12)
 
