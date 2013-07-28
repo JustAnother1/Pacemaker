@@ -33,7 +33,7 @@ public class Reply
     public Reply(byte[] data)
     {
         this.data = data;
-        length = (0xff & data[POS_OF_LENGTH]) - 1;
+        length = (0xff & data[POS_OF_LENGTH]);
     }
 
     public byte getReplyCode()

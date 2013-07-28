@@ -491,7 +491,7 @@ public class ProtocolClient
 
     private void handleOrderReqDeviceName() throws IOException
     {
-        if(3 != length)
+        if(2 != length)
         {
             sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                       Protocol.RESPONSE_BAD_PARAMETER_FORMAT);
@@ -594,7 +594,7 @@ public class ProtocolClient
 
     private void handleOrderReqInformation() throws IOException
     {
-        if(2 != length)
+        if(1 != length)
         {
             sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR, Protocol.RESPONSE_BAD_PARAMETER_FORMAT);
         }
