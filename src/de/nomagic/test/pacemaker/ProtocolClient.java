@@ -94,7 +94,7 @@ public class ProtocolClient
                     order =  getAByte();
                     length = getAByte();
                     control = getAByte();
-                    for(int i = 0; i < (length - 1); i++) // length includes control
+                    for(int i = 0; i < length; i++)
                     {
                         final int h = getAByte();
                         parameter[i] = h;
@@ -668,7 +668,7 @@ public class ProtocolClient
     private void sendStoppedReply() throws IOException
     {
         response[1] = Protocol.RESPONSE_STOPPED;
-        response[2] = 4; // length 3 byte parameter
+        response[2] = 3; // length 3 byte parameter
         if(true == stoppedStateAcknowleadged)
         {
             response[4] = Protocol.STOPPED_ACKNOWLEADGED;
@@ -685,7 +685,7 @@ public class ProtocolClient
     private void sendI16(final int parameterInt) throws IOException
     {
         response[1] = Protocol.RESPONSE_OK;
-        response[2] = 3; // length 2 byte parameter
+        response[2] = 2; // length 2 byte parameter
         response[4] = (byte)((parameterInt >>8) & 0xff);
         response[5] = (byte)(0xff & parameterInt);
         addChecksumControlAndSend(5);
@@ -694,7 +694,7 @@ public class ProtocolClient
     private void sendByteArray(final byte[] list) throws IOException
     {
         response[1] = Protocol.RESPONSE_OK;
-        response[2] = (byte)(list.length + 1);
+        response[2] = (byte)(list.length);
         // 3 = control
         for(int i = 0; i < list.length; i++)
         {
@@ -706,7 +706,7 @@ public class ProtocolClient
     private void sendByteArray(final int[] list) throws IOException
     {
         response[1] = Protocol.RESPONSE_OK;
-        response[2] = (byte)(list.length + 1);
+        response[2] = (byte)(list.length);
         // 3 = control
         for(int i = 0; i < list.length; i++)
         {
@@ -718,7 +718,7 @@ public class ProtocolClient
     private void sendByte(final int parameterByte) throws IOException
     {
         response[1] = Protocol.RESPONSE_OK;
-        response[2] = 2; // length 1 byte parameter
+        response[2] = 1; // length 1 byte parameter
         response[4] = (byte)parameterByte;
         addChecksumControlAndSend(4);
     }
@@ -726,7 +726,7 @@ public class ProtocolClient
     private void sendOK() throws IOException
     {
         response[1] = Protocol.RESPONSE_OK;
-        response[2] = 1; // length 0 byte parameter
+        response[2] = 0; // length 0 byte parameter
         addChecksumControlAndSend(3);
     }
 
@@ -734,7 +734,7 @@ public class ProtocolClient
     {
         final byte[] str = theString.getBytes(Charset.forName("UTF-8"));
         response[1] = Protocol.RESPONSE_OK;
-        response[2] = (byte)(str.length + 1);
+        response[2] = (byte)(str.length);
         // 3 = control
         for(int i = 0; i < str.length; i++)
         {
@@ -746,7 +746,7 @@ public class ProtocolClient
     private void sendReply(final byte replyCode, final int parameterByte) throws IOException
     {
         response[1] = replyCode;
-        response[2] = 2; // length 1 byte parameter
+        response[2] = 1; // length 1 byte parameter
         response[4] = (byte)parameterByte;
         addChecksumControlAndSend(4);
     }
@@ -774,17 +774,18 @@ public class ProtocolClient
 
     private int calculateChecksum(final int order, final int length, final int control, final int[] parameter)
     {
-        final byte[] data = new byte[length + 3];
+        final byte[] data = new byte[length + 4];
         data[0] = Protocol.START_OF_HOST_FRAME;
         data[1] = (byte)order;
         data[2] = (byte)length;
         data[3] = (byte)control;
-        for(int i = 0; i < (length - 1); i++)
+        for(int i = 0; i < length; i++)
         {
             data[i + 4] = (byte)parameter[i];
         }
-        System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data));
-        return 0xff & ClientConnection.getCRCfor(data);
+        int res =  0xff & ClientConnection.getCRCfor(data);
+        System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data) + " -> " + String.format("%02X", res));
+        return res;
     }
 
 }
