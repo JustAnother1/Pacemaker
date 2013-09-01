@@ -1,5 +1,5 @@
-Pacemaker Protocol
-==================
+Pacemaker Protocol - the heart of real-time machine control
+===========================================================
 :toc:
 :numbered:
 :showcomments:
@@ -13,13 +13,13 @@ This document defines the protocol used to communicate between the Pacemaker hos
 
 The Pacemaker protocol provides an open interface to allow the separation of real-time and non-real-time control components for 3D printers, CNC machines and laser cutters.
 
-This has the huge benefit of allowing new controller hardware (the real-time component) to work with existing host software solutions (the non-real-time component) and similarly, for new host software solutions to easily work with existing controllers.
+This has the huge benefit of allowing new controller hardware (the real-time component) to work with existing host software solutions (the non-real-time component) and similarly, for new host software solutions to easily work with existing controller hardware.
 
-Pacemaker allows a much richer level of machine control in the non-real-time application software. This ability provides the opportunity to develop feature-rich host software, more integrated start-to-finish tool chain solutions whilst still being able to operate on a wide range of platforms.
+Pacemaker allows a much deeper level of real-time machine control from non-real-time application software. This ability provides the opportunity to develop feature-rich host software, more integrated start-to-finish tool chain solutions whilst still being able to operate on a wide range of platforms.
 
 == Environment
 
-The Pacemaker system can be used in situations where a application controls the operation of a machine. Examples for such a situation are 3d printing, CNC milling or laser cutters. The usual setup is something like this:
+The Pacemaker system can be used in situations where a application controls the operation of a machine. Examples for such a situation are 3d printing, CNC milling or laser cutters. The usual machine control setup is something like this:
 
 ---------------------------------------------------------------------
 
@@ -27,21 +27,21 @@ The Pacemaker system can be used in situations where a application controls the 
 
 ---------------------------------------------------------------------
 
-The application creates the instructions of what the machine should do as commands encoded in the G-Code format. These G-Code data is then sent to the machine where the Firmware of the machine receives the data, decodes the G-Codes and executes the command by directly controlling the hardware.
+The application creates the instructions of what the machine should do as commands encoded in the G-Code format. This G-Code data is then sent to the machine where the Firmware of the machine receives the data, decodes the G-Codes and executes the command by directly controlling the hardware.
 
 === The need for robust real time control
 
-Some hardware components need to be controlled every millisecond, or even faster. If the control signals stop or are send to late the machine could be damaged or the quality of the work that the machine does is decreased. It is therefore necessary to have a CPU close to the hardware and to not control the hardware directly from the Application as the hardware needs to be controlled in real time. Even for small CPUs real-time command execution is possible, as these CPUs run no or a special real-time Operating system. As these systems are specially designed to do just this and nothing else there are no Influences that could cause the control signals to be delayed.
+Some hardware components need to be accurately controlled every fraction of a millisecond. If the control signals stop or are send too late the machine could be damaged or the quality of the work that the machine does is decreased. It is therefore necessary to have a CPU close to the hardware and to not control the hardware directly from the Application as the hardware needs to be controlled in real time. Even for small CPUs real-time command execution is possible, as these CPUs run no operation system or a special real-time operating system. As these systems are specially designed to do just this and there are no influences that could cause the control signals to be delayed.
 
-But this hard real time functionality of these machine firmwares comes with a cost. These processors used have usually a very limited performance. And the firmware has to be developed with the timing requirements in mind. This makes the firmware development more complicated than normal application development. This higher complexity can cause also higher resource demands. And with more complicated functions that need to be executed in the machine firmware the effort to create the firmware rise and the machines firmwares CPU has to become more powerfully and therefore also more expensive and more complex to program.
+But this hard real time functionality of the machine's firmware comes with a cost. These processors may have very limited computational performance and are usually far more time-consuming to use as a development platform. The firmware has to be developed with the timing requirements in mind. This makes the firmware development more complicated than normal application development and and even so optimal motion control algorithms may require more computational power than is available. The more functions that need to be executed in the machine controller raises the effort to create the firmware, and if the machine's controller CPU has to become more powerful this usually increases the system cost.
 
-It is therefore desirable to have only the functionality that needs the real time feature in the machine's firmware and let the application handle the more complicated calculations. G-Codes are a way to achieve this.
+It is therefore desirable to have only the functionality that needs the real-time accuracy in the machine's firmware and let the host application control the machine using a standard interface. Traditionally G-Codes have often been used to achieve this.
 
-But with growing requirements on the speeds of movement and the precision of the moves the complexities handled by the firmware grows.
+With the growing requirements on the speeds of movement, support for non-linear/Cartesian movement systems, co-ordinate remapping for auto-bed levelling features, increased precision of movement, thus it is becoming apparent a better separation is required between motion planning and real-time motion control.
 
 === The separation of higher functions from real time control
 
-The Pacemaker system is the next step to reduce the complexity of the machine's firmware by moving the complicated calculations out of the machines firmware. The Pacemaker system therefore changes the usual setup. The setup with a Pacemaker system looks like this:
+The Pacemaker system is the next step to reduce the complexity of the machine's firmware by moving the complicated calculations out of the machines firmware. The Pacemaker system therefore changes the usual setup. The setup with a Pacemaker system may look like this:
 
 -------------------------------------------------------------------------------
 
@@ -49,11 +49,11 @@ The Pacemaker system is the next step to reduce the complexity of the machine's 
 
 -------------------------------------------------------------------------------
 
-The integration of the Pacemaker system is a simple extension of the usual setup and only extends this. The only component of the usual setup that needs to be changed is the machines firmware. And the change of the machines firmware, to reduce its complexity and performance demands on the machines limited CPU was the intention.
+The integration of the Pacemaker system can be a simple extension of the usual machine setup. The only component of the usual setup that needs to be changed is the machines firmware. And the change of the machines firmware, to reduce its complexity and performance demands on the machines limited CPU was the intention.
 
 The Pacemaker host and Pacemaker client replace the firmware and implement all functionality that has been previously been fulfilled by the firmware. This way the Application does not need to be changed if the environment is changed from a usual setup to a Pacemaker system.
 
-The functionality needed to control the hardware accordingly to the G-Code commands is split between host and client so that the host executed the complicated calculations and the client executes the real time control signal generation.
+The functionality needed to control the hardware according to the G-Code commands is split between host and client so that the host executes the complicated calculations and the client executes the real time control signal generation.
 
 In this split the client focuses on the hardware control and hardware supervision. The client only executes pre-processed orders from the host and reports back the results of the hardware supervision.
 
@@ -64,15 +64,15 @@ It is the intention to support not only one specific machine, but a broad spectr
 - different feature set
 - different hardware components
 
-The pacemaker system is flexible enougth to deal with these differences.
+The pacemaker system is flexible enough to deal with these differences.
 
 An advanced application can also take direct control of a Pacemaker Client by implementing its own Pacemaker host and motion planning layer (also possibly bypassing the G-code control layer), however, it is encouraged that writing reusable, open-source extensions/plugins to the common Pacemaker Host implementation is at least investigated beforehand.
 
 === Pacemaker - a hardware abstraction for real-time control
 
-The Pacemaker protocol allows the host to request the available hardware capabilities to mitigate the differences in the supported feature set. As the same host software can be used for different machines the same features are available for all supported machines that have the needed hardware capabilities for the feature. The host firmware can then adapt the behavior to the machines ability. This allows it to always use the best features possible with the machine.
+The Pacemaker protocol allows the host to request the available hardware capabilities to mitigate the differences in the supported feature set. As the same host software can be used for different machines the same features are available for all supported machines that have the needed hardware capabilities for the feature. The host application can then adapt the behavior to the machine's ability. This allows it to always use the best features possible with the machine.
 
-The differences in the hardware of the machines has to be mitigated by the client. It is therefore not possible to have one Pacemaker client board that is best suitable for all supported machines. In theory every machine would need it's own specially fitted Pacemaker client board. This is a not the best situation, as this would require a very large number of special made Pacemaker clients. To reduce the number of clients needed, two mechanisms will be used:
+The differences in the hardware of the machines has to be mitigated by the client. It is therefore not possible to have one Pacemaker client board that is best suitable for all supported machines.  A single Pacemaker client firmware implementation may be used in many different physical printer configurations. To avoid separate client firmware implementations for each different physical machine configuration, two mechanisms will be used:
 
 - The first is that the Pacemaker client will only report the abstract hardware functionality that is available. The host then needs a mapping of these abstract hardware features to their specific use in the machine. An example for such a mapping would be that the first stepper controls the X axis and that the second stepper controls the Y axis. A Pacemaker client board can also have support for more hardware capabilities than the machine has. The client could support three temperature sensors whereas the machine has only 2 sensors.
 - The second mechanism is that the client board deals with the differences in how the hardware features are implemented and therefore does not expose these differences to the host. Examples for this would be different kind of temperature sensors. If the client board has the needed hardware components to support different types of temperature sensor the use can connect the sensors available in the machine. By using the correct connector, configuring a jumper, or by configuration of the firmware the Pacemaker client board would be able to read the correct temperature values from the different sensors and would report only the measured temperature to the host.
@@ -102,10 +102,10 @@ All numbers that are prefixed with 0x are hexadecimal numbers (0x10 = 16; 9 + 1 
 All numbers that are prefixed with 0b are binary numbers (0b10 = 2).
 
 === Byte Order - Bit Order
-If data types longer than 8 bit are used then they are send with the Most Significant Byte(MSB) first and the Least Significant Byte(LSB) last. Within a Byte the bit numbered 0 is the Least Significant Bit(LSB and the bit 7 is the Most Significant Bit(MSB). As an Example the Number 9026 that equals the hex string 0x2342 would be transfered as 0x23 followed by 0x42.
+If data types longer than 8 bit are used then they are send with the Most Significant Byte(MSB) first and the Least Significant Byte(LSB) last. Within a Byte the bit numbered 0 is the Least Significant Bit(LSB and the bit 7 is the Most Significant Bit(MSB). As an Example the Number 9026 that equals the hex string 0x2342 would be transferred as 0x23 followed by 0x42.
 
 === Error Check Code (CRC-8)
-The CRC used is defined by this polymonial C(_x_) = _x_^8^ + _x_^6^ + _x_^3^ + _x_^2^ + 1 = 0b101001101. A calculator is available at http://ghsi.de/CRC/index.php?Polynom=101001101
+The CRC used is defined by this polynomial C(_x_) = _x_^8^ + _x_^6^ + _x_^3^ + _x_^2^ + 1 = 0b101001101. A calculator is available at http://ghsi.de/CRC/index.php?Polynom=101001101
 
 An Example implementation in C is this:
 [source,c,numbered]
@@ -162,7 +162,7 @@ uint8_t crc8(uint8_t *data, unsigned int length)
 The transport layer consists of the host sending out Order frames that the client responds to with a Reply frame. The transport layer is communication channel dependent; however, the Pacemaker protocol is intended to work over a variety of channels - including bi-directional serial channels and with master-slave communications channels like I^2^C.
 
 === Host-Client Communication
-All communication between the host and the client is started by the host. The client may not send out data if not requested by the host. The host may send out Order frames. The client must answer to each Order frame with a Reply frame. The timeout for this is 100ms. This included the time it takes to send and receive the data and is meassured on the host. The client therefore has less than 100ms from the time of reception of the order to the sending of the reply.
+All communication between the host and the client is started by the host. The client may not send out data if not requested by the host. The host may send out Order frames. The client must answer to each Order frame with a Reply frame. The timeout for this is 100ms. This included the time it takes to send and receive the data and is measured on the host. The client therefore has less than 100ms from the time of reception of the order to the sending of the reply.
 
 === Communication Over a Standard Serial Channel(UART, RS232)
 
@@ -178,8 +178,8 @@ Order frames are only sent by the host.
 |Length in bytes| Field
 | 1             | Sync
 | 1             | Order code
-| 1             | Length (=N)
 | 1             | Control
+| 1             | Length (=N)
 | N             | Parameter
 | 1             | Error Check Code (CRC-8)
 |=============================
@@ -188,9 +188,9 @@ The *Sync* field has the value 0x23 and signals the start of the frame.
 
 The *Length* field contains the number of bytes consumed by the Parameter field. A length of 0 therefore means an Order with no Parameter Bytes.
 
-The *Order code* field is explained in the Order section.
-
 The *Control* byte is currently used to convey a 4-bit rolling sequence number to detect duplicate transmissions. The sequence number is sent in bits 3-0 (low order nibble). Bit 4 indicates that the host has reset or lost synchronization and is restarting communication (which has the effect of clearing any cached responses). Bits 7-5 (high order nibble) are reserved for future use and must be set to 0 by the host.
+
+The *Order code* field is explained in the Order section.
 
 The *Parameter* field is optional and the data depends on the Order. The possible contents of this field are described in the Order section.
 
@@ -205,19 +205,19 @@ Replies will only be sent by the Pacemaker client in response to an Order frame 
 |Length in bytes| Field
 | 1             | Sync
 | 1             | Reply code
-| 1             | Length (=N)
 | 1             | Control
+| 1             | Length (=N)
 | N             | Parameter
 | 1             | Error Check Code (CRC-8)
 |=============================
 
 The *Sync* field has the value 0x42 and signals the start of the frame.
 
-The *Length* field contains the number of bytes consumed by the Parameter field. A length of 0 therefore means an Order with no Parameter Bytes.
-
-The *Control* byte is currently used to convey a 4-bit rolling sequence number to detect duplicate or out-of-sync transmissions. The sequence number is sent in bits 3-0 (low order nibble) and the value must match that of the Order to which it is replying. Bit 4 is used by the Event Reporting Extension to indicate that event data is available for collection. Bits 7-6 are reserved for future use and must be set to 0.
-
 The *Reply code* field is explained in the Reply section.
+
+The *Control* byte is currently used to convey a 4-bit rolling sequence number to detect duplicate or out-of-sync transmissions. The sequence number is sent in bits 3-0 (low order nibble) and the value must match that of the Order to which it is replying. Bit 4 is used by the Event Reporting Extension to indicate that event data is available for collection. Bit 7 is used to indicate that the response contains a debug message - these packets can either be ignored without action by the host or routed to a debug console. Bits 6-5 are reserved for future use and must be set to 0.
+
+The *Length* field contains the number of bytes consumed by the Parameter field. A length of 0 therefore means an Order with no Parameter Bytes.
 
 The *Parameter* field is optional and the data depends on the reply. The possible contents of this field are described in the Reply section.
 
@@ -237,8 +237,8 @@ The host initially performs a write of the Order frame:
 |Length in bytes| Field
 | 1             | Address in bit 7 to 1 and R/W in bit 0 = 0
 | 1             | Order Code
-| 1             | Length (=N)
 | 1             | Control
+| 1             | Length (=N)
 | N             | Parameter
 | 1             | Error Check Code (CRC8)
 |=============================
@@ -250,9 +250,9 @@ and then immediately performs a read of the Reply frame:
 |=============================
 |Length in bytes| Field
 | 1             | Address in bit 7 to 1 and R/W in bit0 = 1
-| 1             | Length (=N)
 | 1             | Reply Code
 | 1             | Control
+| 1             | Length (=N)
 | N             | Parameter
 | 1             | Error Check Code (CRC8)
 |=============================
@@ -329,7 +329,7 @@ Some Orders can be applied to more than one device type. A common definition of 
 
 ==== Experimental & Unapproved Functionality Identifiers
 
-For each major protocol identifier a range has been allocated for implementors to use with experimental or proposed extensions to the Pacemaker protocol. A separate range is allocated to ensure that collisions do not occur between approved extensions and experimental features. Any extensions not described in this document must use the allocated Expermental/Unapproved identifier range until adopted as a supported extension. The experimental range has been defined for protocol identifiers such as protocol extension ids, device types, order codes, reply codes, command block ids, event type ids.
+For each major protocol identifier a range has been allocated for implementers to use with experimental or proposed extensions to the Pacemaker protocol. A separate range is allocated to ensure that collisions do not occur between approved extensions and experimental features. Any extensions not described in this document must use the allocated Experimental/Unapproved identifier range until adopted as a supported extension. The experimental range has been defined for protocol identifiers such as protocol extension ids, device types, order codes, reply codes, command block ids, event type ids.
 
 Typically the top half of the range is reserved for experimental & unapproved identifiers, e.g., 0x80-0xfe for 1 byte identifiers.
 
@@ -349,7 +349,7 @@ After the host side sends an Order frame to the client, it should wait for a com
 
 Otherwise, when the host receives a valid frame with matching sequence number and reply code greater than 0x0f, then retransmission stops and the reply is passed to the application layer.
 
-Note however that the host should limit itself to sending no more than 2 retransmissions for reasons other than the 100ms timeout. This limitation is to prevent the client getting stuck in a tight error retransmission loop wih the host (for instance, because it is repeatedly trying to frame start sync on a Sync byte value in the data payload). Retransmissions due to the 100ms timeout can however continue to occur until the host decides to give up.
+Note however that the host should limit itself to sending no more than 2 retransmissions for reasons other than the 100ms timeout. This limitation is to prevent the client getting stuck in a tight error retransmission loop with the host (for instance, because it is repeatedly trying to frame start sync on a Sync byte value in the data payload). Retransmissions due to the 100ms timeout can however continue to occur until the host decides to give up.
 
 Retransmission with I^2^C is simpler as the client will simply hold the clock low until it is able to return a response or generate an error. Framing is also inherent in the I^2^C bus protocol. However, retransmission due to malformed frames, invalid sequence numbers, bad error check codes, time outs and transport layer errors remains unchanged.
 
@@ -364,7 +364,8 @@ When waiting for a complete frame, the client should behave as follows:
 If a frame is received with a valid Error Check Code then:
 
 - if the sequence number matches the previously accepted sequence number and bit 4 in the Control byte was not set, then the Client must re-transmit the saved reply frame and discard the received Order frame, otherwise,
-- if the client is curently in an unacknowledged stopped state and the order is not a Resume, then a Stopped reply is generated, otherwise
+- the client can discard the previously cached response once a new valid order frame has been received,
+- if the client is currently in an unacknowledged stopped state and the order is not a Resume, then a Stopped reply is generated, otherwise
 - the client executes the Order and must send a reply. The client must also save a copy of the Reply frame that it sends.
 
 === Client Power-On State
@@ -426,14 +427,15 @@ The first byte of the Parameter indicates the cause of the error. The following 
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Parameter| Meaning
-| 0x0 | Unknown Order
-| 0x1 | Bad Parameter Format
-| 0x2 | Bad Parameter Value
-| 0x3 | Invalid Device Type Specified
-| 0x4 | Invalid Device Number Specified
-| 0x5 | Incorrect mode (e.g., not SPI Master)
-| 0x6 | Busy (e.g., if command can't be executed while Orders queued)
-| 0x7 | Failed
+| 0x1 | Unknown Order
+| 0x2 | Bad Parameter Format
+| 0x3 | Bad Parameter Value
+| 0x4 | Invalid Device Type Specified
+| 0x5 | Invalid Device Number Specified
+| 0x6 | Incorrect mode (e.g., not SPI Master)
+| 0x7 | Busy (e.g., if command can't be executed while Orders queued)
+| 0x8 | Failed
+| 0x9 | Firmware Error
 |============================
 
 Following the first byte of the Parameter, an optional UTF8 string is expected giving the human readable reason for the error.
@@ -453,6 +455,8 @@ The *Incorrect mode* reply code is sent in response to any Order received where 
 The *Busy* reply code is sent in response to any Order received when the current run-time state prevents the Order being accepted. For instance, Orders which can only be executed when the Command Queue is empty.
 
 The *Failed* reply code is a generic code which can be used to indicate that the Parameter format and content were valid but the operation failed.
+
+The *Firmware error* reply code indicates that a client firmware error prevented the correct handling of the message (for instance, the command handler returned without generating a response).
 
 If additional Parameter information must be returned (beyond a possible error reason string), then an Order Specific Error can be used.
 
@@ -482,13 +486,13 @@ The first byte of the Parameter indicates whether or not the stopped state has b
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Parameter| Meaning
-| 0x0 | Unacknoweledged
-| 0x1 | Acknoweledged
+| 0x0 | Unacknowledged
+| 0x1 | Acknowledged
 |=============================
 
 The *Unacknowledged* state indicates that Resume has not been called since this stopped state occurred. Unacknowledged stopped states return the Stopped reply code for all Orders.
 
-The *Acknowledged* state indicates that Resume has been called since this stopped state occurred. Acknowledged stopped states return the Stopped reply code for any order which would casue motors or heaters to activate.
+The *Acknowledged* state indicates that Resume has been called since this stopped state occurred. Acknowledged stopped states return the Stopped reply code for any order which would cause motors or heaters to activate.
 
 .Recovery Options
 [width="50%",options="header", cols="30%,70%"]
@@ -556,7 +560,25 @@ This order will reset the Pacemaker client. See initial client state.
 .Replies
 OK: No parameter information defined.
 
-NOTE: The client is allowed to fail to reply to this. The reason for this is that if a send reply gets disturbed on the line the client is already reseting and can not resend the reply. Also a Reset while the send Reply is still in the buffer to be send out will stop it from being send out.
+NOTE: The client is allowed to fail to reply to this. The reason for this is that if a send reply gets disturbed on the line the client is already resetting and can not resend the reply. Also, the reset may occur while the Reset Reply is still in the buffer to be sent. The host will know when a reset has occurred because the client will report an unacknowledged Stopped condition.
+
+==== Emergency Stop (0x0C)
+
+This Order causes the client to stop the print as fast as possible. All heaters will be turned of. PWM signals will be off (0% on cycle). Output signals will be off (= 0 = Low). If the firmware controls the motion (Stepper Control/Queued Command/Basic Move Extensions) then it must also stop all motion and remove all entries from the Queue. Stepper motors can be disabled (this will only happen if the firmware controls the stepper motors).
+
+.Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Byte Number | Content
+| n/a | This command has no Parameter
+|=============================
+
+A Reset order is different to an emergency stop because a reset does not necessarily de-energise everything before resetting; whereas an emergency stop de-energises everything immediately.
+
+An emergency stop must be accepted at any time.
+
+.Replies
+- OK: No Parameter data.
 
 ==== Resume (0x00)
 
@@ -572,7 +594,7 @@ This order will attempt to acknowledge and/or clear a stopped client condition. 
 The first byte of the Parameter indicates whether the host wants to query(=0), acknowledge(=1) or clear(=2) the stopped state. Attempting to clear a stopped state will also acknowledge it.
 
 .Replies
-- OK: Error/reset state has been cleared/ acknowleadged.
+- OK: Error/reset state has been cleared or acknowledged.
 - Stopped: The stopped state was not cleared (see Reply Code description).
 
 ==== Request Information (0x01)
@@ -590,18 +612,18 @@ The requested Information is specified in the parameter as shown in the followin
 [width="50%",options="header", cols="10%,90%"]
 |================================================
 |Value| Information
-|   0 | Firmware name string
-|   1 | Serial Number string
-|   2 | board name string
-|   3 | given name string
-|   4 | Major protocol version
-|   5 | Minor protocol version
-|   6 | List of supported protocol extensions
-|   7 | Firmware type
-|   8 | Major firmware revision
-|   9 | Minor firmware revision
-|  10 | Hardware type
-|  11 | Hardware revision
+|   0 | firmware name string
+|   1 | serial number string
+|   2 | hardware name string
+|   3 | given name/identity string
+|   4 | major protocol version
+|   5 | minor protocol version
+|   6 | list of supported protocol extensions
+|   7 | firmware type
+|   8 | major firmware revision
+|   9 | minor firmware revision
+|  10 | hardware type
+|  11 | hardware revision
 |  12 | number of available stepper motors
 |  13 | number of available heaters
 |  14 | number of available PWM switched outputs
@@ -609,6 +631,7 @@ The requested Information is specified in the parameter as shown in the followin
 |  16 | number of available switches
 |  17 | number of available output signals
 |  18 | number of available buzzer
+|  19 | number of available buzzer
 | 0x80-0xfe | Experimental/unapproved requestable information
 |================================================
 
@@ -617,31 +640,31 @@ NOTE: If a requested value is only expected to return a single integer value, th
 .Replies
 - OK: The following notes describe the returned data for each requested item.
 
-The *Firmware name string* request returns a UTF8 character sequence that states the name and version of the Pacemaker client Firmware.
+The *firmware name string* request returns a UTF8 character sequence that states the name and version of the Pacemaker client Firmware.
 
-The *Serial number string* contains a UTF8 encoded char sequence that contains
-this clients serial number. The serial number is optional. If no serial version
+The *serial number string* contains a UTF8 encoded char sequence that contains
+this client hardware's serial number. The serial number is optional. If no serial version
 is available the client will response with an empty string (no bytes). The serial number is not guaranteed to be unique.
 
-The *board name string* request returns a UTF8 character sequence that states the name and version of the Pacemaker client PCB.
+The *hardware name string* request returns a UTF8 character sequence that states the name and version of the Pacemaker client PCB.
 
-The *given name string* request a a UTF8 character sequence that states the name that the user has given to this device. This can be used to identify the correct board if two identical pacemaker client boards are used. The given name is optional. If no name has been given the client will respond with an empty sting(no bytes).
+The *given name/identity string* request a a UTF8 character sequence that states the name that the user has given to this device. This can be used to identify the correct board if two identical pacemaker client boards are used. The given name is optional. If no name has been given the client will respond with an empty sting(no bytes).
 
-The *Major protocol version* field defines which major version of the protocol is supported by the Pacemaker client. With each reworking of the protocol which makes the communication incompatible then the major version number will be increased. If the client supports more than one major protocol versions then each byte of the reply will contain one major protocol version number that is supported by the client.
+The *major protocol version* field defines which major version of the protocol is supported by the Pacemaker client. With each reworking of the protocol which makes the communication incompatible then the major version number will be increased. If the client supports more than one major protocol versions then each byte of the reply will contain one major protocol version number that is supported by the client.
 
-The *Minor protocol version* field also defines which minor version of the protocol is supported by the Pacemaker client. With each reworking of the protocol which does not make the communication incompatible then the minor version number will be increased. A higher number supported includes all lower numbered versions. So if minor Version 5 is supported by the client the minor Versions 1, 2, 3 and 4 must also be supported.
+The *minor protocol version* field also defines which minor version of the protocol is supported by the Pacemaker client. With each reworking of the protocol which does not make the communication incompatible then the minor version number will be increased. A higher number supported includes all lower numbered versions. So if minor Version 5 is supported by the client the minor Versions 1, 2, 3 and 4 must also be supported.
 
-The *List of supported protocol extensions* lists the extensions that this firmware implements. See table "Protocol Extensions" in the section "Protocol Extensions" for details. Echa byte of the reply holds one supported extension.
+The *list of supported protocol extensions* lists the extensions that this firmware implements. See table "Protocol Extensions" in the section "Protocol Extensions" for details. Each byte of the reply holds one supported extension.
 
-The *Firmware type* defines the firmware family that this firmware belongs to. See Firmware Types table.
+The *firmware type* defines the firmware family that this firmware belongs to. See Firmware Types table.
 
-The *Major firmware version* field defines which major version of the firmware is running on the Pacemaker client.
+The *major firmware version* field defines which major version of the firmware is running on the Pacemaker client.
 
-The *Minor firmware version* field also defines which minor version of the firmware is running on the Pacemaker client.
+The *minor firmware version* field also defines which minor version of the firmware is running on the Pacemaker client.
 
-The *Hardware type* defines the Hardware Type. See Hardware Types table.
+The *hardware type* defines the Hardware Type. See Hardware Types table.
 
-The *Hardware revision* defines the Hardware revision.
+The *hardware revision* defines the Hardware revision.
 
 The *number of available stepper motors* contains the number of stepper motors.
 
@@ -659,19 +682,12 @@ The *number of available output signals* contains the number of digital output s
 
 The *number of buzzers available* contains the number of buzzers.
 
-.Protocol Version
-[width="50%",options="header", cols="30%,70%"]
-|================================================
-|Value| Version
-|   0 | Version 1
-|================================================
-
 .Hardware Types
 [width="50%",options="header", cols="30%,70%"]
 |================================================
 |Value| Hardware
 |   0 | Pacemaker
-|   1 | Generic arduino based
+|   1 | Generic Arduino based
 |================================================
 
 .Firmware Types
@@ -679,12 +695,12 @@ The *number of buzzers available* contains the number of buzzers.
 |================================================
 |Value| Hardware Revision
 |   0 | Pacemaker
-|   1 | Minnow (Arduino based client implementation)
+|   1 | Minnow (Arduino based client implementation - https://github.com/minnow-pmc/Minnow )
 |================================================
 
 ==== Request Device Name (0x02)
 
-This order requests the "friendly" name of the device. Normally this would return a value which matches the labeling on the board to allow a user to easily correlate the device number with the physical connector.
+This order requests the "friendly" name of the device. Normally this would return a value which matches the labelling on the board to allow a user to easily correlate the device number with the physical connector.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -821,7 +837,16 @@ This will switch the Output on one or more specified switch/devices to on(High/ 
 | .. | [Optional]
 |=============================
 
-The first byte of the Parameter contains the device type (see Definitions), the second byte contains the number of the device. The third byte will contain 0x01 to switch the Output on or 0x00 to switch the output off. If more than one Output shall be switched at the same time, then the next bytes of the parameter may contain additional sets of Device Type, Device Number and Value. (3 bytes per additional output)
+The first byte of the Parameter contains the device type (see Definitions), the second byte contains the number of the device. The third byte will contain the desired switch state. If more than one Output shall be switched at the same time, then the next bytes of the parameter may contain additional sets of Device Type, Device Number and State. (3 bytes per additional output)
+
+.Output Switch State
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+| Value | Meaning
+| 0 | low
+| 1 | high
+| 2 | disabled / high-impedance
+|=============================
 
 The client should return a failure without executing any of the requested changes if any one of the requested changes is invalid.
 
@@ -843,14 +868,9 @@ This will set the average on-time value of the specified PWM outputs (e.g., fans
 | 1 | device number
 | 2 | PWM (MSB)
 | 3 | PWM (LSB)
-| 4 | device type [Optional]
-| 5 | device number [Optional]
-| 6 | PWM (MSB) [Optional]
-| 7 | PWM (LSB) [Optional]
-| .. | [Optional]
 |=============================
 
-The first byte of the Parameter contains the device type (see Definitions), the second byte contains the number of the device. The third and fourth byte will contain the 16-bit PWM value. If the client has only 8bit PWM then the client can ignore the lower 8 bits (fifth byte = LSB). If more than one PWM output shall be changed at the same time, then the next bytes of the parameter may contain additional sets of Device Type, Device Number and PWM Value (4 bytes per additional output).
+The first byte of the Parameter contains the device type (see Definitions), the second byte contains the number of the device. The third and fourth byte will contain the 16-bit PWM value. If the client has only 8bit PWM then the client can ignore the lower 8 bits (fourth byte = LSB). 
 
 This order can also be queued using the Queue Command Wrapper if the queued command extension is supported.
 
@@ -870,7 +890,7 @@ This command sends a configuration name and value to the firmware. The host shou
 | any | value of configuration to set (utf8 string)
 |================================================
 
-The supported names and the expected values are firmware dependent. All configuration names and value are encoded as utf8 strings. If the parameter name is unrecognized or the value is malformed then a Bad Parameter Command Error is returned.
+The supported names and the expected values are firmware dependent. All configuration names and value are encoded as utf8 strings. If the parameter name is unrecognized or the value is malformed then a Bad Parameter Value error is returned. If the value is valid but the operation fails then a Failed error response is returned.
 
 .Example
 Setting the configuration named "Power" to "on" would result in this parameter value:
@@ -917,31 +937,64 @@ Reading the configuration named "Power" would result in this parameter value:
 .Replies
 - OK: Successful read. Parameter contains value.
 - Bad Parameter Value: Bad configuration name
+- Failed: Read operation failed
 
-==== Emergency Stop (0x0C)
+==== Traverse Firmware Configuration Values (0x18)
 
-This Order causes the client to stop the print as fast as possible. All
-heaters will be turned of. PWM signals will be off (0% on cycle). Output
-signals will be off (= 0 = Low). If the firmware controls the motion (Stepper Control/Queued Command/Basic Move Extensions) then it must also stop all motion
-and remove all entries from the Queue. Stepper motors can be disabled.
-This will only happen if the firmware controls the stepper motors.
+This command allows the host to traverse all firmware configuration values supported by the client. This allows the host to save a copy of the current client configuration and also allows the host to provide a richer configuration interface to the user.
 
-.Parameter
+The configuration element list is traversed by supplying the next Traverse Firmware Configuration Values order with the configuration element name returned by the last Traverse Firmware Configuration Values order. Specifying an empty Parameter will start the traversal again. 
+
+Note: the firmware configuration values will often represent the dynamic state of the client's configuration and so setting firmware values (such as configuring a new peripheral device using the Write Firmware Configuration Value Order) may cause the set of elements returned by the Traverse Firmware Configuration Order to change. 
+
+If a Write Firmware Configuration Value order is sent in the middle of traversing the firmware configuration list, then this may result in a Bad Parameter Value error being returned by the Traverse order (in this case the traversal should start from the beginning again). 
+
+.Order Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
-|Byte Number | Content
-| n/a | This command has no Parameter
+|Length | Content
+| N | Last configuration element name traversed (or empty Parameter to restart traversal)
 |=============================
 
-A Reset order is different to an emergency stop because a reset does not
-necessarily de-energise everything before resetting; whereas an
-emergency stop de-energises everything immediately.
-
-An emergency stop must be accepted at any time.
-
 .Replies
-- OK: No Parameter data.
+- Bad Parameter Value: Bad/unknown configuration name. This can occur if a Write Firmware Configuration Value order removes or invalidates an element during a traversal. 
+- OK: The Reply Parameter contents is as follows:
 
+.Reply Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Length | Content
+| 1 | Element type
+| 1 | Element modes
+| N | Configuration element name (utf8 string)
+|=============================
+
+.Element Type
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+| Value | Meaning
+| 0 | Volatile Configuration. These configuration element values will not be retained after a reset. These elements are expected to be both readable and writeable.
+| 1 | Non-volatile Configuration. These configuration element values will be retained after a reset. Read-only non-volatile configuration elements indicate a compile-time client configuration value.
+| 2 | Status & Statistics. These elements indicate aspects of the run-time state of the client (if readable), or are used to manipulate/reset the status and statistics values (if writeable).
+| 3 | Firmware-specific operation. These elements are used to invoke firmware-specific operations. 
+| 4 | Diagnostic & Debug. These elements are used to aid development of debugging of the client system.
+| 0x80-0xfe | Experimental
+| 0xff | End of configuration tree (no more elements)
+|=============================
+
+.Element Modes
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+| Bit Position | Meaning
+| 0 (lsb) | Element readable? (0 = Not readable, 1 = Readable)
+| 1 | Element Writeable? (0 = Not Writeable, 1 = Writeable)
+| 2 | Default value? (0 = No, 1 = Yes). This indicates that the configuration value has not been explicitly set and that this is the compile-time default value currently in use.
+| 3 | Inactive Facility? (0 = Active, 1 = Inactive). A value of 1 indicates that the device or facility associated with this element is not currently correctly or completely configured for use. An example of an inactive facility element might be the configuration elements for a heater device where the heater pin or heater control mode has not been configured. Note: this bit is intended to represent a firmware configuration state and not a dynamic or protocol-controlled active/inactive state.
+|=============================
+
+The end of the configuration traversal is indicated by the order returning an element type of 0xff.
+
+The host should be able to restore the dynamic configuration state of a client following a reset by re-applying all "Dynamic Configuration" element values. Note: this does not imply that restoring the dynamic configuration elements will also restore all dynamic and protocol-controlled runtime state.
 
 ==== Experimental & Unapproved Orders
 Experimental or unapproved orders must use order codes from the range 0x80 to 0xfe. Experimental or unapproved orders that need additional order-specific Reply Codes should use Reply Code values of 0x80-0xfe.
@@ -975,7 +1028,7 @@ When the client enters an "End-stop hit" Stopped state then:
 
 - all movement is halted,
 - all heaters are deactivated,
-- all other outputs are deactivated (The firmware may be configurated to do otherwise to have devices operating that protect the printer)
+- all other outputs are deactivated (The firmware may be configured to do otherwise to have devices operating that protect the printer)
 - the order queue is flushed,
 - the stopped state is asserted.
 
@@ -1100,17 +1153,19 @@ In addition to basic movement commands, there are other non-movement orders whic
 
 === Queuing of Commands and Movement
 
-The queue is assumed to consist of a ring buffer of "queue slots" (although internal implementaion may use a contiguous memory block). The Order Queue can also hold non-movement commands like changing switch output values or fans speeds as these often need to be synchronized with toolhead movement.
+The queue is assumed to consist of a ring buffer of "queue slots" (although internal implementation may use a contiguous memory block). The Order Queue can also hold non-movement commands like changing switch output values or fans speeds as these often need to be synchronized with toolhead movement.
 
 The host should be aware that complicated commands may take up more than one queue slot; however, the host can assume that a short linear move block command which includes up to 4 moving axes (e.g XYZ & 1 toolhead) will fit into a single queue slot.
 
 The number of remaining free slots is reported in the reply for an Order which was queued. This allows the host to determine how many more commands or movement blocks it can send.
 
+The host should not assume that the current number of remaining queue slots is exactly equal to the initial number of queue-slots minus the currently queued number of commands. The exact amount of space to store each command varies depending on the implementation and may also be affected by the use of ring buffer algorithms. Luckily, each queue-related command reports the remaining number of command slots. The number of commands remaining in the queue can also be polled by sending an empty Enqueue Command Blocks order.
+
 === What Orders Can Be Queued?
 
-This extension supports a special command block called "Queue Comand Wrapper" which can be used to wrap and enqueue a normal Order frame into the queue. This is provided so that these queue-compatible orders can be efficiently synchronized with movement without needing to duplicate functionality on the client.
+This extension supports a special command block called "Queue Command Wrapper" which can be used to wrap and enqueue a normal Order frame into the queue. This is provided so that these queue-compatible orders can be efficiently synchronized with movement without needing to duplicate functionality on the client.
 
-It should be noted that the "Queue Comand Wrapper" will not accept arbitrary Order frames. Accepted Orders need to have a particular set of properties to be appropriate for queuing:
+It should be noted that the "Queue Command Wrapper" will not accept arbitrary Order frames. Accepted Orders need to have a particular set of properties to be appropriate for queuing:
 
 - the Order cannot expect to return data in the Reply
 - the Order must not be expected to return failure
@@ -1124,16 +1179,11 @@ Before command blocks are queued, the client should perform reasonable validatio
 
 === Extension Orders
 
-==== clear Command Block Queue (0x17)
+==== Clear Command Block Queue (0x17)
 
 This order flushes the order queue. If a queued command is currently executing then it is allowed to continue execution.
 
-The replies to this order contain a count of the executed command blocks
-since the last Resume order. This rolling 16-bit value can be used to
-determine the state of the system after this command is issued or a
-Stopped state entered. For the purposes of this count, each movement
-block counts as one command. All other queued orders also count as 1
-command.
+The replies to this order contain a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after this command is issued or a Stopped state entered. For the purposes of this count, each movement block counts as one command. All other queued orders also count as 1 command.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1142,18 +1192,19 @@ command.
 | n/a | This command has no Parameter
 |=============================
 
-NOTE: the count of executed command blocks does not include command
-blocks which failed validation (and therefore not inserted in the queue)
-or were flushed from the queue before execution but it does include all
-executed commands regardless of whether or not they were successful.
+NOTE: the count of executed command blocks does not include command blocks which failed validation (and therefore not inserted in the queue) or were flushed from the queue before execution but it does include all executed commands regardless of whether or not they were successful.
 
 .Replies
-- OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply
-Parameter indicates the number of move block queue slots are available.
-Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed
-command blocks since last Resume.
-- Incorrect mode: Order received when stepper control is not activated.
+- OK: Queue was cleared successfully (except for any commands currently executing). Bytes 1 & 2 of the Reply parameter indicates the number of move block queue slots are available. Bytes 3 & 4 indicate the number of commands in the queue including any commands currently executing. For this order, the queue count value will only have a value of 0 or 1 depending on whether a command was executing when the Clear Command Block Queue order was received. Bytes 5 & 6 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
 
+.OK Reply Parameter Content
+[width="50%",options="header", cols="30%,70%"]
+|============================
+| Length in bytes | Content
+| 2 | Number of queue slots available
+| 2 | Number of currently commands in queue including any commands currently executing
+| 2 | Number of executed command blocks since last the last Stopped state was cleared (a rolling 16-bit integer).
+|============================
 
 ==== Queue Command Blocks (0x12)
 
@@ -1161,7 +1212,7 @@ This order adds new command blocks to the Pacemaker command queue. If the client
 
 If the client detects an error in any requested command block then it must reply with the Order Specific Error reply as described below. In this case the client may queue previous command blocks but must not queue command block following the errored block.
 
-The replies to this order contain a count of the executed command blocks since the last Resume order. This rolling 16-bit value can be used to determine the state of the system after a stop print is issued or a Stopped state entered. For the purposes of this count, each movement block counts as one command. All other queued orders also count as 1 command.
+The replies to this order contain a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after a stop print is issued or a Stopped state entered. For the purposes of this count, each movement block counts as one command. All other queued orders also count as 1 command.
 
 The Parameter contains the sequence of command blocks.
 
@@ -1170,31 +1221,32 @@ The Parameter contains the sequence of command blocks.
 |============================
 | Length in bytes | Content
 | 1 | Length of block 0 in bytes (N)
-| 1 | Control byte for block 0
+| 1 | Command block type for block 0
 | N-1 | block 0 data
 | 1 | Length of block 1 in bytes (M)
-| 1 | Control byte for block 1
+| 1 | Command block type for block 1
 | M-1 | block 1 data
 |  .. | ..
 |============================
 
-Each block begins with a length byte and a control byte: the length byte indicates the number of following bytes in the block (including the control byte) and the control byte indicates the command block type. The currently defined movement block types are described in the next section (along with the associated extension).
+Each block begins with a length byte and a command block type: the length byte indicates the number of following bytes in the block (including the command block byte) and the command block byte indicates the command block type. The currently defined movement block types are described in the next section (along with the associated extension).
 
 If an empty Parameter is sent then no orders are queued but the Order Queued reply is sent as usual (and can be used to monitor print progress).
 
-NOTE: if a queued command blocks is currently being executed, then this is treated as still being in the queue for the purposes of counting available queue slots and completed command blocks.
+NOTE: if a queued command blocks is currently being executed, then this is treated as still being in the queue for the purposes of counting available queue slots and command blocks queue counts.
 
-NOTE: the count of executed command blocks does not include command blocks which failed validation (and therefore not inserted in the queue) or were flushed from the queue before execution but it does include all executed commands regardless of whether or not they were successful.
+NOTE: the count of executed command blocks does not include command blocks which failed validation (and therefore not inserted in the queue) or were flushed from the queue before execution but it does include all executed commands regardless of whether or not they were successful. The count does include currently executing command blocks.
 
 .Replies
-- OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply Parameter indicates the number of move block queue slots are available. Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed command blocks since last Resume.
+- OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply Parameter indicates the number of move block queue slots are available. Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
 
 .OK Reply Parameter Content
-[width="50%",options="header", cols="35%,65%"]
+[width="50%",options="header", cols="30%,30%"]
 |============================
 | Length in bytes | Content
 | 2 | Number of queue slots available
-| 2 | Number of executed command blocks since last Resume (a rolling 16-bit integer).
+| 2 | Number of command blocks currently in queue including any commands currently executing
+| 2 | Number of executed command blocks since last the last Stopped state was cleared (a rolling 16-bit integer).
 |============================
 
 - Order Specific Error: Sent if the entire Order wasn't successfully enqueued. The Parameter content is as follows:
@@ -1203,28 +1255,26 @@ NOTE: the count of executed command blocks does not include command blocks which
 [width="50%",options="header", cols="35%,65%"]
 |============================
 | Length in bytes | Content
-| 1 | Cause: 0x1 = Queue Full, 0x2 = Unknown Command Block Type, 0x3 = Error in command block
-| 1 | Number of command blocks enqueued from order
+| 1 | Cause: 0x1 = Queue Full, 0x2 = Unknown Command Block Type, 0x3 = Malformed Block, 0x4 = Error in command block
+| 1 | Number of command blocks successfully enqueued from order
 | 2 | Number of queue slots available
+| 2 | Number of currently command blocks in queue including any commands currently executing
 | 2 | Number of executed command blocks since last resume (a rolling 16-bit integer).
-| 1 | Index of errored block in order [Optional]
-| 1 | Error Reply Code [Optional]
-| 1 | Error Parameter data [Optional]
+| 1 | Error Reply Code or 0xff
+| N | Error Parameter data / Error Reason [Optional]
 |============================
 
 The *Cause* indicates whether the error was caused by the queue being full, an unknown command block type, or an error in the command. If a command block has insufficient bytes then an "Error in command block" should be indicated with Malformed Parameter Value as the Reply Code in byte 8.
 
-The *Number of command blocks enqueued* indicates the number of command blocks from the order which were successfully queued.
+The *Number of command blocks enqueued* indicates the number of command blocks from the order which were successfully queued. The error information in this reply will always relate to the following command block.
 
-The *Number of executed command blocks since last resume* is a rolling 16-bit integer which indicates the total number of command blocks where exection was attempted since the last resume.
+The *Number of executed command blocks since last resume* is a rolling 16-bit integer which indicates the total number of command blocks where execution was attempted since the last resume.
 
 The *Number of queue slots available* indicates the remaining queue slots available.
 
-The *Index of errored block* value (if present) indicates the index of the errored command where 0 equals the first command block in the order, 1 equals the second command block in the order, etc.
+The *Error Reply Code* value indicates the reply code of the errored command block as though the command was executed directly. This byte normally has a value of 0xff except for "Error in command block" type errors. An error reply code of 0xff indicates that the following byte is the start of an error string rather then reply parameter data.
 
-The *Error Reply Code* value (if present) indicates the reply code of the errored command block as though the command was executed directly.
-
-The *Error Parameter data* value (if present) indicates the parameter data of the errored command block as though the command was executed directly.
+The *Error Parameter data* value (if present) indicates the parameter data of the errored command block as though the command was executed directly. If the Error Reply Code is equal to 0xff then this should simply be interpreted as a utf8 error string.
 
 === Currently Defined Command Block Types
 
@@ -1232,17 +1282,17 @@ The currently defined movement block types are described below along with the as
 
 [width="75%",options="header", cols="40%,60%"]
 |============================
-|Control Byte Binary Value | Movement Block Type
-| 0b00000001 | Queue Command Wrapper [queued command extension]
-| 0b00000010 | Delay [queued command extension]
-| 0b00000011 | Set Active Toolhead [basic move extension]
-| 0b011xxxxx | Experimental or Unapproved Command Blocks
-| 0b1xxxxxxx | Basic Linear Move [basic move extension]
+|Command Block Type Value | Movement Block Type
+| 0x1 | Queue Command Wrapper [queued command extension]
+| 0x2 | Delay [queued command extension]
+| 0x3 | Basic Linear Move [basic move extension]
+| 0x4 | Set Active Toolhead [basic move extension]
+| 0x80 - 0xfe | Experimental or Unapproved Command Blocks
 |============================
 
 === Basic Command Block Definitions
 
-==== Queue Command Wrapper (0b00000001)
+==== Queue Command Wrapper (0x01)
 
 This command block is a wrapper which allows a standard order to be inserted into the command queue. For instance, it allows the "Switch an Output" order to be enqueued.
 
@@ -1254,12 +1304,14 @@ Orders supporting queuing should not expect to fail and cannot return informatio
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Length In Bytes | Content
-| 1 | Control Byte (0b00000001)
+| 1 | Command Block Type Byte (== 0x01)
 | 1 | Order Code
 | N-2 | Order Parameter data (where N is the value in the length byte for the block)
 |=============================
 
-==== Delay (0b00000010)
+If the requested Order Code is not a permitted order code for queueing, then the client should return a "Unknown Order" Code in the Error Reply Code of the Queue Command Blocks order.
+
+==== Delay (0x02)
 
 This command block will enqueue a delay.
 
@@ -1267,7 +1319,7 @@ This command block will enqueue a delay.
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Byte Number | Content
-| 0 | bits7-0 = 0b00000010 [Control Byte]
+| 0 | Command Block Type Byte (== 0x02)
 | 1 | delay (MSB)
 | 2 | delay (LSB)
 |=============================
@@ -1282,11 +1334,11 @@ This extension is intended to allow a client which needs to directly drive the s
 
 NOTE: The active orders in this extension all require that stepper control is activated. The extension also assumes that the Queued Command Extension is implemented.
 
-=== Movement modeling
+=== Movement modelling
 
 The basic move extension defines the basic linear movement block type.
 
-Each movement block describes the movement of all selected axes for a specific period of time. One of the selected axes is used as the primary axis. The movement block specifies the speed and acceleration/deceleration on the primary axis. The movement of all other axes undergoes the same acceleration and decceleration such that the requested steps on all other axes are generated to be evenly distributed (in distance not time) along the path of the primary axis.
+Each movement block describes the movement of all selected axes for a specific period of time. One of the selected axes is used as the primary axis. The movement block specifies the speed and acceleration/deceleration on the primary axis. The movement of all other axes undergoes the same acceleration and deceleration such that the requested steps on all other axes are generated to be evenly distributed (in distance not time) along the path of the primary axis.
 
 The encoding of the movement block has been optimized to allow a large number of short linear segments to be queued and executed with a minimum of serial bandwidth and CPU overhead. Each block defines a trapezoidal speed function, that is, accelerate to a nominal speed, move at nominal speed, then decelerate to an end speed.
 
@@ -1297,18 +1349,18 @@ Other movement block types can be defined in later extensions as required, for i
 === Design Rationale For Movement
 
 ==== What assumptions does the protocol make about stepper movement?
-The basic linear move command assumes that the same acceleration can be applied to all travel axes and a linear path will still be followed. This assumption is true for cartesian and CoreXY machine configurations - other configurations are discussed below.
+The basic linear move command assumes that the same acceleration can be applied to all travel axes and a linear path will still be followed. This assumption is true for Cartesian and CoreXY machine configurations - other configurations are discussed below.
 
 The current basic move order also assumes that a separate speed specification is not needed for each axis. Speed of the toolhead in three-dimensional space can be controlled by specifying a single desired step rate on the primary axis and controlling the relative number of steps in each other axes of movement. [Remember that each movement block describes the movement for the same time period.]
 
 ==== What about delta and polar bots?
-Delta and polar co-ordinate systems require a non-linear step-rate generation in order for the toolhead to trace a linear path. These non-linear calculations can be quite expensive to perform on small processors.
+Delta and polar co-ordinate systems require a non-linear step-rate generation in order for the toolhead to trace a linear path. These non-linear calculations can be quite expensive to perform on small processors. 
 
 There are two recommended approaches for implementing these type of machine configurations with Pacemaker:
 
-- One common approach (such as used by Marlin) is to break each linear toolhead movement command (in cartesian space) into the large number of small "linear step-rate" movement segments which are sent to the stepper controllers. Each segment will not trace a perfectly linear path but because the segment sizes are very small then this is usually not noticeable. Pacemaker enhances this approach because it has been specifically optimized to transport and execute many small linear segments. CPU-limited real-time printner controllers (e.g., Arduino) are limited in the number of times they can be performed these calculations per second. With Pacemaker, the movement planning is done on the host (typically much faster than the client) and so the number of segments which can be generated per second is likely to be higher (in this case).
+- One common approach (such as used by Marlin) is to break each linear toolhead movement command (in Cartesian space) into the large number of small "linear step-rate" movement segments which are sent to the stepper controllers. Each segment will not trace a perfectly linear path but because the segment sizes are very small then this is usually not noticeable. Pacemaker enhances this approach because it has been specifically optimized to transport and execute many small linear segments. CPU-limited real-time printer controllers (e.g., Arduino) are limited in the number of times they can be performed these calculations per second. With Pacemaker, the movement planning is done on the host (typically much faster than the client) and so the number of segments which can be generated per second is likely to be higher (in this case). This makes the Pacemaker solutions far more suitable to these non-linear co-ordinate systems than many of the existing systems.
 
-- Another approach is that the client simply presents itself to the host as a cartesian machine and then performs all conversion to polar or delta co-ordinate systems within the firmware.
+- Another approach is that the client simply presents itself to the host as a Cartesian machine and then performs all conversion to polar or delta co-ordinate systems within the firmware.
 
 ==== What about non-linear extruder advance algorithms?
 Some printers use extruder advance algorithms to non-linearly modify the extrusion rate based on parameters like toolhead speed.
@@ -1322,7 +1374,7 @@ A movement wind-down algorithm can be implemented to limit the maximum speed whe
 
 The protocol currently doesn't require the client to track the position of each axis and therefore doesn't include a "get position" command. However, in situations other than an emergency stop or a Stopped state (where steps might have been missed anyway), the host should be able to determine the position on all axes by simply knowing how many command blocks have been executed.
 
-The client always returns an executed command block count in the "Queue Command Block" Reply Parameter which can be used to determine position even after a orderly "stop print" command has been issued. The executed command block count is a count of all command blocks which have attempted execution (including those which encountered an error) since the host sent the last Resume order.
+The client always returns an executed command block count in the "Queue Command Block" Reply Parameter which can be used to determine position even after a orderly "stop print" command has been issued. The executed command block count is a count of all command blocks which have attempted execution (including those which encountered an error) since the last the last Stopped state was cleared.
 
 An emergency stop will require the host to re-home axes to determine its position - an emergency stop and certain or Stopped errors can result in skipped steps. Thus even if the client maintained an exact step count it wouldn't necessarily be accurate.
 
@@ -1338,14 +1390,10 @@ This order configures the maximum speed and deceleration used for each axis.
 | Length In Bytes | Content
 | 1 | stepper motor number
 | 2 | max steps per second
-| 2 | max deceleration
 |=============================
 
 Byte 1 of the Parameter is the stepper number.
 Bytes 2 & 3 will contain the maximum carriage speed (in steps per second).
-Bytes 4 & 5 will contain the maximum carriage deceleration to avoid missed steps (in steps per second^2^).
-
-NOTE: The maximum deceleration value is not actually used as part of the basic linear move calculation; the maximum deceleration value is primarily required to perform a movement wind-down if a buffer underrun looks likely.
 
 .Replies
 - OK: No Parameter data.
@@ -1354,9 +1402,9 @@ NOTE: The maximum deceleration value is not actually used as part of the basic l
 
 === Queue Command Block Definitions
 
-==== Basic Linear Move (1xxxxxxx)
+==== Basic Linear Move (0x03)
 
-Each basic linear movement block specifies a trapazoid speed profile, that is, accelerate to nominal speed, move at nominal speed, then decelerate to end speed.
+Each basic linear movement block specifies a trapezoid speed profile, that is, accelerate to nominal speed, move at nominal speed, then decelerate to end speed.
 
 Each block includes the following information:
 
@@ -1367,61 +1415,59 @@ Each block includes the following information:
 * a desired nominal speed
 * a desired end speed
 
-The nominal starting speed for each block can be deduced from end speed of the previous movement block; queue underruns may however mean that the actual starting speed when executed is different to specified speed (in this case).
+The nominal starting speed for each block can be deduced from end speed of the previous movement block; queue underrun avoidance algorithms however may mean that the actual starting speed when executed is different to specified speed.
 
-The command supports up to 14 stepper axes.
+The command supports up to 15 stepper axes.
 
 ===== Format Examples:
 
-.1 byte axis selection bitmask format (allows up to 6 axes)
+.1 byte axis selection bitmask format (allows up to 7 axes)
 [width="75%",options="header", cols="30%,70%"]
 |============================
 | Length in Bytes | Content
-|   1 | bit7 = 1 (for basic linear move) *[Control Byte]*
-|     | bit6: 1 or 2 byte format: 0 (= 1 byte format)
-|     | bits5-0: axes used in block (assume n bits set in this example)
+|   1 | Command Block Type Byte (== 0x03)
+|   1 | bit7: 1 or 2 byte axes format: 0 (= 1 byte format) *[Axis Selection Field]*
+|     | bits6-0: axes used in block (assume n bits set in this example)
 |   1 | bit7: use 1 or 2 byte step counts (0=1 byte, 1=2 byte) *[Directions Field]*
-|     | bit6: 0 (Reserved)
-|     | bits5-0: direction on each axis
+|     | bits6-0: direction on each axis
 |   1 | nominal speed factor
 |   1 | end speed factor
 |   1 | initial acceleration/deceleration time
 |   1 | final acceleration/deceleration time
-| 1 or 2 | Steps on selected axis 1
+| 1 or 2 | Steps on selected axis 1 [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
 | 1 or 2 | Steps on selected axis 2
 | 1 or 2 | steps on selected axis 3
 |  .. | ..
 | 1 or 2 | steps on selected axis n
 |============================
 
-.2 byte axis selection bitmask format (allows up to 14 axes)
+.2 byte axis selection bitmask format (allows up to 15 axes)
 [width="75%",options="header", cols="30%,70%"]
 |============================
 | Length in Bytes | Content
-|   2 | bit15 = 1 (for basic linear move) *[Control Byte]*
-|     | bit14: 1 or 2 byte format: 1 (= 2 byte format)
-|     | bits13-0: axes used in block (assume n bits set for example)
+|   1 | Command Block Type Byte (== 0x03)
+|   2 | bit15 = 1 or 2 byte axes format: 1 (= 2 byte format) *[Axis Selection Field]*
+|     | bits14-0: axes used in block (assume n bits set for example)
 |   2 | bit15: use 2 byte step counts (0=no, 1=yes) *[Directions Field]*
-|     | bit14: 0 (Reserved)
-|     | bits13-0: direction on each axis
+|     | bits14-0: direction on each axis
 |   1 | nominal speed factor
 |   1 | end speed factor
 |   1 | initial acceleration/deceleration time
 |   1 | final acceleration/deceleration time
-| 1 or 2 | Steps on selected axis 1
+| 1 or 2 | Steps on selected axis 1 [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
 | 1 or 2 | Steps on selected axis 2
 | 1 or 2 | steps on selected axis 3
 |  .. | ..
 | 1 or 2 | steps on selected axis n
 |============================
 
-The *Control Byte* does a number of things: the MSB indicates that this is a basic linear move block (i.e, bit7 = 0), it then indicates whether a 1 or 2 byte axis selection bitmask will be used, then the remaining 6 bits contains the axis selection bitmask which indicates the stepper number indexes which will be moving in this block. For instance, if bit 2 is set, then stepper number 2 will be moved in the current movement block. If bit 6 of the Control Byte is equal to 1, then the first two bytes of the movement block should be consider as making up the axis selection bitmask (supporting up to 14 axes instead of 6 axes).
+The *Axis Selection Field* does a couple of things: the MSB indicates whether a 1 or 2 byte axis selection bitmask will be used, then the remaining 6 bits contains the axis selection bitmask which indicates the stepper number indexes which will be moving in this block. For instance, if bit 2 is set, then stepper number 2 will be moved in the current movement block. If bit msb of the Axis Selection Field is equal to 1, then the first two bytes of the movement block should be consider as making up the axis selection bitmask (supporting up to 15 axes instead of 6 axes).
 
-The *Directions* field is another bitmask field where each bit defines the direction of movement and uses the same axis to bit position mapping as for the axis selection bitmask. For example, bit 0(LSB) contains the direction of stepper number 0 movement. A "1" means moving in increasing direction. If a 2 byte axis selection bitmask is used, then a 2 byte directions field is also used. The MSB of the Directions field indicates whether 1 or 2 byte step counts will be used.
+The *Directions Field* is another bitmask field where each bit defines the direction of movement and uses the same axis to bit position mapping as for the axis selection bitmask. For example, bit 0(LSB) contains the direction of stepper number 0 movement. A "1" means moving in increasing direction. If a 2 byte axis selection bitmask is used, then a 2 byte directions field is also used. The MSB of the Directions field indicates whether 1 or 2 byte step counts will be used.
 
 The speed and acceleration is calculated with respect to the primary axis for the movement block. The primary axis is selected to be the axis with the largest numbers of steps in the block. If more than one travel axis has equal highest number of steps, then the travel axis with the lowest configured maximum speed is selected.
 
-NOTE: The host has to make sure that the other axis do not get more staps then they can handle. The client does not need to check if the move command causes valid accelations and valid speeds on all axis.
+NOTE: The host has to make sure that the other axes do not get more steps than they can handle. The client does not need to check if the move command causes valid acceleration and valid speeds on all axis.
 
 The *initial acceleration/deceleration time* is the fraction of the total movement distance which is taken to accelerate/decelerate from the starting speed to the nominal speed. For instance, for a segment with 200 steps, a value of 50 would mean that the client would attempt to reach nominal speed at 39 steps into the block (50/255 * 200).
 
@@ -1439,7 +1485,7 @@ The steps on the other selected axes are simply generated to be evenly distribut
 
 It is recommended that the host decomposes long, slow, straight moves into multiple smaller segments so that an orderly Stop Print order takes effect in a reasonable time.
 
-==== Set Active Toolhead (0b00000011)
+==== Set Active Toolhead (0x4)
 
 This changes the active toolhead. This is primarily a hook for the firmware to take any firmware-specific actions on toolhead change and normally can be ignored by the client (but should still be sent by the host).
 
@@ -1447,7 +1493,7 @@ This changes the active toolhead. This is primarily a hook for the firmware to t
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Byte Number | Content
-| 0 | bits7-0: 0b00000011 [Control Byte]
+| 0 | Command Block Type Byte (== 0x04)
 | 1 | new toolhead number
 |=============================
 
@@ -1541,4 +1587,5 @@ An SD card extension is not intended at this stage. Within the Pacemaker environ
 |Version| Date | Author| Comment
 | 0.1   | 2013-06-17 | Lars Pötter and Robert Fairlie-Cuninghame.| first published draft
 | 0.2   | 2013-07-25 | Lars Pötter and Robert Fairlie-Cuninghame.| changed CRC and Length
+| 0.3   | 2013-08-18 | Lars Pötter and Robert Fairlie-Cuninghame.| added firmware config traversal, change length frame order
 |=======================================
