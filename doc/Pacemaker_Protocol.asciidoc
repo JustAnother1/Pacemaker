@@ -870,7 +870,7 @@ This will set the average on-time value of the specified PWM outputs (e.g., fans
 | 3 | PWM (LSB)
 |=============================
 
-The first byte of the Parameter contains the device type (see Definitions), the second byte contains the number of the device. The third and fourth byte will contain the 16-bit PWM value. If the client has only 8bit PWM then the client can ignore the lower 8 bits (fourth byte = LSB). 
+The first byte of the Parameter contains the device type (see Definitions), the second byte contains the number of the device. The third and fourth byte will contain the 16-bit PWM value. If the client has only 8bit PWM then the client can ignore the lower 8 bits (fourth byte = LSB).
 
 This order can also be queued using the Queue Command Wrapper if the queued command extension is supported.
 
@@ -943,11 +943,11 @@ Reading the configuration named "Power" would result in this parameter value:
 
 This command allows the host to traverse all firmware configuration values supported by the client. This allows the host to save a copy of the current client configuration and also allows the host to provide a richer configuration interface to the user.
 
-The configuration element list is traversed by supplying the next Traverse Firmware Configuration Values order with the configuration element name returned by the last Traverse Firmware Configuration Values order. Specifying an empty Parameter will start the traversal again. 
+The configuration element list is traversed by supplying the next Traverse Firmware Configuration Values order with the configuration element name returned by the last Traverse Firmware Configuration Values order. Specifying an empty Parameter will start the traversal again.
 
-Note: the firmware configuration values will often represent the dynamic state of the client's configuration and so setting firmware values (such as configuring a new peripheral device using the Write Firmware Configuration Value Order) may cause the set of elements returned by the Traverse Firmware Configuration Order to change. 
+Note: the firmware configuration values will often represent the dynamic state of the client's configuration and so setting firmware values (such as configuring a new peripheral device using the Write Firmware Configuration Value Order) may cause the set of elements returned by the Traverse Firmware Configuration Order to change.
 
-If a Write Firmware Configuration Value order is sent in the middle of traversing the firmware configuration list, then this may result in a Bad Parameter Value error being returned by the Traverse order (in this case the traversal should start from the beginning again). 
+If a Write Firmware Configuration Value order is sent in the middle of traversing the firmware configuration list, then this may result in a Bad Parameter Value error being returned by the Traverse order (in this case the traversal should start from the beginning again).
 
 .Order Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -957,7 +957,7 @@ If a Write Firmware Configuration Value order is sent in the middle of traversin
 |=============================
 
 .Replies
-- Bad Parameter Value: Bad/unknown configuration name. This can occur if a Write Firmware Configuration Value order removes or invalidates an element during a traversal. 
+- Bad Parameter Value: Bad/unknown configuration name. This can occur if a Write Firmware Configuration Value order removes or invalidates an element during a traversal.
 - OK: The Reply Parameter contents is as follows:
 
 .Reply Parameter
@@ -976,7 +976,7 @@ If a Write Firmware Configuration Value order is sent in the middle of traversin
 | 0 | Volatile Configuration. These configuration element values will not be retained after a reset. These elements are expected to be both readable and writeable.
 | 1 | Non-volatile Configuration. These configuration element values will be retained after a reset. Read-only non-volatile configuration elements indicate a compile-time client configuration value.
 | 2 | Status & Statistics. These elements indicate aspects of the run-time state of the client (if readable), or are used to manipulate/reset the status and statistics values (if writeable).
-| 3 | Firmware-specific operation. These elements are used to invoke firmware-specific operations. 
+| 3 | Firmware-specific operation. These elements are used to invoke firmware-specific operations.
 | 4 | Diagnostic & Debug. These elements are used to aid development of debugging of the client system.
 | 0x80-0xfe | Experimental
 | 0xff | End of configuration tree (no more elements)
@@ -1241,7 +1241,7 @@ NOTE: the count of executed command blocks does not include command blocks which
 - OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply Parameter indicates the number of move block queue slots are available. Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
 
 .OK Reply Parameter Content
-[width="50%",options="header", cols="30%,30%"]
+[width="50%",options="header", cols="35%,65%"]
 |============================
 | Length in bytes | Content
 | 2 | Number of queue slots available
@@ -1354,7 +1354,7 @@ The basic linear move command assumes that the same acceleration can be applied 
 The current basic move order also assumes that a separate speed specification is not needed for each axis. Speed of the toolhead in three-dimensional space can be controlled by specifying a single desired step rate on the primary axis and controlling the relative number of steps in each other axes of movement. [Remember that each movement block describes the movement for the same time period.]
 
 ==== What about delta and polar bots?
-Delta and polar co-ordinate systems require a non-linear step-rate generation in order for the toolhead to trace a linear path. These non-linear calculations can be quite expensive to perform on small processors. 
+Delta and polar co-ordinate systems require a non-linear step-rate generation in order for the toolhead to trace a linear path. These non-linear calculations can be quite expensive to perform on small processors.
 
 There are two recommended approaches for implementing these type of machine configurations with Pacemaker:
 
