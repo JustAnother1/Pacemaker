@@ -19,6 +19,7 @@ import java.awt.Component;
 import java.awt.GridLayout;
 import java.util.Enumeration;
 import java.util.Vector;
+import java.util.Properties;
 
 import javax.swing.BoxLayout;
 import javax.swing.JCheckBox;
@@ -72,6 +73,8 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
         slide.setLayout(new GridLayout(0,2));
         // Port
         JLabel portLabel = new JLabel(t.t("Interface_uart_port"));
+        Properties systemProperties = System.getProperties();
+        systemProperties.setProperty("jna.nosys", "true");
         @SuppressWarnings("rawtypes")
         Enumeration ports = CommPortIdentifier.getPortIdentifiers();
         while (ports.hasMoreElements())
