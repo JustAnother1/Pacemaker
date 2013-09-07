@@ -17,8 +17,9 @@ package de.nomagic.printerController.gui;
 import javax.swing.JFrame;
 import javax.swing.JSplitPane;
 
-import de.nomagic.printerController.printer.Cfg;
-import de.nomagic.printerController.printer.PrintProcess;
+import de.nomagic.printerController.Cfg;
+import de.nomagic.printerController.core.CoreStateMachine;
+import de.nomagic.printerController.core.Executor;
 
 /**
  * @author Lars P&ouml;tter
@@ -33,17 +34,18 @@ public class MainWindow extends JFrame
     public MainWindow(final Cfg cfg)
     {
         // set up the printer
-        final PrintProcess pp = new PrintProcess();
-        pp.setCfg(cfg);
+        final CoreStateMachine core = new CoreStateMachine(cfg);
+        // TODO check if core is operational !
+        final Executor exe = core.getExecutor();
         // set up the window
         this.setTitle("Pacemaker - printerController");
         this.setResizable(true);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // TODO close Core !
         // add all sub Panes
         // Printer Status Panel (cur extruder, cur Temperature, cur Position of print head,....)
-        printerStatusPanel = new PrinterStatusPanel(pp);
+        printerStatusPanel = new PrinterStatusPanel(exe);
         // Machine Control Panel
-        machineControlPanel = new MachineControlPanel(pp, printerStatusPanel);
+        machineControlPanel = new MachineControlPanel(core, cfg, printerStatusPanel);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
                                               machineControlPanel.getPanel(),

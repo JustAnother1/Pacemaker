@@ -28,9 +28,8 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.gui.MainWindow;
-import de.nomagic.printerController.printer.Cfg;
-import de.nomagic.printerController.printer.PrintProcess;
 
 /**
  * @author Lars P&ouml;tter
@@ -51,7 +50,7 @@ public class ControllerMain
     {
     }
 
-    private void printHelp()
+    public void printHelp()
     {
         System.out.println("Printer Controller for Pacemaker");
         System.out.println("Parameters:");
@@ -73,13 +72,14 @@ public class ControllerMain
             {
                 if(true == "-h".equals(args[i]))
                 {
-                    printHelp();
                     return false;
                 }
                 else if(true == "-c".equals(args[i]))
                 {
                     i++;
-                    cfg.setClientDeviceString(args[i]);
+                    Integer num = cfg.getNumberOfClients();
+                    num ++;
+                    cfg.setClientDeviceString(num, args[i]);
                 }
                 else if(true == "-p".equals(args[i]))
                 {
@@ -105,13 +105,11 @@ public class ControllerMain
                 else
                 {
                     System.err.println("Invalid Parameter : " + args[i]);
-                    printHelp();
                     return false;
                 }
             }
             else
             {
-                printHelp();
                 return false;
             }
         }
@@ -136,19 +134,19 @@ public class ControllerMain
 
     public void sendGCodeFile()
     {
-        final PrintProcess pp = new PrintProcess();
         if(false == hasReadConfiguration)
         {
             System.out.println("No Configuration File found ! Printing not possible !");
             return;
         }
-        pp.setCfg(cfg);
 
-        if(false == pp.connectToPacemaker())
+        CoreStateMachine pp = new CoreStateMachine(cfg);
+        if(false == pp.isOperational())
         {
-            System.err.println("Could not Connect to Pacemaker !");
+            System.err.println("Could not Connect to Pacemaker Client !");
             return;
         }
+
         String line;
         try
         {
@@ -173,6 +171,7 @@ public class ControllerMain
         {
             e.printStackTrace();
         }
+        pp.close();
     }
 
     public boolean hasFileToPrint()
@@ -212,6 +211,7 @@ public class ControllerMain
         final ControllerMain cm = new ControllerMain();
         if(false == cm.parseCommandLineParameters(args))
         {
+            cm.printHelp();
             return;
         }
         if(false == cm.hasFileToPrint())

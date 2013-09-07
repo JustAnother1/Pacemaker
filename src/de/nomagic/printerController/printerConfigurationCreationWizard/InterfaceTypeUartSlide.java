@@ -37,7 +37,7 @@ import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
 import de.nomagic.printerController.pacemaker.ClientConnectionFactory;
 import de.nomagic.printerController.pacemaker.UartClientConnection;
-import de.nomagic.printerController.printer.Cfg;
+import de.nomagic.printerController.Cfg;
 
 /** Ask user for parameters of UART Interface.
  *
@@ -138,7 +138,7 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
         if(true == obj instanceof Cfg)
         {
             cfg = (Cfg)obj;
-            String configuredConnection = cfg.getClientDeviceString();
+            String configuredConnection = cfg.getConnectionDefinitionOfClient(0);
             if(true == configuredConnection.startsWith(ClientConnectionFactory.UART_PREFIX))
             {
                 final String data = configuredConnection.substring(ClientConnectionFactory.UART_PREFIX.length());
@@ -178,7 +178,7 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
             log.error("No Configuration in Data Store ! Creating new Configuration !");
             cfg = new Cfg();
         }
-        cfg.setClientDeviceString(ClientConnectionFactory.UART_PREFIX
+        cfg.setClientDeviceString(0, ClientConnectionFactory.UART_PREFIX
                 + UartClientConnection.getDescriptorFor(
                 (String)portName.getSelectedItem(),
                 Integer.parseInt(baudInput.getText()),

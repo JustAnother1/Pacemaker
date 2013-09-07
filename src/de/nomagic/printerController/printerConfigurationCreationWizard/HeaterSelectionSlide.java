@@ -35,7 +35,8 @@ import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
 import de.nomagic.WizardDialog.SlideTableModel;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
-import de.nomagic.printerController.printer.Cfg;
+import de.nomagic.printerController.Cfg;
+import de.nomagic.printerController.Heater_enum;
 
 /**
  * @author Lars P&ouml;tter
@@ -55,7 +56,7 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
     private JTable tab;
     private String unknown;
 
-    private String[] functionNames = new String[Cfg.NUMBER_OF_HEATER_FUNCTIONS];
+    private String[] functionNames = new String[5];
 
     public HeaterSelectionSlide(Translator t)
     {
@@ -66,11 +67,11 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
         tableData.addColumn(t.t("HeaterSelector_used_for"), true, String.class);
         tableData.addColumn(t.t("HeaterSelector_sensor"), true, String.class);
 
-        functionNames[Cfg.CHAMBER] = t.t("HeaterSelector_func_chamber");
-        functionNames[Cfg.PRINT_BED] = t.t("HeaterSelector_func_bed");
-        functionNames[Cfg.EXTRUDER_1] = t.t("HeaterSelector_func_e1");
-        functionNames[Cfg.EXTRUDER_2] = t.t("HeaterSelector_func_e2");
-        functionNames[Cfg.EXTRUDER_3] = t.t("HeaterSelector_func_e3");
+        functionNames[Heater_enum.Chamber.ordinal()] = t.t("HeaterSelector_func_chamber");
+        functionNames[Heater_enum.Print_Bed.ordinal()] = t.t("HeaterSelector_func_bed");
+        functionNames[Heater_enum.Extruder_0.ordinal()] = t.t("HeaterSelector_func_e1");
+        functionNames[Heater_enum.Extruder_1.ordinal()] = t.t("HeaterSelector_func_e2");
+        functionNames[Heater_enum.Extruder_2.ordinal()] = t.t("HeaterSelector_func_e3");
 
         tab = new JTable(tableData);
         TableColumn usageColumn = tab.getColumnModel().getColumn(USED_FOR_COLUMN);
@@ -169,24 +170,17 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
                 {
                     activeHeaters.add(i);
                     String function = (String)tableData.getValueAt(i, USED_FOR_COLUMN);
-                    for(int j = 0; j < functionNames.length; j++)
+                    cfg.addHeater(0, i, Heater_enum.valueOf(function));
+                    // if we can map the function then we can also map the sensor if the sensor is given
+                    String Sensor = (String)tableData.getValueAt(i, USED_SENSOR_COLUMN);
+                    try
                     {
-                        if(true == function.equals(functionNames[j]))
-                        {
-                            cfg.mapHeaterToFunction(i, j);
-                            // if we can map the function then we can also map the sensor if the sensor is given
-                            String Sensor = (String)tableData.getValueAt(i, USED_SENSOR_COLUMN);
-                            try
-                            {
-                                int sensorIdx = Integer.parseInt(Sensor);
-                                cfg.mapTemperatureSensorToHeaterFunction(j, sensorIdx);
-                            }
-                            catch(NumberFormatException e)
-                            {
-                                // unknown sensor -> no mapping
-                            }
-                            break;
-                        }
+                        int sensorIdx = Integer.parseInt(Sensor);
+                        cfg.addTemperatureSensor(0, sensorIdx,  Heater_enum.valueOf(function));
+                    }
+                    catch(NumberFormatException e)
+                    {
+                        // unknown sensor -> no mapping
                     }
                 }
             }

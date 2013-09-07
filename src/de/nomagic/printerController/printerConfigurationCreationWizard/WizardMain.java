@@ -31,7 +31,7 @@ import de.nomagic.WizardDialog.BaseWindow;
 import de.nomagic.WizardDialog.CancelAction;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.printerController.pacemaker.ClientConnection;
-import de.nomagic.printerController.printer.Cfg;
+import de.nomagic.printerController.Cfg;
 
 /**
  * @author Lars P&ouml;tter

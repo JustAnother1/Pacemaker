@@ -15,7 +15,6 @@
 package de.nomagic.printerController.printerConfigurationCreationWizard;
 
 import java.awt.Component;
-import java.io.IOException;
 
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
@@ -27,13 +26,9 @@ import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.BaseWindow;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
-import de.nomagic.printerController.gcode.GCodeDecoder;
+import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.pacemaker.ClientConnection;
-import de.nomagic.printerController.pacemaker.ClientConnectionFactory;
-import de.nomagic.printerController.pacemaker.DeviceInformation;
-import de.nomagic.printerController.pacemaker.Protocol;
-import de.nomagic.printerController.planner.Planner;
-import de.nomagic.printerController.printer.Cfg;
+import de.nomagic.printerController.Cfg;
 
 /**
  * @author Lars P&ouml;tter
@@ -85,65 +80,17 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
         {
             cfg = (Cfg)obj;
             // TODO Thread Start:
-            Protocol proto = new Protocol();
-            proto.setCfg(cfg);
-            connectLog.append("\ncreate chanel,...");
-            ClientConnection cc = ClientConnectionFactory.establishConnectionTo(cfg);
-            if(null == cc)
+            CoreStateMachine pp = new CoreStateMachine(cfg);
+            if(true == pp.isOperational())
             {
-                log.error("Could not establish the connection !");
-                log.info("connection failed !");
-                connectLog.setText(connectLog.getText() + "\nconnection failed !");
-                return ds;
+                log.trace("connection to client is now open !");
+                connectLog.setText(connectLog.getText() + "\nconnection to client is now open !");
+                configCreator.setNextAllowed(true);
             }
-            connectLog.append("\nconnect to channel,...");
-            if(false == proto.ConnectToChannel(cc))
+            else
             {
-                log.error("Could not establish the connection !");
-                log.info("connection failed !");
-                connectLog.setText(connectLog.getText() + "\nconnection failed !");
-                return ds;
+                log.error("Could not open connection to client!");
             }
-            // else Connection established successfully !
-            connectLog.append("\napply configuration to client,...");
-            if(false == proto.applyConfigurationToClient())
-            {
-                log.error("Could not establish the connection !");
-                log.info("connection failed !");
-                connectLog.setText(connectLog.getText() + "\nconnection failed !");
-                return ds;
-            }
-            // else Client configured successfully !
-            Planner plan = new Planner(proto);
-            GCodeDecoder decoder = new GCodeDecoder(plan);
-            DeviceInformation di = plan.getPrinterAbilities();
-            try
-            {
-                connectLog.append("\nread connector names,...");
-                if(false == di.readConnectorNames())
-                {
-                    log.error("Could not establish the connection !");
-                    log.info("connection failed !");
-                    connectLog.setText(connectLog.getText() + "\nconnection failed !");
-                    return ds;
-                }
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-                log.error("Could not establish the connection !");
-                log.info("connection failed !");
-                connectLog.setText(connectLog.getText() + "\nconnection failed !");
-                return ds;
-            }
-            log.trace("connection to client is now open !");
-            connectLog.setText(connectLog.getText() + "\nconnection to client is now open !");
-            ds.putObject(WizardMain.DS_CLIENT_CONNECTION_NAME, cc);
-            ds.putObject(WizardMain.DS_PROTOCOL_NAME, proto);
-            ds.putObject(WizardMain.DS_PLANNER_NAME, plan);
-            ds.putObject(WizardMain.DS_G_CODE_DECODER_NAME, decoder);
-            ds.putObject(WizardMain.DS_DEVICE_INFORMATION_NAME, di);
-            configCreator.setNextAllowed(true);
             // Thread end
         }
         else

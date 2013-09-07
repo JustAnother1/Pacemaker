@@ -12,7 +12,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>
  *
  */
-package de.nomagic.printerController.planner;
+package de.nomagic.printerController.core;
 
 /**
  * @author Lars P&ouml;tter
@@ -23,26 +23,20 @@ public class RelativeMove
     private final double x;
     private final double y;
     private final double z;
-    private final double a;
-    private final double b;
-    private final double c;
     private final double e;
+    private final double f;
 
     public RelativeMove(final double x,
                         final double y,
                         final double z,
-                        final double a,
-                        final double b,
-                        final double c,
-                        final double e)
+                        final double e,
+                        final double f)
     {
         this.x = x;
         this.y = y;
         this.z = z;
-        this.a = a;
-        this.b = b;
-        this.c = c;
         this.e = e;
+        this.f = f;
     }
 
     public double getX()
@@ -60,24 +54,13 @@ public class RelativeMove
         return z;
     }
 
-    public double getA()
-    {
-        return a;
-    }
-
-    public double getB()
-    {
-        return b;
-    }
-
-    public double getC()
-    {
-        return c;
-    }
-
     public double getE()
     {
         return e;
     }
 
+    public double getF()
+    {
+        return f;
+    }
 }

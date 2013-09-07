@@ -12,7 +12,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>
  *
  */
-package de.nomagic.printerController.gcode;
+package de.nomagic.printerController.core;
 
 import java.util.HashMap;
 

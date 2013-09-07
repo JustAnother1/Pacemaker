@@ -77,4 +77,16 @@ public class Reply
         return res;
     }
 
+    public boolean isDebugFrame()
+    {
+        if(Protocol.DEBUG_FLAG == (Protocol.DEBUG_FLAG & data[POS_OF_CONTROL]))
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
 }

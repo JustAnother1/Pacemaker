@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
-import de.nomagic.printerController.printer.Cfg;
+import de.nomagic.printerController.Cfg;
 
 /** Ask user for ClientDeviceString directly.
  *
@@ -69,7 +69,7 @@ public class InterfaceTypeExperimental extends OneNextWizardSlide
         if(true == obj instanceof Cfg)
         {
             cfg = (Cfg)obj;
-            desscriptionField.setText(cfg.getClientDeviceString());
+            desscriptionField.setText(cfg.getConnectionDefinitionOfClient(0));
         }
         String text = desscriptionField.getText();
         if(1 > text.length())
@@ -95,7 +95,7 @@ public class InterfaceTypeExperimental extends OneNextWizardSlide
             log.error("No Configuration in Data Store ! Creating new Configuration !");
             cfg = new Cfg();
         }
-        cfg.setClientDeviceString(desscriptionField.getText());
+        cfg.setClientDeviceString(0, desscriptionField.getText());
         ds.putObject(WizardMain.DS_CONFIGURATION_NAME, cfg);
         return ds;
     }

@@ -18,7 +18,7 @@ import javax.swing.JTextArea;
 import de.nomagic.Translator.Translator;
 import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.WizardSlide;
-import de.nomagic.printerController.printer.Cfg;
+import de.nomagic.printerController.Cfg;
 
 /** Let the user select which Interface type to use to talk to the client.
  *

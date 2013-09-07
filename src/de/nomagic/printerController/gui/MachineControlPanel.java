@@ -36,8 +36,9 @@ import javax.swing.JPanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.nomagic.printerController.printer.Cfg;
-import de.nomagic.printerController.printer.PrintProcess;
+import de.nomagic.printerController.Cfg;
+import de.nomagic.printerController.core.CoreStateMachine;
+import de.nomagic.printerController.core.Executor;
 
 /**
  * @author Lars P&ouml;tter
@@ -50,16 +51,16 @@ public class MachineControlPanel implements ActionListener
     public final static String ACTION_LOAD_CONFIGURATION = "loadConfig";
     public final static String ACTION_PRINT = "print";
 
-    private final PrintProcess pp;
     private final JPanel myPanel = new JPanel();
     private final ClientPanel clientPane;
     private final DirectControlPanel directControlPane;
     private final JButton configurationButton = new JButton("load configuration");
     private final JButton printButton = new JButton("print");
     private final PrinterStatusPanel printerStatusPanel;
-    final JFileChooser fc = new JFileChooser();
+    private final JFileChooser fc = new JFileChooser();
+    private final CoreStateMachine pp;
 
-    public MachineControlPanel(final PrintProcess pp, PrinterStatusPanel printerStatusPanel)
+    public MachineControlPanel(final CoreStateMachine pp, final Cfg cfg, PrinterStatusPanel printerStatusPanel)
     {
         this.pp = pp;
         this.printerStatusPanel = printerStatusPanel;
@@ -83,7 +84,7 @@ public class MachineControlPanel implements ActionListener
         myPanel.add(directControlPane.getPanel());
 
         // connection to Client Panel (connect, disconnect,...)
-        clientPane = new ClientPanel(pp, this);
+        clientPane = new ClientPanel(pp, cfg, this);
         myPanel.add(clientPane.getPanel());
     }
 
@@ -99,7 +100,7 @@ public class MachineControlPanel implements ActionListener
         if(ClientPanel.ACTION_CLOSE_CLIENT_CONNECTION.equals(e.getActionCommand()))
         {
             log.trace("User requests to close the connection to the client!");
-            pp.closeClientConnection();
+            pp.close();
             clientPane.updateButtons();
             printerStatusPanel.setToOffline();
             directControlPane.setToOffline();
@@ -108,7 +109,7 @@ public class MachineControlPanel implements ActionListener
         else if(ClientPanel.ACTION_OPEN_CLIENT_CONNECTION.equals(e.getActionCommand()))
         {
             log.info("User requests to open the connection to the client!");
-            final Cfg cfg = pp.getCfg();
+            /* TODO
             cfg.setClientDeviceString(clientPane.getConnectionDefinition());
             pp.setCfg(cfg);
             if(true == pp.connectToPacemaker())
@@ -123,6 +124,7 @@ public class MachineControlPanel implements ActionListener
             {
                 log.info("connection failed !");
             }
+            */
         }
         else if(ACTION_LOAD_CONFIGURATION.equals(e.getActionCommand()))
         {
@@ -136,7 +138,7 @@ public class MachineControlPanel implements ActionListener
                     if(true == c.readFrom(new FileInputStream(file)))
                     {
                         log.trace("using the newly read configuration !");
-                        pp.setCfg(c);
+                        // TODO pp.setCfg(c);
                         clientPane.updateConnectionDefinition();
                     }
                 }

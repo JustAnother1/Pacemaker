@@ -25,8 +25,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import de.nomagic.printerController.printer.Cfg;
-import de.nomagic.printerController.printer.PrintProcess;
+import de.nomagic.printerController.Cfg;
+import de.nomagic.printerController.core.CoreStateMachine;
 
 /**
  * @author Lars P&ouml;tter
@@ -44,11 +44,13 @@ public class ClientPanel
     private final JTextField desscriptionField = new JTextField("", 20);
     private final JButton connectButton = new JButton("Connect");
     private final JButton disconnectButton = new JButton("Disconnect");
-    private final PrintProcess pp;
+    private final CoreStateMachine pp;
+    private final Cfg cfg;
 
-    public ClientPanel(final PrintProcess pp, ActionListener parent)
+    public ClientPanel(final CoreStateMachine pp, Cfg cfg, ActionListener parent)
     {
         this.pp = pp;
+        this.cfg = cfg;
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Client Connection"));
@@ -71,7 +73,7 @@ public class ClientPanel
 
     public void updateButtons()
     {
-        if(true == pp.isClientConnected())
+        if(true == pp.isOperational())
         {
             connectButton.setEnabled(false);
             disconnectButton.setEnabled(true);
@@ -85,8 +87,7 @@ public class ClientPanel
 
     public void updateConnectionDefinition()
     {
-        Cfg cfg = pp.getCfg();
-        desscriptionField.setText(cfg.getClientDeviceString());
+        desscriptionField.setText(cfg.getConnectionDefinitionOfClient(0));
     }
 
     public Component getPanel()

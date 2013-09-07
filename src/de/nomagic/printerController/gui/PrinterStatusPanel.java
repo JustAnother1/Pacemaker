@@ -24,8 +24,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.text.DefaultCaret;
 
-import de.nomagic.printerController.pacemaker.DeviceInformation;
-import de.nomagic.printerController.printer.PrintProcess;
+import de.nomagic.printerController.core.Executor;
 
 /**
  * @author Lars P&ouml;tter
@@ -38,11 +37,11 @@ public class PrinterStatusPanel
     private final JPanel myPanel = new JPanel();
     private final JTextArea statusText = new JTextArea(20, 50);
     private final JScrollPane scrollPane = new JScrollPane();
-    private final PrintProcess pp;
+    private final Executor exe;
 
-    public PrinterStatusPanel(PrintProcess pp)
+    public PrinterStatusPanel(Executor exe)
     {
-        this.pp = pp;
+        this.exe = exe;
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Printer Status"));
@@ -66,9 +65,7 @@ public class PrinterStatusPanel
 
     public void setToOnline()
     {
-        DeviceInformation di = pp.getPrinterAbilities();
-        statusText.setText("Connected to Pacemaker client !\n"
-                           + di.toString());
+        statusText.setText("Connected to Pacemaker client !\n");
     }
 
 }

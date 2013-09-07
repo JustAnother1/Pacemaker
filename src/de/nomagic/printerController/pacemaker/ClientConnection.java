@@ -17,6 +17,8 @@ package de.nomagic.printerController.pacemaker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public abstract class ClientConnection
+public abstract class ClientConnection extends Thread
 {
     private final static Logger log = LoggerFactory.getLogger("ClientConnection");
 
@@ -36,6 +38,7 @@ public abstract class ClientConnection
     protected OutputStream out;
     protected byte sequenceNumber = 0;
     protected boolean isSynced = false;
+    private BlockingQueue<Reply> receiveQueue = new LinkedBlockingQueue<Reply>();
 
     private static byte crc_array[] =
     {
@@ -222,71 +225,103 @@ public abstract class ClientConnection
     {
         try
         {
-            // Sync
-            do{
-            final int sync = getAByte();
-            if((sync != Protocol.START_OF_CLIENT_FRAME) && (true == isSynced))
-            {
-                // Protocol Error
-                log.error("Frame did not start with sync byte !");
-                isSynced = false;
-                return null;
-            }
-            if(Protocol.START_OF_CLIENT_FRAME == sync)
-            {
-                isSynced = true;
-            }
-            } while (false == isSynced);
-
-            // Reply Code
-            final byte reply =  (byte)getAByte();
-            if(Protocol.RESPONSE_MAX < reply)
-            {
-                // Protocol Error
-                log.error("Invalid reply code !");
-                return null;
-            }
-
-            // Length
-            final int replyLength = getAByte();
-
-            final byte[] buf = new byte[5 + replyLength];
-            buf[0] = Protocol.START_OF_CLIENT_FRAME;
-            buf[1] = reply;
-            buf[2] = (byte)(replyLength & 0xff);
-
-            // Control
-            buf[3] =  (byte)getAByte();
-            if(buf[3] != sequenceNumber)
-            {
-                // Protocol Error
-                log.error("Wrong Sequence Number !");
-                return null;
-            }
-
-            // Parameter
-            for(int i = 0; i < replyLength;i++)
-            {
-                buf[4 + i] = (byte)getAByte();
-                // log.traceSystem.out.print(" " + i);
-            }
-
-            // Error Check Code (CRC-8)
-            buf[4 + replyLength] = (byte)getAByte();
-            if(getCRCfor(buf, replyLength + 4) != buf[4 + replyLength])
-            {
-                log.error("Wrong CRC ! expected : " + String.format("%02X", getCRCfor(buf, replyLength + 4))
-                                   + " received : " + String.format("%02X", buf[4 + replyLength]));
-                return null;
-            }
-            return new Reply(buf);
+            return receiveQueue.take();
         }
-        catch (final IOException e)
+        catch(InterruptedException e)
         {
-            e.printStackTrace();
+            return null;
         }
-        log.error("Failed to read Reply - Exception !");
-        return null;
+    }
+
+    public void run()
+    {
+        try
+        {
+            for(;;)
+            {
+                try
+                {
+                    // Sync
+                    do{
+                        final int sync = getAByte();
+                        if((sync != Protocol.START_OF_CLIENT_FRAME) && (true == isSynced))
+                        {
+                            // Protocol Error
+                            log.error("Frame did not start with sync byte !");
+                            isSynced = false;
+                        }
+                        else
+                        {
+                            if(Protocol.START_OF_CLIENT_FRAME == sync)
+                            {
+                                isSynced = true;
+                            }
+                        }
+                    } while (false == isSynced);
+
+                    // Reply Code
+                    final byte reply =  (byte)getAByte();
+                    if(Protocol.RESPONSE_MAX < reply)
+                    {
+                        // Protocol Error
+                        log.error("Invalid reply code !");
+                        continue;
+                    }
+
+                    // Length
+                    final int replyLength = getAByte();
+
+                    final byte[] buf = new byte[5 + replyLength];
+                    buf[0] = Protocol.START_OF_CLIENT_FRAME;
+                    buf[1] = reply;
+                    buf[2] = (byte)(replyLength & 0xff);
+
+                    // Control
+                    buf[3] =  (byte)getAByte();
+                    if(buf[3] != sequenceNumber)
+                    {
+                        // Protocol Error
+                        log.error("Wrong Sequence Number !");
+                        continue;
+                    }
+
+                    // Parameter
+                    for(int i = 0; i < replyLength;i++)
+                    {
+                        buf[4 + i] = (byte)getAByte();
+                        // log.traceSystem.out.print(" " + i);
+                    }
+
+                    // Error Check Code (CRC-8)
+                    buf[4 + replyLength] = (byte)getAByte();
+                    if(getCRCfor(buf, replyLength + 4) != buf[4 + replyLength])
+                    {
+                        log.error("Wrong CRC ! expected : " + String.format("%02X", getCRCfor(buf, replyLength + 4))
+                                           + " received : " + String.format("%02X", buf[4 + replyLength]));
+                        continue;
+                    }
+                    Reply curReply = new Reply(buf);
+                    if(true == curReply.isDebugFrame())
+                    {
+                        log.info(curReply.toString());
+                    }
+                    else
+                    {
+                        receiveQueue.put(curReply);
+                    }
+                }
+                catch (final IOException e)
+                {
+                    e.printStackTrace();
+                }
+                log.error("Failed to read Reply - Exception !");
+            }
+        }
+        catch(InterruptedException ie)
+        {
+            log.info("Has been Interrupted !");
+            // end the thread
+        }
     }
 
     public void close()

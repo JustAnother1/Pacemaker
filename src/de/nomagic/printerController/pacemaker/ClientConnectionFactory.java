@@ -17,8 +17,6 @@ package de.nomagic.printerController.pacemaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.nomagic.printerController.printer.Cfg;
-
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -33,14 +31,9 @@ public class ClientConnectionFactory
     {
     }
 
-    public static ClientConnection establishConnectionTo(final Cfg cfg)
+
+    public static ClientConnection establishConnectionTo(final String connectionDescription)
     {
-        if(null == cfg)
-        {
-            log.error("No Configuration available !");
-            return null;
-        }
-        final String connectionDescription = cfg.getClientDeviceString();
         if(null == connectionDescription)
         {
             log.error("No Connection Description available !");

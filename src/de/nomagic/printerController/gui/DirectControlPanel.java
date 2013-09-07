@@ -25,7 +25,8 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import de.nomagic.printerController.printer.PrintProcess;
+import de.nomagic.printerController.core.CoreStateMachine;
+
 
 /**
  * @author Lars P&ouml;tter
@@ -34,7 +35,6 @@ import de.nomagic.printerController.printer.PrintProcess;
 public class DirectControlPanel implements ActionListener
 {
     private final JPanel myPanel = new JPanel();
-    private final PrintProcess pp;
     private final static String ACTION_COMMAND_X_PLUS = "xplus";
     private final static String ACTION_COMMAND_X_MINUS = "xminus";
     private final static String ACTION_COMMAND_Y_PLUS = "yplus";
@@ -61,7 +61,9 @@ public class DirectControlPanel implements ActionListener
     private final JButton EmergencyStopButton = new JButton("Emergency Stop");
     private final JButton HomeButton = new JButton("Home");
 
-    public DirectControlPanel(PrintProcess pp)
+    private final CoreStateMachine pp;
+
+    public DirectControlPanel(CoreStateMachine pp)
     {
         this.pp = pp;
         myPanel.setBorder(BorderFactory.createTitledBorder(

@@ -22,8 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Tool;
-import de.nomagic.printerController.planner.AxisConfiguration;
-import de.nomagic.printerController.printer.Cfg;
+import de.nomagic.printerController.Cfg;
 
 /**
  * @author Lars P&ouml;tter
@@ -112,6 +111,7 @@ public class Protocol
 
 // Client
     public final static int START_OF_CLIENT_FRAME = 0x42;
+    public static final int DEBUG_FLAG = 0x10;
 
     public final static byte RESPONSE_FRAME_RECEIPT_ERROR = 0;
     public final static int RESPONSE_BAD_FRAME = 0;
@@ -177,35 +177,36 @@ public class Protocol
     private final int MAX_ENQUEUE_DELAY = 100;
 
     private ClientConnection cc;
-    private AxisConfiguration[] axisCfg;
-    private int[] heaters;
-    private int[] temperatureSensors;
-    private Cfg cfg;
+    private boolean isOperational = false;
     private DeviceInformation di = new DeviceInformation();
 
     private final static int QUEUE_SEND_BUFFER_SIZE = 200;
+
     private final Vector<byte[]> sendQueue = new Vector<byte[]>();
     public int ClientQueueFreeSlots = 0;
     public int ClientExecutedJobs = 0;
     public int CommandsSendToClient = 0;
 
-    public Protocol()
+    public Protocol(String ConnectionDefinition)
     {
-    }
-
-    public boolean ConnectToChannel(final ClientConnection cc)
-    {
-        this.cc = cc;
+        this.cc = ClientConnectionFactory.establishConnectionTo(ConnectionDefinition);
         // take client out of Stopped Mode
-        return sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
+        isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
     }
 
-    public void setCfg(final Cfg cfg)
+    /**
+     *
+     * @return true if everything is ready to start.
+     */
+    public boolean isOperational()
     {
-        this.cfg = cfg;
-        heaters = cfg.getHeaterMapping();
-        temperatureSensors = cfg.getTemperatureSensorMapping();
-        axisCfg = cfg.getAxisMapping();
+        return isOperational;
+    }
+
+    public void closeConnection()
+    {
+        cc.close();
+        isOperational = false;
     }
 
     public Reply sendInformationRequest(final int which) throws IOException
@@ -283,7 +284,7 @@ public class Protocol
         default: return -1;
         }
     }
-
+    /*
     public boolean isEndSwitchTriggered(final int axis, final int direction)
     {
         int SwitchNum = -1;
@@ -358,53 +359,16 @@ public class Protocol
             isTriggered = isEndSwitchTriggered(axis, direction);
         }
     }
-
+*/
     public boolean setTemperature(final int heaterNum, Double temperature)
     {
         temperature = temperature * 10; // Client expects Temperature in 0.1 degree units.
         final int tempi = temperature.intValue();
         final byte[] param = new byte[3];
-        param[0] = (byte) heaters[heaterNum];
+        param[0] = (byte) heaterNum;
         param[1] = (byte)(0xff & (tempi/256));
         param[2] = (byte)(tempi & 0xff);
         return sendOrderExpectOK(Protocol.ORDER_SET_HEATER_TARGET_TEMPERATURE, param);
-    }
-
-    public void waitForHeaterInLimits(final int heaterNumber,
-                                      final Double temperature_min,
-                                      final Double temperature_max)
-    {
-        if(Cfg.INVALID == heaterNumber)
-        {
-            log.warn("Ignoring waiting for reaching the temperature on a missing Heater !");
-            return;
-        }
-        if(0.0 < temperature_min)
-        {
-            log.info("waiting for Temperature to reach {} on heater {}", temperature_min, heaterNumber);
-            if(Cfg.INVALID == temperatureSensors[heaterNumber])
-            {
-                log.error("No Temperature Sensor available for Heater {} !", heaterNumber);
-                return;
-            }
-            double curTemp = readTemperatureFrom(temperatureSensors[heaterNumber]);
-            while(   (curTemp < (temperature_min))
-                  || (curTemp > (temperature_max)) )
-            {
-                try
-                {
-                    Thread.sleep(POLLING_TIME_HEATER_MS);
-                }
-                catch (final InterruptedException e)
-                {
-                    e.printStackTrace();
-                }
-                curTemp = readTemperatureFrom(temperatureSensors[heaterNumber]);
-                log.info("cur Temperature is {}", curTemp);
-                //TODO If the temperature does not change for too long then the heater heats somewhere else and we must shut him off, right?
-            }
-        }
-        // else heater is not active -> already in limit
     }
 
     public double readTemperatureFrom(int sensorNumber)
@@ -479,53 +443,34 @@ public class Protocol
      */
     public boolean enableAllStepperMotors()
     {
-        if(true == cfg.shouldUseSteppers())
+        final int numSteppers = di.getNumberSteppers();
+        byte[] parameter = new byte[2];
+        parameter[1] = 0x01; // Enabled
+        for(int i = 0; i < numSteppers; i++)
         {
-            final int numSteppers = di.getNumberSteppers();
-            byte[] parameter = new byte[2];
-            parameter[1] = 0x01; // Enabled
-            for(int i = 0; i < numSteppers; i++)
+            parameter[0] = (byte)i;
+            if(false == sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter))
             {
-                parameter[0] = (byte)i;
-                if(false == sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter))
-                {
-                    log.error("Falied to enable the Steppers !");
-                    return false;
-                }
+                log.error("Falied to enable the Steppers !");
+                return false;
             }
-            return true;
         }
-        else
-        {
-            // TODO alternative to Stepper Control Extension
-            log.error("Found Enable Stepper Command but Client is not allowed to use the Steppers !");
-            return false;
-        }
-
+        return true;
     }
 
     public boolean disableAllStepperMotors()
     {
-        if(true == cfg.shouldUseSteppers())
+        if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, null))
         {
-            if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, null))
-            {
-                log.error("Falied to disable the Steppers !");
-                return false;
-            }
-            else
-            {
-                return true;
-            }
+            log.error("Falied to disable the Steppers !");
+            return false;
         }
         else
         {
-            // TODO alternative to Stepper Control Extension
-            log.error("Found disable Stepper Command but Client is not allowed to use the Steppers !");
-            return false;
+            return true;
         }
     }
-
+/*
     public void startHomeOnAxes(final Vector<Integer> listOfHomeAxes)
     {
         if(null == listOfHomeAxes)
@@ -571,7 +516,7 @@ public class Protocol
             log.error("Falied to Home the Axis !");
         }
     }
-
+*/
     public boolean doStopPrint()
     {
         final byte[] param = new byte[1];
@@ -810,50 +755,7 @@ public class Protocol
         return true;
     }
 
-    public boolean applyConfigurationToClient()
-    {
-        // use or not use the "Stepper Control Extension"
-        if((true == cfg.shouldUseSteppers()) && (true == di.hasExtensionStepperControl()))
-        {
-            if(false == sendOrderExpectOK(ORDER_ACTIVATE_STEPPER_CONTROL, (byte)0x01))
-            {
-                log.error("Failed to activate Stepper Control Extension !");
-                return false;
-            }
-        }
-        // else no extension- no support for command
-
-        // Configure heater (Heater-Temperature sensor mapping)
-        int[] heaters = cfg.getHeaterMapping();
-        int[] sensors = cfg.getTemperatureSensorMapping();
-        byte[] parameter = new byte[2];
-        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
-        {
-            int heaterNum = heaters[i];
-            int sensorNum = sensors[i];
-            if((-1 < heaterNum) && (-1 < sensorNum))
-            {
-                parameter[0] = (byte)heaterNum;
-                parameter[1] = (byte)sensorNum;
-                if(false == sendOrderExpectOK(ORDER_CONFIGURE_HEATER, parameter))
-                {
-                    log.error("Failed to configure Heater {} to use Temperature sensor {} !", heaterNum, sensorNum);
-                    return false;
-                }
-            }
-            // else invalid configuration -> skip
-        }
-
-        // send all Firmware configuration Values to the Client
-        String[] keys = cfg.getAllFirmwareKeys();
-        for(int i = 0; i < keys.length; i++)
-        {
-            writeFirmwareConfigurationValue(keys[i], cfg.getFirmwareSetting(keys[i]));
-        }
-        return true;
-    }
-
-    private void writeFirmwareConfigurationValue(String name, String value)
+    public boolean writeFirmwareConfigurationValue(String name, String value)
     {
         byte[] nameBuf = name.getBytes(Charset.forName("UTF-8"));
         byte[] valueBuf = value.getBytes(Charset.forName("UTF-8"));
@@ -870,6 +772,11 @@ public class Protocol
         if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter))
         {
             log.error("Failed to write Fimrware Setting {} = {} !", name, value);
+            return false;
+        }
+        else
+        {
+            return true;
         }
     }
 
