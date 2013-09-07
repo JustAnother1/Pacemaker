@@ -8,15 +8,14 @@
             <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
         </tstamp>
 
-        <javac srcdir="src" destdir="bin" includeantruntime="false" classpath="lib/slf4j-api.jar;lib/logback-core.jar;lib/logback-classic.jar lib/jna.jar;lib/purejavacomm.jar"/>
-
+        <javac srcdir="src" destdir="bin" includeantruntime="false" classpath="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar;lib/logback-1.0.13/logback-core-1.0.13.jar;lib/logback-1.0.13/logback-classic-1.0.13.jar lib/jna-3.5.1.jar;lib/purejavacomm.jar"/>
         <jar destfile="Pacemaker.jar" update="false">
             <fileset dir="bin">
                 <include name="**/*.class" />
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.ControllerMain" />
-                <attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar lib/jna.jar lib/purejavacomm.jar"/>
+                <attribute name="Class-Path" value="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar lib/logback-1.0.13/logback-core-1.0.13.jar lib/logback-1.0.13/logback-classic-1.0.13.jar lib/jna-3.5.1.jar lib/purejavacomm.jar"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
@@ -28,7 +27,7 @@
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.test.pacemaker.ClientMain" />
-                <attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar"/>
+                <attribute name="Class-Path" value="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar lib/logback-1.0.13/logback-core-1.0.13.jar lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
@@ -40,7 +39,7 @@
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.printerConfigurationCreationWizard.WizardMain" />
-                <attribute name="Class-Path" value="lib/slf4j-api.jar lib/logback-core.jar lib/logback-classic.jar lib/jna.jar lib/purejavacomm.jar . "/>
+                <attribute name="Class-Path" value="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar lib/logback-1.0.13/logback-core-1.0.13.jar lib/logback-1.0.13/logback-classic-1.0.13.jar lib/jna-3.5.1.jar lib/purejavacomm.jar . "/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
