@@ -14,10 +14,14 @@
  */
 package de.nomagic.printerController.gui;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 import javax.swing.JFrame;
 import javax.swing.JSplitPane;
 
 import de.nomagic.printerController.Cfg;
+import de.nomagic.printerController.CloseApplication;
 import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.core.Executor;
 
@@ -31,16 +35,20 @@ public class MainWindow extends JFrame
     private final PrinterStatusPanel printerStatusPanel;
     private final MachineControlPanel machineControlPanel;
 
-    public MainWindow(final Cfg cfg)
+    public MainWindow(final Cfg cfg, final CoreStateMachine core, final CloseApplication Closer)
     {
-        // set up the printer
-        final CoreStateMachine core = new CoreStateMachine(cfg);
-        // TODO check if core is operational !
         final Executor exe = core.getExecutor();
         // set up the window
         this.setTitle("Pacemaker - printerController");
         this.setResizable(true);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // TODO close Core !
+        this.addWindowListener(new WindowAdapter() {
+
+            @Override
+            public void windowClosing(WindowEvent e)
+            {
+                Closer.close();
+            }
+        });
         // add all sub Panes
         // Printer Status Panel (cur extruder, cur Temperature, cur Position of print head,....)
         printerStatusPanel = new PrinterStatusPanel(exe);

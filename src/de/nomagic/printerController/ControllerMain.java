@@ -22,12 +22,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
+import java.util.Iterator;
+import java.util.Vector;
 
 import javax.swing.SwingUtilities;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.Interface.InteractiveInterface;
+import de.nomagic.printerController.Interface.StandardStreamInterface;
+import de.nomagic.printerController.Interface.TcpInterface;
+import de.nomagic.printerController.Interface.UdpInterface;
 import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.gui.MainWindow;
 
@@ -35,13 +41,19 @@ import de.nomagic.printerController.gui.MainWindow;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class ControllerMain
+public class ControllerMain implements CloseApplication
 {
     public final static String DEFAULT_CONFIGURATION_FILE_NAME = "pacemaker.cfg";
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final Cfg cfg = new Cfg();
     private String fileToPrint = null;
     private boolean hasReadConfiguration = false;
+    private boolean shallStartGui = true;
+    private boolean shallStartTcp = false;
+    private boolean schallStartUdp = false;
+    private boolean schallStartStandardStreams = false;
+    private CoreStateMachine core;
+    private Vector<InteractiveInterface> interfaces = new Vector<InteractiveInterface>();
 
     /**
      *
@@ -55,14 +67,19 @@ public class ControllerMain
         System.out.println("Printer Controller for Pacemaker");
         System.out.println("Parameters:");
         System.out.println("-h                         : print this message.");
-        System.out.println("-p <G-Code File>           : print the file and exit");
+        System.out.println("-p <G-Code File>           : print the file and exit(does not start other interfaces");
         System.out.println("-r <Configuration File>    : read configuration from file\n"
                          + "                           : defaults to " + DEFAULT_CONFIGURATION_FILE_NAME);
         System.out.println("-c TCP:<host or ip>:<port> : connect to client using TCP");
         System.out.println("\n"
                          + "-c UART:<device>,<baudrate>,<bits per symbol>,<parity>,<Numbe of Stop Bits>\n"
                          + "                           : connect to client using UART");
+        System.out.println("-t                         : enable the TCP Interface");
+        System.out.println("-u                         : enable the UDP Interface");
+        System.out.println("-s                         : enable the Standard Input Output Stream Interface");
+        System.out.println("--no-gui                   : dont start the graphic Interface");
     }
+
 
     public boolean parseCommandLineParameters(final String[] args)
     {
@@ -85,6 +102,7 @@ public class ControllerMain
                 {
                     i++;
                     fileToPrint = args[i];
+
                 }
                 else if(true == "-r".equals(args[i]))
                 {
@@ -101,6 +119,22 @@ public class ControllerMain
                         System.err.println(e.getLocalizedMessage());
                         return false;
                     }
+                }
+                else if(true == "-t".equals(args[i]))
+                {
+                    shallStartTcp = true;
+                }
+                else if(true == "-u".equals(args[i]))
+                {
+                    schallStartUdp = true;
+                }
+                else if(true == "-s".equals(args[i]))
+                {
+                    schallStartStandardStreams = true;
+                }
+                else if(true == "--no-gui".equals(args[i]))
+                {
+                    shallStartGui = false;
                 }
                 else
                 {
@@ -186,24 +220,55 @@ public class ControllerMain
         }
     }
 
-    public void startGui()
+    public void startInterfaces()
     {
-        SwingUtilities.invokeLater(new Runnable()
+        // set up the printer
+        core = new CoreStateMachine(cfg);
+        final CloseApplication Closer = this;
+        if(false == core.isOperational())
         {
-            @Override
-            public void run()
+            System.err.println("Could not Connect to Pacemaker Client !");
+            return;
+        }
+        if(true == shallStartTcp)
+        {
+            TcpInterface tcp = new TcpInterface();
+            tcp.addPacemakerCore(core);
+            tcp.addCloser(Closer);
+            tcp.start();
+            interfaces.add(tcp);
+        }
+        if(true == schallStartUdp)
+        {
+            UdpInterface udp = new UdpInterface();
+            udp.start();
+            interfaces.add(udp);
+        }
+        if(true == schallStartStandardStreams)
+        {
+            StandardStreamInterface stdStream = new StandardStreamInterface();
+            stdStream.start();
+            interfaces.add(stdStream);
+        }
+        if(true == shallStartGui)
+        {
+            SwingUtilities.invokeLater(new Runnable()
             {
-                try
+                @Override
+                public void run()
                 {
-                    @SuppressWarnings("unused")
-                    final MainWindow gui = new MainWindow(cfg);
+                    try
+                    {
+                        @SuppressWarnings("unused")
+                        final MainWindow gui = new MainWindow(cfg, core, Closer);
+                    }
+                    catch(final Exception e)
+                    {
+                        e.printStackTrace();
+                    }
                 }
-                catch(final Exception e)
-                {
-                    e.printStackTrace();
-                }
-            }
-        });
+            });
+        }
     }
 
     public static void main(final String[] args)
@@ -216,12 +281,24 @@ public class ControllerMain
         }
         if(false == cm.hasFileToPrint())
         {
-            cm.startGui();
+            cm.startInterfaces();
         }
         else
         {
             cm.sendGCodeFile();
         }
+    }
+
+    @Override
+    public void close()
+    {
+        Iterator<InteractiveInterface> it = interfaces.iterator();
+        while(it.hasNext())
+        {
+            InteractiveInterface cutInterface = it.next();
+            cutInterface.close();
+        }
+        core.close();
     }
 
 }
