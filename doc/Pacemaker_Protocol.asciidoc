@@ -715,6 +715,40 @@ The first byte of the Parameter indicates the device type. The second byte of th
 .Replies
 - OK: Utf8 string which indicates the human readable device name or an empty Parameter if no friendly name has been explicitly configured in the firmware.
 
+==== Request Device Status (0x18)
+
+This order indicates the operational status of the specified device.
+
+.Order Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Byte Number | Content
+| 0 | device type
+| 1 | device number
+|=============================
+
+The first byte of the Parameter indicates the device type. The second byte of the Parameter indicates the desired device number.
+
+.Replies
+- OK: The first byte of the Reply Paramter contains indicates one of the following values:
+
+.Device Status values
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+| value | meaning
+| 0x0 | device available
+| 0x1 | device configuration error
+| 0x2 | device fault
+|=============================
+
+A status of *device configuration error* indicates that the device is not available fur use because it has missing or invalid device configuration.
+
+A status of *device fault* indicates that the device has sufficent configuration but is unavailable due to a detected hardware fault (e.g., unconnected or shorted sensor).
+
+A status of *device available* indicates that the device has no detected hardware or configuration errors currently.
+
+A utf8 string may optionally follow the device status value describing the cause of any device errors.
+
 ==== Request Temperature Reading (0x03)
 
 The requested temperature sensor(s) shall report their current temperature.
@@ -989,7 +1023,6 @@ If a Write Firmware Configuration Value order is sent in the middle of traversin
 | 0 (lsb) | Element readable? (0 = Not readable, 1 = Readable)
 | 1 | Element Writeable? (0 = Not Writeable, 1 = Writeable)
 | 2 | Default value? (0 = No, 1 = Yes). This indicates that the configuration value has not been explicitly set and that this is the compile-time default value currently in use.
-| 3 | Inactive Facility? (0 = Active, 1 = Inactive). A value of 1 indicates that the device or facility associated with this element is not currently correctly or completely configured for use. An example of an inactive facility element might be the configuration elements for a heater device where the heater pin or heater control mode has not been configured. Note: this bit is intended to represent a firmware configuration state and not a dynamic or protocol-controlled active/inactive state.
 |=============================
 
 The end of the configuration traversal is indicated by the order returning an element type of 0xff.
@@ -1287,6 +1320,7 @@ The currently defined movement block types are described below along with the as
 | 0x2 | Delay [queued command extension]
 | 0x3 | Basic Linear Move [basic move extension]
 | 0x4 | Set Active Toolhead [basic move extension]
+| 0x5 | Movement checkpoint [basic move extension]
 | 0x80 - 0xfe | Experimental or Unapproved Command Blocks
 |============================
 
@@ -1382,18 +1416,54 @@ An emergency stop will require the host to re-home axes to determine its positio
 
 ==== Configure Axis Movement Rates (0x13)
 
-This order configures the maximum speed and deceleration used for each axis.
+This specifies a 2-byte maximum movement rate value (in steps per second) for each movement axis. This value is used when the axis is selected as the primary movement axis for a linear move command block.
+
+Any axes which are not specified or specified with a movement rate value of 0 will assumed to be unused for movement.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 | Length In Bytes | Content
-| 1 | stepper motor number
-| 2 | max steps per second
+| 2 | max steps per second for movement axis 0
+| 2 | max steps per second for movement axis 1
+| 2 | max steps per second for movement axis 2
+| .. | 
+| 2 | max steps per second for movement axis N-1
 |=============================
 
-Byte 1 of the Parameter is the stepper number.
-Bytes 2 & 3 will contain the maximum carriage speed (in steps per second).
+.Replies
+- OK: No Parameter data.
+- Busy: Order received when Order Queue is not empty.
+- Incorrect mode: Order received when stepper control is not activated.
+
+==== Configure Movement Underrun Avoidance Parameters (0x19)
+
+This order configures the parameters for the underrun avoidance algorithm. This algorithm comes into play when the client believes that a movement queue underrun is likely to occur, that is, the movement queue will be exhausted without a movement checkpoint command being received. 
+
+An example underrun avoidance algorithm is as follows: 
+
+- if the remaining movement time (at nominal speed) is less than the specified minimum period, then the client will decelerate at the specified rate until the movement rate equals the lower of the nominal movement rate or the specified underrun avoidance maximum movement rate
+- the client will then limit the movement rate to be less than or equal to the specified underrun avoidance maximum movement rate until the enqueued remaining movement time (at nominal speed) exceeds the specified minimum period.
+- the client will accelerate back up to the nominal speed at the specified rate when the movement queue refills beyonds the specified minimum period or a movement checkpoint is received.
+- the aglorithm will also gracefully decelerate to a stop coinciding with the point where the movement queue is exhausted.
+
+As usual, acceleration/deceleration and maximum movement rates are with respect to the currently specified primary axis. A set of maximum movement rates and acceleration values must therefore be specified for each possible axis.
+
+.Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+| Length In Bytes | Content
+| 2 | threshold minimum remaining movement time for underrun avoidance (in 10us units)
+| 2 | maximum movement rate (in steps per second) during underrun avoidance for movement axis 0
+| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for movement 0
+| 2 | maximum movement rate (in steps per second) during underrun avoidance for movement axis 1
+| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for movement 1
+| 2 | maximum movement rate (in steps per second) during underrun avoidance for movement axis 2
+| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for movement 2
+| .. | 
+| 2 | maximum movement rate (in steps per second) during underrun avoidance for movement axis N-1
+| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for movement N-1
+|=============================
 
 .Replies
 - OK: No Parameter data.
@@ -1409,11 +1479,12 @@ Each basic linear movement block specifies a trapezoid speed profile, that is, a
 Each block includes the following information:
 
 * the axes involved in the move
-* the direction and number of steps on each axis
-* an acceleration/deceleration time to reach nominal speed
-* an acceleration/deceleration time to reach end speed
+* the direction and total number of steps on each axis
+* the primary axis to use for movement rate values
 * a desired nominal speed
 * a desired end speed
+* a step count fraction to reach nominal speed (which conveys an initial nominal acceleration rate)
+* a step count fraction to reach final speed (which conveys a final acceleration rate)
 
 The nominal starting speed for each block can be deduced from end speed of the previous movement block; queue underrun avoidance algorithms however may mean that the actual starting speed when executed is different to specified speed.
 
@@ -1430,10 +1501,11 @@ The command supports up to 15 stepper axes.
 |     | bits6-0: axes used in block (assume n bits set in this example)
 |   1 | bit7: use 1 or 2 byte step counts (0=1 byte, 1=2 byte) *[Directions Field]*
 |     | bits6-0: direction on each axis
-|   1 | nominal speed factor
-|   1 | end speed factor
-|   1 | initial acceleration/deceleration time
-|   1 | final acceleration/deceleration time
+|   1 | bits3-0: primary axis selector
+|   1 | nominal speed fraction
+|   1 | end speed fraction
+|   1 | initial acceleration/deceleration step count fraction
+|   1 | final acceleration/deceleration step count fraction
 | 1 or 2 | Steps on selected axis 1 [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
 | 1 or 2 | Steps on selected axis 2
 | 1 or 2 | steps on selected axis 3
@@ -1450,10 +1522,11 @@ The command supports up to 15 stepper axes.
 |     | bits14-0: axes used in block (assume n bits set for example)
 |   2 | bit15: use 2 byte step counts (0=no, 1=yes) *[Directions Field]*
 |     | bits14-0: direction on each axis
-|   1 | nominal speed factor
-|   1 | end speed factor
-|   1 | initial acceleration/deceleration time
-|   1 | final acceleration/deceleration time
+|   1 | bits3-0: primary axis selector
+|   1 | nominal speed fraction
+|   1 | end speed fraction
+|   1 | initial acceleration/deceleration step count fraction
+|   1 | final acceleration/deceleration step count fraction
 | 1 or 2 | Steps on selected axis 1 [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
 | 1 or 2 | Steps on selected axis 2
 | 1 or 2 | steps on selected axis 3
@@ -1465,19 +1538,19 @@ The *Axis Selection Field* does a couple of things: the MSB indicates whether a 
 
 The *Directions Field* is another bitmask field where each bit defines the direction of movement and uses the same axis to bit position mapping as for the axis selection bitmask. For example, bit 0(LSB) contains the direction of stepper number 0 movement. A "1" means moving in increasing direction. If a 2 byte axis selection bitmask is used, then a 2 byte directions field is also used. The MSB of the Directions field indicates whether 1 or 2 byte step counts will be used.
 
-The speed and acceleration is calculated with respect to the primary axis for the movement block. The primary axis is selected to be the axis with the largest numbers of steps in the block. If more than one travel axis has equal highest number of steps, then the travel axis with the lowest configured maximum speed is selected.
+The *primary axis selector* indicates the stepper axis number of the primary axis for this movement command. The speed and acceleration are calculated with respect to the primary axis for the movement block. 
 
 NOTE: The host has to make sure that the other axes do not get more steps than they can handle. The client does not need to check if the move command causes valid acceleration and valid speeds on all axis.
 
-The *initial acceleration/deceleration time* is the fraction of the total movement distance which is taken to accelerate/decelerate from the starting speed to the nominal speed. For instance, for a segment with 200 steps, a value of 50 would mean that the client would attempt to reach nominal speed at 39 steps into the block (50/255 * 200).
+The *initial acceleration/deceleration step count fraction* is the fraction of the total movement distance which is taken to accelerate/decelerate from the starting speed to the nominal speed. For instance, for a segment with 200 steps, a value of 50 would mean that the client would attempt to reach nominal speed at 39 steps into the block (50/255 * 200).
 
-The *final acceleration/deceleration time* is the fraction of the total movement distance at which point the client starts to accelerate/decelerate from the nominal speed to the end speed. For instance, for a segment with 200 steps, a value of 200 would mean that the client would start to accelerate/decelerate to the end speed after 156 steps into the block (200/255 * 200).
+The *final acceleration/deceleration step count fraction* is the cumulative fraction of the total movement distance at which point the client starts to accelerate/decelerate from the nominal speed to the end speed. For instance, for a segment with 200 steps, a value of 200 would mean that the client would start to accelerate/decelerate to the end speed after 156 steps into the block (200/255 * 200).
 
 If the movement block is accelerating/decelerating for the entire time, then the nominal & end speed should be set equal and the initial & final acceleration/deceleration time should be both equal to 255. By specifying, these acceleration/deceleration time the host is not limited to always accelerating at the maximum rate.
 
-The *nominal speed factor* is the desired movement speed after initial acceleration/deceleration. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%).
+The *nominal speed fraction* is the desired movement speed after initial acceleration/deceleration. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%).
 
-The *end speed factor* is the desired movement speed after all primary axis steps have been taken. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%).
+The *end speed fraction* is the desired movement speed after all primary axis steps have been taken. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%).
 
 The steps on each of the selected axes are always specified as unsigned step count values (indicating movement not position). The step counts in each movement block are always specified in order of the stepper number index but it only includes selected axes for the block. This is a 1 byte unsigned integer if 1 byte step values are being used; otherwise it is a 2 byte unsigned integer.
 
@@ -1498,6 +1571,19 @@ This changes the active toolhead. This is primarily a hook for the firmware to t
 |=============================
 
 The first byte of the Parameter will contain the new active toolhead number. The toolhead number must be a zero-indexed identifier which may have some significance to firmware-specific configuration (if used); otherwise, this command block is ignored by the client. The client is assumed to be using toolhead 0 initially.
+
+==== Movement Checkpoint (0x5)
+
+This comand block indicates the end of a sequence of moves. The client will not activate the movement underrun prevention algorithms when a Movement Checkpoint command has been received after the last movement command.
+
+NOTE: The final speed of the last movement command before the Movement Checkpoint must always be zero!
+
+.Command Block
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Byte Number | Content
+| 0 | Command Block Type Byte (== 0x05)
+|=============================
 
 == Event Reporting Extension
 
