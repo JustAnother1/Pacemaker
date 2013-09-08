@@ -245,7 +245,7 @@ public class ActionHandler extends Thread implements EventSource
         Event e;
         try
         {
-            for(;;)
+            while(false == isInterrupted())
             {
                 e = eventQueue.take();
                 if(null != e)

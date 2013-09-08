@@ -267,7 +267,7 @@ public abstract class ClientConnection extends Thread
     {
         try
         {
-            for(;;)
+            while(false == isInterrupted())
             {
                 try
                 {
@@ -343,6 +343,7 @@ public abstract class ClientConnection extends Thread
                 catch (final IOException e)
                 {
                     e.printStackTrace();
+                    sleep(100);
                 }
                 log.error("Failed to read Reply - Exception !");
             }
