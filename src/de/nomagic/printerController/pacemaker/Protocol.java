@@ -22,7 +22,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Tool;
-import de.nomagic.printerController.Cfg;
 
 /**
  * @author Lars P&ouml;tter
@@ -190,8 +189,15 @@ public class Protocol
     public Protocol(String ConnectionDefinition)
     {
         this.cc = ClientConnectionFactory.establishConnectionTo(ConnectionDefinition);
-        // take client out of Stopped Mode
-        isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
+        if(null == cc)
+        {
+            isOperational = false;
+        }
+        else
+        {
+            // take client out of Stopped Mode
+            isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
+        }
     }
 
     /**

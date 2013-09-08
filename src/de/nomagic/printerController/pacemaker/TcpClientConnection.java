@@ -79,6 +79,7 @@ public class TcpClientConnection extends ClientConnection
         this.pms = pms;
         this.in = pms.getInputStream();
         this.out = pms.getOutputStream();
+        this.start();
     }
 
     @Override

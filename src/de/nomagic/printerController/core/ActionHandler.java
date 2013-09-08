@@ -95,12 +95,17 @@ public class ActionHandler extends Thread implements EventSource
                 log.error("Client Definition for Client {} is null !", i);
                 return false;
             }
+            else
+            {
+                log.info("Client Definition: " + clientDefinition);
+            }
             Protocol pro = new Protocol(clientDefinition);
             if(false == pro.isOperational())
             {
                 log.error("Client connection failed ! " + clientDefinition);
                 return false;
             }
+            log.info("Protocol is operational");
             DeviceInformation di = new DeviceInformation();
             try
             {
@@ -108,6 +113,7 @@ public class ActionHandler extends Thread implements EventSource
                 // check for all devices if they are configured
                 // if yet then create the instances for them
                 di.readDeviceInformationFrom(pro);
+                log.info("Connected to : " + di);
                 print.put(i, new Printer(pro));
                 mapFans(di, cfg, pro, i);
                 mapHeaters(di, cfg, pro, i);

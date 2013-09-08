@@ -14,6 +14,9 @@
  */
 package de.nomagic.printerController.core;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.nomagic.printerController.Cfg;
 
 /**
@@ -23,6 +26,7 @@ import de.nomagic.printerController.Cfg;
  */
 public class CoreStateMachine
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private boolean isOperational = false;
     private Executor exe;
@@ -31,12 +35,15 @@ public class CoreStateMachine
 
     public CoreStateMachine(final Cfg cfg)
     {
+        log.info("starting Action Handler,...");
         handler = new ActionHandler(cfg);
         if(false == handler.isOperational())
         {
             return;
         }
+        log.info("starting Executor,...");
         exe = new Executor(handler);
+        log.info("starting G-Code Decoder,...");
         decoder = new GCodeDecoder(exe);
         // everything is now up and running
         isOperational = true;

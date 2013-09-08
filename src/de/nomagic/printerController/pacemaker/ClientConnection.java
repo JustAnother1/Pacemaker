@@ -23,6 +23,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.Tool;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -129,6 +131,7 @@ public abstract class ClientConnection extends Thread
             buf[4 + length] = getCRCfor(buf, 4 + length);
             try
             {
+                log.info("Sending Frame: " + Tool.fromByteBufferToHexString(buf));
                 out.write(buf);
                 numberOfTransmissions++;
                 r =  getReply();
@@ -184,6 +187,16 @@ public abstract class ClientConnection extends Thread
 
     protected int getAByte() throws IOException
     {
+        final int res =  in.read();
+        if(-1 == res)
+        {
+            throw new IOException("Channel closed");
+        }
+        return res;
+    }
+    /* non blocking:
+    protected int getAByte() throws IOException
+    {
         if(1 > in.available())
         {
             int timeoutCounter = 0;
@@ -211,6 +224,7 @@ public abstract class ClientConnection extends Thread
         }
         return res;
     }
+    */
 
     protected void incrementSequenceNumber()
     {
@@ -223,14 +237,30 @@ public abstract class ClientConnection extends Thread
 
     protected Reply getReply()
     {
-        try
+        Reply r = null;
+        r = receiveQueue.poll();
+        if(null != r)
         {
-            return receiveQueue.take();
+            return r;
         }
-        catch(InterruptedException e)
-        {
-            return null;
-        }
+        int timeoutCounter = 0;
+        do{
+            try
+            {
+                Thread.sleep(1);
+            }
+            catch(InterruptedException e)
+            {
+            }
+            timeoutCounter++;
+            r = receiveQueue.poll();
+            if((null == r) && (MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter))
+            {
+                log.error("Timeout !");
+                throw new TimeoutException();
+            }
+        }while(null == r);
+        return r;
     }
 
     public void run()

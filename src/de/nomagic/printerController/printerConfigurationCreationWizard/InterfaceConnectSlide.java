@@ -28,6 +28,7 @@ import de.nomagic.WizardDialog.DataStore;
 import de.nomagic.WizardDialog.OneNextWizardSlide;
 import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.pacemaker.ClientConnection;
+import de.nomagic.printerController.pacemaker.TimeoutException;
 import de.nomagic.printerController.Cfg;
 
 /**
@@ -80,16 +81,30 @@ public class InterfaceConnectSlide extends OneNextWizardSlide
         {
             cfg = (Cfg)obj;
             // TODO Thread Start:
-            CoreStateMachine pp = new CoreStateMachine(cfg);
-            if(true == pp.isOperational())
+            CoreStateMachine pp = null;
+            try
             {
-                log.trace("connection to client is now open !");
-                connectLog.setText(connectLog.getText() + "\nconnection to client is now open !");
-                configCreator.setNextAllowed(true);
+                pp = new CoreStateMachine(cfg);
+                if(true == pp.isOperational())
+                {
+                    log.info("connection to client is now open !");
+                    connectLog.setText(connectLog.getText() + "\nconnection to client is now open !");
+                    configCreator.setNextAllowed(true);
+                }
+                else
+                {
+                    log.error("Could not open connection to client!");
+                }
             }
-            else
+            catch(TimeoutException e)
             {
-                log.error("Could not open connection to client!");
+                log.error("Timeout from client!");
+                connectLog.setText(connectLog.getText() + "\nTimeout from client !");
+                if(null != pp)
+                {
+                    pp.close();
+                    pp = null;
+                }
             }
             // Thread end
         }

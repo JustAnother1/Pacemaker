@@ -239,13 +239,22 @@ public class UartClientConnection extends ClientConnection
             CommPortIdentifier portId = CommPortIdentifier.getPortIdentifier(PortName);
             if(CommPortIdentifier.PORT_SERIAL != portId.getPortType())
             {
-                log.error("Specified Port{} is not a Serial Port ({})!", PortName, portId.getPortType());
+                log.error("Specified Port {} is not a Serial Port ({})!", PortName, portId.getPortType());
                 return;
             }
-            CommPort basePort = portId.open("Pacemaker Host", TIMEOUT_PORT_OPEN_MS);
+            CommPort basePort = null;
+            try
+            {
+                basePort = portId.open("Pacemaker Host", TIMEOUT_PORT_OPEN_MS);
+            }
+            catch(PortInUseException e)
+            {
+                log.error("Specified Port {} is in use by another Application !", PortName);
+                return;
+            }
             if(false ==(basePort instanceof SerialPort))
             {
-                log.error("Specified Port{} is not a Serial Port Object!", PortName);
+                log.error("Specified Port {} is not a Serial Port Object!", PortName);
                 return;
             }
             port = (SerialPort)basePort;
@@ -303,16 +312,13 @@ public class UartClientConnection extends ClientConnection
             in = port.getInputStream();
             out = port.getOutputStream();
             connected = true;
+            this.start();
+            log.info("Serial Port is open");
             return;
         }
         catch(NoSuchPortException e)
         {
             log.error("There is no port named {} !", PortName);
-            e.printStackTrace();
-        }
-        catch(PortInUseException e)
-        {
-            log.error("The Interface {} is in use by another application !", PortName);
             e.printStackTrace();
         }
         catch(UnsupportedCommOperationException e)
