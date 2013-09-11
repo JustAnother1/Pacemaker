@@ -164,10 +164,6 @@ public class Protocol
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    // time between two Temperature polls in milliseconds.
-    private final int POLLING_TIME_HEATER_MS = 100;
- // time between two end Switch polls in milliseconds.
-    private final int POLLING_TIME_END_SWITCH_MS = 1;
     // resolution of Delay : 10us
     private final double DELAY_TICK_LENGTH = 0.00001;
     // the client needs at lest this(in milliseconds) time to free up one slot in the Queue
@@ -636,8 +632,7 @@ public class Protocol
                 final Reply r = cc.sendRequest(ORDER_QUEUE_COMMAND_BLOCKS,
                                                sendBuffer, // data
                                                0, // offset
-                                               writePos, // length
-                                               false // not cached
+                                               writePos // length
                                                );
                 // and see what happens.
                 if(null == r)

@@ -40,6 +40,7 @@ public abstract class ClientConnection extends Thread
     protected OutputStream out;
     protected byte sequenceNumber = 0;
     protected boolean isSynced = false;
+    private boolean isFirstOrder = true;
     private BlockingQueue<Reply> receiveQueue = new LinkedBlockingQueue<Reply>();
 
     private static byte crc_array[] =
@@ -82,11 +83,11 @@ public abstract class ClientConnection extends Thread
     {
         if(null == parameter)
         {
-            return sendRequest(order, parameter, 0, 0, true);
+            return sendRequest(order, parameter, 0, 0);
         }
         else
         {
-            return sendRequest(order, parameter, 0, parameter.length, true);
+            return sendRequest(order, parameter, 0, parameter.length);
         }
     }
 
@@ -96,10 +97,9 @@ public abstract class ClientConnection extends Thread
      * @param parameter the parameter data. May be null !
      * @param offset parameter starts at this offset in the buffer.
      * @param length send only this many bytes. May be 0 !
-     * @param cached true= client may send cached result; false= client must execute the order. no cached reply.
      * @return true= success false = no reply received - timeout
      */
-    public Reply sendRequest(final byte Order, final byte[] parameter, int offset, int length, final boolean cached)
+    public Reply sendRequest(final byte Order, final byte[] parameter, int offset, int length)
     {
         Reply r = null;
         int numberOfTransmissions = 0;
@@ -115,13 +115,14 @@ public abstract class ClientConnection extends Thread
                 incrementSequenceNumber();
             }
             // else retransmission due to communications error
-            if(true == cached)
+            if(false == isFirstOrder)
             {
                 buf[3] = sequenceNumber;
             }
             else
             {
                 buf[3] = (byte)(0x08 | sequenceNumber);
+                isFirstOrder = false;
             }
             for(int i = 0; i < length; i++)
             {
@@ -192,6 +193,7 @@ public abstract class ClientConnection extends Thread
         {
             throw new IOException("Channel closed");
         }
+        log.info("Received the Byte: " + String.format("%02X", res));
         return res;
     }
     /* non blocking:
@@ -311,7 +313,7 @@ public abstract class ClientConnection extends Thread
                     if(buf[3] != sequenceNumber)
                     {
                         // Protocol Error
-                        log.error("Wrong Sequence Number !");
+                        log.error("Wrong Sequence Number !(Received: {}; Expected: {})", buf[3], sequenceNumber);
                         continue;
                     }
 
