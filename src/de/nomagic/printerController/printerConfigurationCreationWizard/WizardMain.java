@@ -166,6 +166,7 @@ public class WizardMain implements CancelAction
             ClientConnection cc = (ClientConnection)obj;
             cc.close();
         }
+        System.exit(0);
     }
 
 }
