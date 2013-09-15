@@ -32,6 +32,10 @@ To test the Pacemaker system without real hardware a simulation for the client c
 
 +$ java -jar PacemakerTest.jar+
 
+To send data to a Pacemaker client you can use the Terminal like this:
+
++$ java -jar PacemakerTerminal.jar+
+
 
 License
 -------

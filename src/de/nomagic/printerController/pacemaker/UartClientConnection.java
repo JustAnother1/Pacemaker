@@ -15,6 +15,7 @@
 package de.nomagic.printerController.pacemaker;
 
 import java.io.IOException;
+import java.util.Properties;
 import java.util.Scanner;
 
 import org.slf4j.Logger;
@@ -233,6 +234,8 @@ public class UartClientConnection extends ClientConnection
 
     public UartClientConnection(String data)
     {
+        Properties systemProperties = System.getProperties();
+        systemProperties.setProperty("jna.nosys", "true");
         String PortName = getPortNameFromDescriptor(data);
         try
         {

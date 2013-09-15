@@ -91,6 +91,16 @@ public abstract class ClientConnection extends Thread
         }
     }
 
+    public Reply sendRequest(final int Order, final int[] parameter, int offset, int length)
+    {
+        byte[] para = new byte[length];
+        for(int i = 0; i < length; i++)
+        {
+            para[i] = (byte)(0xff & parameter[offset + i]);
+        }
+        return sendRequest((byte)(0xff & Order), para, 0, length);
+    }
+
     /** sends a request frame to the client.
      *
      * @param order The Order byte.
@@ -109,7 +119,6 @@ public abstract class ClientConnection extends Thread
             final byte[] buf = new byte[length + 5];
             buf[0] = Protocol.START_OF_HOST_FRAME;
             buf[1] = Order;
-            buf[2] = (byte)(length);
             if(false == needsToRetransmitt)
             {
                 incrementSequenceNumber();
@@ -117,13 +126,14 @@ public abstract class ClientConnection extends Thread
             // else retransmission due to communications error
             if(false == isFirstOrder)
             {
-                buf[3] = sequenceNumber;
+                buf[2] = sequenceNumber;
             }
             else
             {
-                buf[3] = (byte)(0x08 | sequenceNumber);
+                buf[2] = (byte)(0x08 | sequenceNumber);
                 isFirstOrder = false;
             }
+            buf[3] = (byte)(length);
             for(int i = 0; i < length; i++)
             {
                 buf[4 + i] = parameter[i + offset];
@@ -165,12 +175,12 @@ public abstract class ClientConnection extends Thread
 
     public static byte getCRCfor(final byte[] buf)
     {
-        return getCRCfor(buf, buf.length, 0);
+        return getCRCfor(buf, buf.length, 1/* Byte 0 is Sync and is not included in CRC*/);
     }
 
     public static byte getCRCfor(final byte[] buf, final int length)
     {
-        return getCRCfor(buf, length, 0);
+        return getCRCfor(buf, length, 1/* Byte 0 is Sync and is not included in CRC*/);
     }
 
     public static byte getCRCfor(final byte[] buf, int length, final int offset)
@@ -259,7 +269,8 @@ public abstract class ClientConnection extends Thread
             if((null == r) && (MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter))
             {
                 log.error("Timeout !");
-                throw new TimeoutException();
+                // throw new TimeoutException();
+                return r;
             }
         }while(null == r);
         return r;
@@ -300,22 +311,22 @@ public abstract class ClientConnection extends Thread
                         continue;
                     }
 
+                    // Control
+                    final int control =  (byte)getAByte();
+                    if(control != sequenceNumber)
+                    {
+                        // Protocol Error
+                        log.error("Wrong Sequence Number !(Received: {}; Expected: {})", control, sequenceNumber);
+                        continue;
+                    }
+
                     // Length
                     final int replyLength = getAByte();
-
                     final byte[] buf = new byte[5 + replyLength];
                     buf[0] = Protocol.START_OF_CLIENT_FRAME;
                     buf[1] = reply;
-                    buf[2] = (byte)(replyLength & 0xff);
-
-                    // Control
-                    buf[3] =  (byte)getAByte();
-                    if(buf[3] != sequenceNumber)
-                    {
-                        // Protocol Error
-                        log.error("Wrong Sequence Number !(Received: {}; Expected: {})", buf[3], sequenceNumber);
-                        continue;
-                    }
+                    buf[2] = (byte)(control & 0xff);
+                    buf[3] = (byte)(replyLength & 0xff);
 
                     // Parameter
                     for(int i = 0; i < replyLength;i++)
@@ -345,9 +356,9 @@ public abstract class ClientConnection extends Thread
                 catch (final IOException e)
                 {
                     e.printStackTrace();
-                    sleep(100);
                 }
                 log.error("Failed to read Reply - Exception !");
+                return;
             }
         }
         catch(InterruptedException ie)

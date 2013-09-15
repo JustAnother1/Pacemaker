@@ -15,6 +15,7 @@
 package de.nomagic.printerController.pacemaker;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 
 /**
  * @author Lars P&ouml;tter
@@ -23,8 +24,8 @@ import java.nio.charset.Charset;
 public class Reply
 {
     private final static int POS_OF_REPLY_CODE = 1;
-    private final static int POS_OF_LENGTH = 2;
-    private final static int POS_OF_CONTROL = 3;
+    private final static int POS_OF_LENGTH = 3;
+    private final static int POS_OF_CONTROL = 2;
     private final static int POS_OF_PARAMETER_START = 4;
 
     private final byte[] data;
@@ -34,6 +35,12 @@ public class Reply
     {
         this.data = data;
         length = (0xff & data[POS_OF_LENGTH]);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Reply [data=" + Arrays.toString(data) + ", length=" + length + "]";
     }
 
     public byte getReplyCode()
