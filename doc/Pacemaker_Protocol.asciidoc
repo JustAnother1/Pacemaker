@@ -741,11 +741,11 @@ The first byte of the Parameter indicates the device type. The second byte of th
 | 0x2 | device fault
 |=============================
 
-A status of *device configuration error* indicates that the device is not available fur use because it has missing or invalid device configuration.
+A status of *device configuration error* indicates that the device is not available for use because it has missing or invalid device configuration.
 
 A status of *device fault* indicates that the device has sufficent configuration but is unavailable due to a detected hardware fault (e.g., unconnected or shorted sensor).
 
-A status of *device available* indicates that the device has no detected hardware or configuration errors currently.
+A status of *device available* indicates that the device has no explicitly detected hardware or configuration errors currently.
 
 A utf8 string may optionally follow the device status value describing the cause of any device errors.
 
@@ -1165,9 +1165,11 @@ This command moves the specified axes in specified direction until they trigger 
 
 The first Parameter byte contains the stepper number that will be homed. The second byte defines the direction of movement (a "0" means moving in decreasing direction; a "1" means moving in increasing direction). The third byte indicates a second stepper motor which should follow the movements of the main stepper motor (or 0xFF if this facility is not needed). If more than one axes need to be homed simultaneously, the next bytes of the Parameter will include additional stepper number, direction & mirrored stepper byte triplets.
 
-This command is only allowed if the stepper control has been activated! The command will continue until all axes have homed.
+This order is only allowed if the stepper control has been activated! The order will continue until all axes have homed but the response is sent immediately.
 
-This command will only be accepted when the system is not currently moving the stepper motors or is about to move stepper motors (e.g., the movement queue is empty). However, if the queued command extension is supported, then this Order can be queued. This allows the host to monitor the completion of the activity by polling the state of the queue.
+This (non-queued) order will only be accepted when the system is not currently moving the stepper motors or is about to move stepper motors (e.g., the movement queue is empty). 
+
+However, if the queued command extension is supported, then this non-queued Order will actually be queued internally (and will also increase the count of attempted queue commands). This allows the host to monitor the completion of the homing activity by polling the state of the queue and does not require the client to provide two implementations of the homing logic. The command can also be sent using the Queue Command Wrapper in which case the movement queue does not need to be empty before sending.
 
 .Replies
 - OK: No parameter data.
@@ -1315,7 +1317,7 @@ The currently defined movement block types are described below along with the as
 
 [width="75%",options="header", cols="40%,60%"]
 |============================
-|Command Block Type Value | Movement Block Type
+|Command Block Type Value | Command Block Type Name And Extension
 | 0x1 | Queue Command Wrapper [queued command extension]
 | 0x2 | Delay [queued command extension]
 | 0x3 | Basic Linear Move [basic move extension]
@@ -1416,7 +1418,7 @@ An emergency stop will require the host to re-home axes to determine its positio
 
 ==== Configure Axis Movement Rates (0x13)
 
-This specifies a 2-byte maximum movement rate value (in steps per second) for each movement axis. This value is used when the axis is selected as the primary movement axis for a linear move command block.
+This specifies a 2-byte maximum movement rate value (in steps per second) for each stepper. This value is used when the axis is selected as the primary axis for a linear move command block.
 
 Any axes which are not specified or specified with a movement rate value of 0 will assumed to be unused for movement.
 
@@ -1424,11 +1426,11 @@ Any axes which are not specified or specified with a movement rate value of 0 wi
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 | Length In Bytes | Content
-| 2 | max steps per second for movement axis 0
-| 2 | max steps per second for movement axis 1
-| 2 | max steps per second for movement axis 2
+| 2 | max steps per second for stepper 0
+| 2 | max steps per second for stepper 1
+| 2 | max steps per second for stepper 2
 | .. | 
-| 2 | max steps per second for movement axis N-1
+| 2 | max steps per second for stepper N-1
 |=============================
 
 .Replies
@@ -1438,7 +1440,7 @@ Any axes which are not specified or specified with a movement rate value of 0 wi
 
 ==== Configure Movement Underrun Avoidance Parameters (0x19)
 
-This order configures the parameters for the underrun avoidance algorithm. This algorithm comes into play when the client believes that a movement queue underrun is likely to occur, that is, the movement queue will be exhausted without a movement checkpoint command being received. 
+This order configures the parameters for the underrun avoidance algorithm. This algorithm comes into play when the client believes that a movement queue underrun is likely to occur, that is, the command queue will be exhausted without a movement checkpoint command being received. 
 
 An example underrun avoidance algorithm is as follows: 
 
@@ -1447,22 +1449,24 @@ An example underrun avoidance algorithm is as follows:
 - the client will accelerate back up to the nominal speed at the specified rate when the movement queue refills beyonds the specified minimum period or a movement checkpoint is received.
 - the aglorithm will also gracefully decelerate to a stop coinciding with the point where the movement queue is exhausted.
 
-As usual, acceleration/deceleration and maximum movement rates are with respect to the currently specified primary axis. A set of maximum movement rates and acceleration values must therefore be specified for each possible axis.
+A client may also choose to implement a simpler underrun avoidance algorithm which simply ensures that the there are no missed steps when an underrun occurs (i.e., the client will decelerate gracefully to a stop at that point). This should be adequate in situations where an underrun is extremely unlikely, for instance, where the Pacemaker host and client are directly connected and the nature of the host makes it unlikely to be blocked for any substantial period.
+
+As usual, acceleration/deceleration and maximum movement rates used by the underrun avoidance algorithm are slected by the currently specified primary axis. A set of maximum movement rates and acceleration values must therefore be specified for each possible axis. Remaining queued movement time also includes other commands which take non-negligible time such as the Delay command block (0x02).
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 | Length In Bytes | Content
 | 2 | threshold minimum remaining movement time for underrun avoidance (in 10us units)
-| 2 | maximum movement rate (in steps per second) during underrun avoidance for movement axis 0
-| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for movement 0
-| 2 | maximum movement rate (in steps per second) during underrun avoidance for movement axis 1
-| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for movement 1
-| 2 | maximum movement rate (in steps per second) during underrun avoidance for movement axis 2
-| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for movement 2
+| 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 0
+| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 0
+| 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 1
+| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 1
+| 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 2
+| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 2
 | .. | 
-| 2 | maximum movement rate (in steps per second) during underrun avoidance for movement axis N-1
-| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for movement N-1
+| 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper N-1
+| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper N-1
 |=============================
 
 .Replies
@@ -1538,7 +1542,7 @@ The *Axis Selection Field* does a couple of things: the MSB indicates whether a 
 
 The *Directions Field* is another bitmask field where each bit defines the direction of movement and uses the same axis to bit position mapping as for the axis selection bitmask. For example, bit 0(LSB) contains the direction of stepper number 0 movement. A "1" means moving in increasing direction. If a 2 byte axis selection bitmask is used, then a 2 byte directions field is also used. The MSB of the Directions field indicates whether 1 or 2 byte step counts will be used.
 
-The *primary axis selector* indicates the stepper axis number of the primary axis for this movement command. The speed and acceleration are calculated with respect to the primary axis for the movement block. 
+The *primary axis selector* indicates the stepper axis number of the primary axis for this movement command. The speed and acceleration are calculated with respect to the primary axis for the movement block. The selected primary axis must be one of the axes involved in the current movement block. It is recommended that the primary axis is selected to be the travel axis with the highest movement rate (in steps per second) for the movement block.
 
 NOTE: The host has to make sure that the other axes do not get more steps than they can handle. The client does not need to check if the move command causes valid acceleration and valid speeds on all axis.
 
@@ -1574,7 +1578,7 @@ The first byte of the Parameter will contain the new active toolhead number. The
 
 ==== Movement Checkpoint (0x5)
 
-This comand block indicates the end of a sequence of moves. The client will not activate the movement underrun prevention algorithms when a Movement Checkpoint command has been received after the last movement command.
+This comand block indicates the end of a sequence of moves - for instance at the end of job or when intentional pausing movement. The client will not activate the movement underrun prevention algorithms when a Movement Checkpoint command has been received after the last movement command.
 
 NOTE: The final speed of the last movement command before the Movement Checkpoint must always be zero!
 
