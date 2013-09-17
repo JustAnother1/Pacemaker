@@ -194,7 +194,7 @@ The *Order code* field is explained in the Order section.
 
 The *Parameter* field is optional and the data depends on the Order. The possible contents of this field are described in the Order section.
 
-The *Error Check Code* field contains a CRC-8 value calculated over the Order code, Length, Control & Parameter field values. The Error Check Code must be used by the client to verify that the frame has been correctly received.
+The *Error Check Code* field contains a CRC-8 value calculated over the Order code, Control, Length, & Parameter field values. The Error Check Code must be used by the client to verify that the frame has been correctly received.
 
 ==== Reply Frame Format
 
@@ -221,7 +221,7 @@ The *Length* field contains the number of bytes consumed by the Parameter field.
 
 The *Parameter* field is optional and the data depends on the reply. The possible contents of this field are described in the Reply section.
 
-The *Error Check Code* field contains a CRC-8 value calculated over the Reply code, Length, Control & Parameter field values. The Error Check Code must be used by the host to verify that the frame has been correctly received.
+The *Error Check Code* field contains a CRC-8 value calculated over the Reply code, Control, Length & Parameter field values. The Error Check Code must be used by the host to verify that the frame has been correctly received.
 
 === Communication over a I^2^C Serial Bus channel
 
@@ -973,6 +973,53 @@ Reading the configuration named "Power" would result in this parameter value:
 - Bad Parameter Value: Bad configuration name
 - Failed: Read operation failed
 
+==== Get Firmware Configuration Value Properties (0x1a)
+
+This command allows the read properties of a firmware configuration element.
+
+.Order Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Length | Content
+| N | Configuration element name
+|=============================
+
+.Replies
+- Bad Parameter Value: Bad/unknown configuration name.
+- OK: The Reply Parameter contents is as follows:
+
+.Reply Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Length | Content
+| 1 | Element type
+| 1 | Element modes
+|=============================
+
+.Element Type
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+| Value | Meaning
+| 0 | Volatile Configuration. These configuration element values will not be retained after a reset. These elements are expected to be both readable and writeable.
+| 1 | Non-volatile Configuration. These configuration element values will be retained after a reset. Read-only non-volatile configuration elements indicate a compile-time client configuration value.
+| 2 | Status & Statistics. These elements indicate aspects of the run-time state of the client (if readable), or are used to manipulate/reset the status and statistics values (if writeable).
+| 3 | Firmware-specific operation. These elements are used to invoke firmware-specific operations.
+| 4 | Diagnostic & Debug. These elements are used to aid development of debugging of the client system.
+| 0x80-0xfe | Experimental
+| 0xff | End of configuration tree (no more elements)
+|=============================
+
+.Element Modes
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+| Bit Position | Meaning
+| 0 (lsb) | Element readable? (0 = Not readable, 1 = Readable)
+| 1 | Element Writeable? (0 = Not Writeable, 1 = Writeable)
+| 2 | Default value? (0 = No, 1 = Yes). This indicates that the configuration value has not been explicitly set and that this is the compile-time default value currently in use.
+|=============================
+
+The host should be able to restore the dynamic configuration state of a client following a reset by re-applying all "Dynamic Configuration" element values. Note: this does not imply that restoring the dynamic configuration elements will also restore all dynamic and protocol-controlled runtime state.
+
 ==== Traverse Firmware Configuration Values (0x18)
 
 This command allows the host to traverse all firmware configuration values supported by the client. This allows the host to save a copy of the current client configuration and also allows the host to provide a richer configuration interface to the user.
@@ -998,36 +1045,10 @@ If a Write Firmware Configuration Value order is sent in the middle of traversin
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Length | Content
-| 1 | Element type
-| 1 | Element modes
 | N | Configuration element name (utf8 string)
 |=============================
 
-.Element Type
-[width="50%",options="header", cols="30%,70%"]
-|=============================
-| Value | Meaning
-| 0 | Volatile Configuration. These configuration element values will not be retained after a reset. These elements are expected to be both readable and writeable.
-| 1 | Non-volatile Configuration. These configuration element values will be retained after a reset. Read-only non-volatile configuration elements indicate a compile-time client configuration value.
-| 2 | Status & Statistics. These elements indicate aspects of the run-time state of the client (if readable), or are used to manipulate/reset the status and statistics values (if writeable).
-| 3 | Firmware-specific operation. These elements are used to invoke firmware-specific operations.
-| 4 | Diagnostic & Debug. These elements are used to aid development of debugging of the client system.
-| 0x80-0xfe | Experimental
-| 0xff | End of configuration tree (no more elements)
-|=============================
-
-.Element Modes
-[width="50%",options="header", cols="30%,70%"]
-|=============================
-| Bit Position | Meaning
-| 0 (lsb) | Element readable? (0 = Not readable, 1 = Readable)
-| 1 | Element Writeable? (0 = Not Writeable, 1 = Writeable)
-| 2 | Default value? (0 = No, 1 = Yes). This indicates that the configuration value has not been explicitly set and that this is the compile-time default value currently in use.
-|=============================
-
 The end of the configuration traversal is indicated by the order returning an element type of 0xff.
-
-The host should be able to restore the dynamic configuration state of a client following a reset by re-applying all "Dynamic Configuration" element values. Note: this does not imply that restoring the dynamic configuration elements will also restore all dynamic and protocol-controlled runtime state.
 
 ==== Experimental & Unapproved Orders
 Experimental or unapproved orders must use order codes from the range 0x80 to 0xfe. Experimental or unapproved orders that need additional order-specific Reply Codes should use Reply Code values of 0x80-0xfe.
@@ -1106,20 +1127,25 @@ If a Parameter is provided the first byte will contain the stepper motors Number
 
 ==== Configure End-stops (0x0F)
 
-This order will configure the switches which are used as end-stops for movement and homing.
+This order configures the end-stop switches which are checked when the specified stepper is moving in either a positive or negative direction. The order also configures whether the end-stop triggers at a high level or low level. The end-stops must be enabled using Enable End-stops before they will cause the end-stop state to affect movement.
+
+All end-stops (including both maximum and minimum) for a single stepper number must specified in the same order. Multiple end-stops can be sepcified for each direction. End-stops are initially disabled and must still be activated using the Activate Endstops command. 
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |================================================
 | Length in Bytes | Parameter Contents
-| 1 | stepper motor number
-| 2 | device type and device number for minimum end-stop (or 0x0000 for no minimum end-stop)
-| 2 | device type and device number for maximum end-stop (or 0x0000 for no maximum end-stop)
-| 1 | whether the minimum end-stop is triggered at a high (0x1) or a (0x0) low level
-| 1 | whether the maximum end-stop is triggered at a high (0x1) or a (0x0) low level
-| 1 | whether the minimum end-stop should cause the client to enter stopped state when triggered and not homing (0=no, 1=yes)
-| 1 | whether the maximum end-stop should cause the client to enter stopped state when triggered and not homing (0=no, 1=yes)
+| 1 | stepper number
+| 1 | input switch number
+| 1 | min or max endstop (0 = min endstop, 1 = max endstop)
+| 1 | whether end-stop is triggered at a high (0x1) or a (0x0) low level
+| 1 | input switch number [optional]
+| 1 | min or max endstop (0 = min endstop, 1 = max endstop) [optional]
+| 1 | whether end-stop is triggered at a high (0x1) or a (0x0) low level  [optional]
+| .. |
 |================================================
+
+After the first byte (identifying the target stepper number), the following Parameter data is made up of three byte tuplets which configure the set of max or min end-stops to be checked when the stepper is moving in the specified direction. Multiple steppers can share the same endstop - which is common in a CoreXY configuration.
 
 .Replies
 - OK: No Parameter data.
@@ -1127,56 +1153,25 @@ This order will configure the switches which are used as end-stops for movement 
 
 ==== Enable/Disable End-stops (0x10)
 
-After the initial configuration of the end-stops, the host can also use this order to control whether the client will enter a stopped state if the end-stop hit condition is detected. This can be used to move the carriage right up to the home position (for instance).
+The host enables or disables end-stops using this order. Attempting to enable an end-stop which hasn't been enabled with Configure End-stops will result in an error.
+
+The order Parameter consists of byte pairs which specifies an end-stop device number and whether the end-stop is enabled or disabled.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
-|Byte Number | Content
-| 0 | stepper motor number
-| 1 | end stop (0 = minimum end-stop, 1 = maximum end-stop)
-| 2 | stopped state
+| Length in Bytes | Content
+| 1 | input switch number
+| 1 | enabled state (0 = disabled, 1 = enabled)
+| 1 | input switch number [optional]
+| 1 | enabled state (0 = disabled, 1 = enabled) [optional]
 |=============================
-
-The first byte of the Parameter will contain the stepper number; the second byte of the Parameter indicates whether to change the state of the minimum or maximum end stop (0 = minimum end-stop, 1 = maximum end-stop), the third byte indicates if the end-stop should cause the client to enter the stopped state (0 = no, 1 = yes).
 
 This order can also be queued using the Queue Command Wrapper if the queued command extension is supported.
 
 .Replies
-- Bad Parameter Value: If end-stop switch hasn't been configured for stepper.
+- Bad Parameter Value: If any end-stop is enabled which hasn't been configured using Configure End-stops.
 - Incorrect mode: Order received when stepper control is not activated.
-
-==== Home Axes (0x11)
-
-This command moves the specified axes in specified direction until they trigger their end switch. This command sends a reply immediately and then the homing request will then begin execution. The host can detect the end of the homing by reading the state of the switches and the length of the Order Queue (i.e., waiting for the queued Home Axes command to complete).
-
-.Parameter
-[width="50%",options="header", cols="30%,70%"]
-|=============================
-|Byte Number | Content
-| 0 | stepper motor number
-| 1 | direction
-| 2 | second stepper motor number
-| 3 | stepper motor number [Optional]
-| 4 | direction [Optional]
-| 5 | second stepper motor number [Optional]
-| .. | [Optional]
-|=============================
-
-The first Parameter byte contains the stepper number that will be homed. The second byte defines the direction of movement (a "0" means moving in decreasing direction; a "1" means moving in increasing direction). The third byte indicates a second stepper motor which should follow the movements of the main stepper motor (or 0xFF if this facility is not needed). If more than one axes need to be homed simultaneously, the next bytes of the Parameter will include additional stepper number, direction & mirrored stepper byte triplets.
-
-This order is only allowed if the stepper control has been activated! The order will continue until all axes have homed but the response is sent immediately.
-
-This (non-queued) order will only be accepted when the system is not currently moving the stepper motors or is about to move stepper motors (e.g., the movement queue is empty). 
-
-However, if the queued command extension is supported, then this non-queued Order will actually be queued internally (and will also increase the count of attempted queue commands). This allows the host to monitor the completion of the homing activity by polling the state of the queue and does not require the client to provide two implementations of the homing logic. The command can also be sent using the Queue Command Wrapper in which case the movement queue does not need to be empty before sending.
-
-.Replies
-- OK: No parameter data.
-- Bad Parameter Value: If end-stop switch hasn't been configured for stepper.
-- Stopped: Order rejected because client is in stopped stated.
-- Incorrect mode: Order received when stepper control is not activated.
-- Busy: Movement is already in progress.
 
 == Queued Command Extension
 
@@ -1506,6 +1501,7 @@ The command supports up to 15 stepper axes.
 |   1 | bit7: use 1 or 2 byte step counts (0=1 byte, 1=2 byte) *[Directions Field]*
 |     | bits6-0: direction on each axis
 |   1 | bits3-0: primary axis selector
+|     | bit4: homing mode (0 = no, 1= yes)
 |   1 | nominal speed fraction
 |   1 | end speed fraction
 |   1 | initial acceleration/deceleration step count fraction
@@ -1527,6 +1523,7 @@ The command supports up to 15 stepper axes.
 |   2 | bit15: use 2 byte step counts (0=no, 1=yes) *[Directions Field]*
 |     | bits14-0: direction on each axis
 |   1 | bits3-0: primary axis selector
+|     | bit4: homing mode (0 = no, 1= yes)
 |   1 | nominal speed fraction
 |   1 | end speed fraction
 |   1 | initial acceleration/deceleration step count fraction
@@ -1545,6 +1542,8 @@ The *Directions Field* is another bitmask field where each bit defines the direc
 The *primary axis selector* indicates the stepper axis number of the primary axis for this movement command. The speed and acceleration are calculated with respect to the primary axis for the movement block. The selected primary axis must be one of the axes involved in the current movement block. It is recommended that the primary axis is selected to be the travel axis with the highest movement rate (in steps per second) for the movement block.
 
 NOTE: The host has to make sure that the other axes do not get more steps than they can handle. The client does not need to check if the move command causes valid acceleration and valid speeds on all axis.
+
+The *homing mode* bit indicates how the movement is affected by end-stop triggering. If the homing mode is not set, then any if relevant end-stops triggers (i.e., end-stops which are associated with the direction of movement of all selected axes), then the system will immediately enter a "End-stop Hit" stopped state. If the homing mode bit is set, then the client will simply stop movement in any axis when an enabled end-stop is triggered but continue movement in all other axes (until either an end-stop is hit or the command block movement is completed).
 
 The *initial acceleration/deceleration step count fraction* is the fraction of the total movement distance which is taken to accelerate/decelerate from the starting speed to the nominal speed. For instance, for a segment with 200 steps, a value of 50 would mean that the client would attempt to reach nominal speed at 39 steps into the block (50/255 * 200).
 
@@ -1565,6 +1564,8 @@ It is recommended that the host decomposes long, slow, straight moves into multi
 ==== Set Active Toolhead (0x4)
 
 This changes the active toolhead. This is primarily a hook for the firmware to take any firmware-specific actions on toolhead change and normally can be ignored by the client (but should still be sent by the host).
+
+At power-on the system is assumed to be using toolhead 0.
 
 .Command Block
 [width="50%",options="header", cols="30%,70%"]
