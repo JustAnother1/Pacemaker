@@ -1,0 +1,51 @@
+Pacemaker Host - Design of the core Module
+===========================================
+:toc:
+:numbered:
+:showcomments:
+
+== Summary
+This document describes the design of the core module. The core module is a part of the pacemaker host software.
+
+== Overview
+The core takes strings that contain single G-Codes and communicates them to the clients. To do that the core needs a valid configuration. The configuration defines the connections to the clients and maps the functionalities of the printer to the features of the connected clients.
+
+== Way of a typical G-Code through the cores modules
+The public API for other modules to use is the CoreStateMachine class. Other modules using the core shall use the executeGCode function of that class.
+
+The G-Code that comes in that way is passed to the GCodeDecoder. The GCodeDecoder reads the string and extracts the data. After this step the G-Code is available as structured data(double, int,..) represented by a instance of the GCode class.
+
+The GCode decoder calls the appropriate methods to execute the detected G-Code. These methods are provided by the Executor class. As it might be more sensible for the GUI of the host the GUI may access the Executor directly.
+The Executor creates a instance of a Action class that correspondent to the requested action defined in the GCode. This action is then put into the Queue for the ActionHandler.
+
+The ActionHandler is a Thread. It receives Actions through a Queue from the Executor. Is opens all connections to the clients and Sends and receives from the clients. The Action Handler is the heart of the process. Here is the logic that decides what actions have to be executes and how the host has to react to the data coming in from the clients.
+
+To do this in a clear manner the Action Handler has several Devices that represent the functions of the printer. These devices are connected to the features of the clients. These devices are therefore responsible to map the abstract functions of the printer like move X axis, heat up Extruder one, .. to the concrete actions of the clients like do steps on stepper 3 of the first client, set the target temperature of heater 0 on client 2,..
+To translate these concrete actions to the needed data packets to send out to the client a instance of the protocol class is used for each client connection.
+
+The protocol class uses a Client Connection class to send the bytes to the client.
+
+The Client Connection Instance is a Thread that listens for the responses and events from the client. These information is then given back though the Protocol instance to the ActionHandler. The ActionHandler reacts to the events and takes the appropriate actions. Responses are handed from the ActionHandler back to the the external module that issued the G-Code. The external Module can then use this response to generate the OK to signal that the execution of the GCode finished.
+
+== Modules
+This section gives detailed Information on all the Modules of the core.
+
+=== CoreStateMachine
+Facade and public API to other Modules.
+
+=== Action Handler
+Central Event/ Action Handler. Uses Devices to map abstract printer features to concrete function of the connected clients. Creates all the connections to the clients.
+
+=== Executor
+Creates Actions for the ActionHandler.
+
+=== G-Code Decoder
+Takes a string and reads the G-Code from it. It then uses the Executor to create the appropriate actions.
+
+=== ClientConnection
+Is a Task that handles the communications channel (Serial or TCP) to the pacemaker client.
+
+=== Protocol
+creates and decodes Frames in the pacemaker protocol.
+
+

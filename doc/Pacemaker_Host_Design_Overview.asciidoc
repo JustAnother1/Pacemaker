@@ -1,0 +1,42 @@
+Pacemaker Host - design overview
+=================================
+:toc:
+:numbered:
+:showcomments:
+
+== Summary
+This document describes the design of the pacemaker host software. The pacemaker host software communicates with a pacemaker client using the pacemaker protocol. The combination of the pacemaker host software and a pacemaker client is a pacemaker system.
+
+== Overview
+The main component of the Host software is the core. The core does the main task of handling the G-Codes and talking to the client. The core needs a configuration to be able to operate. As the interface of the core is restricted to single G-Codes lines the host software has other modules to allow better user interfaces. Additionally modules for the system test / bring up and debug are part of the host software.
+
+== Modules
+In this section all modules will be discussed in detail.
+
+=== Core
+The core takes strings that contain a line of G-Code and handles the communication with the client so that the printer will execute the G-Code. The design of the core is defined in a separate document.
+
+=== GUI
+The GUI module provides the Graphical User Interface. It allows the user to configure the pacemaker system, to control the printer directly or to print G-Code Files.
+
+=== Interface Modules
+The interface Modules provide Interfaces for other Software components to interface with the pacemaker system. All these Modules exchange data with their partners using the standard G-Code protocol usually used by the standard firmwares like Marlin as defined here: http://reprap.org/wiki/G-code
+The following Interface Modules exist:
+
+==== Standard Streams
+This Module allows to send G-Codes to the pacemaker systems by using the systems standard Input and Output streams. This allows to pipe G-Codes into pacemaker or use it interactively.
+
+==== TCP Socket
+This Module opens a TCP Socket. Other programs can send G-Code Lines by opening up a TCP connection.
+
+==== UDP Datagram Socket
+This Module listens to UDP Packets. Each Packet may contain one line of G-Code.
+
+== Wizard
+The wizard creates a configuration file for the pacemaker host software by asking the user a series of questions and dosing some test with the connected client. This should be the easiest way to configure the pacemaker system.
+
+== Terminal
+The terminal gives a GUI to send single frames to a pacemaker client. It can be used to debug or test a client.
+
+== Client Simulator
+The client Simulator is a application that speaks the pacemaker protocol and acts as a pacemaker client. It can be used to test the pacemaker host
