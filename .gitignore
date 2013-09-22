@@ -5,6 +5,6 @@ bin
 README.html
 Pacemaker.jar
 PacemakerTest.jar
-
 /pacemaker.cfg
 /PacemakerWizard.jar
+/PacemakerTerminal.jar
