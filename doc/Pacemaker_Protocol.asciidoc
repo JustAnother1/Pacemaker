@@ -177,16 +177,16 @@ Order frames are only sent by the host.
 |=============================
 |Length in bytes| Field
 | 1             | Sync
-| 1             | Order code
+| 1             | Length
 | 1             | Control
-| 1             | Length (=N)
+| 1             | Order code
 | N             | Parameter
 | 1             | Error Check Code (CRC-8)
 |=============================
 
 The *Sync* field has the value 0x23 and signals the start of the frame.
 
-The *Length* field contains the number of bytes consumed by the Parameter field. A length of 0 therefore means an Order with no Parameter Bytes.
+The *Length* field contains the number of bytes consumed by the Control, Order code and Parameter field. The length of the parameter field is length - 2. The length of 0 and 1 is not valid.
 
 The *Control* byte is currently used to convey a 4-bit rolling sequence number to detect duplicate transmissions. The sequence number is sent in bits 3-0 (low order nibble). Bit 4 indicates that the host has reset or lost synchronization and is restarting communication (which has the effect of clearing any cached responses). Bits 7-5 (high order nibble) are reserved for future use and must be set to 0 by the host.
 
@@ -204,9 +204,9 @@ Replies will only be sent by the Pacemaker client in response to an Order frame 
 |=============================
 |Length in bytes| Field
 | 1             | Sync
-| 1             | Reply code
+| 1             | Length
 | 1             | Control
-| 1             | Length (=N)
+| 1             | Reply code
 | N             | Parameter
 | 1             | Error Check Code (CRC-8)
 |=============================
@@ -217,7 +217,7 @@ The *Reply code* field is explained in the Reply section.
 
 The *Control* byte is currently used to convey a 4-bit rolling sequence number to detect duplicate or out-of-sync transmissions. The sequence number is sent in bits 3-0 (low order nibble) and the value must match that of the Order to which it is replying. Bit 4 is used by the Event Reporting Extension to indicate that event data is available for collection. Bit 7 is used to indicate that the response contains a debug message - these packets can either be ignored without action by the host or routed to a debug console. Bits 6-5 are reserved for future use and must be set to 0.
 
-The *Length* field contains the number of bytes consumed by the Parameter field. A length of 0 therefore means an Order with no Parameter Bytes.
+The *Length* field contains the number of bytes consumed by the Control, Reply code and Parameter field. The length of the parameter field is length - 2. The length of 0 and 1 is not valid.
 
 The *Parameter* field is optional and the data depends on the reply. The possible contents of this field are described in the Reply section.
 
@@ -236,9 +236,9 @@ The host initially performs a write of the Order frame:
 |=============================
 |Length in bytes| Field
 | 1             | Address in bit 7 to 1 and R/W in bit 0 = 0
-| 1             | Order Code
+| 1             | Length
 | 1             | Control
-| 1             | Length (=N)
+| 1             | Order Code
 | N             | Parameter
 | 1             | Error Check Code (CRC8)
 |=============================
@@ -250,16 +250,16 @@ and then immediately performs a read of the Reply frame:
 |=============================
 |Length in bytes| Field
 | 1             | Address in bit 7 to 1 and R/W in bit0 = 1
-| 1             | Reply Code
-| 1             | Control
 | 1             | Length (=N)
+| 1             | Control
+| 1             | Reply Code
 | N             | Parameter
 | 1             | Error Check Code (CRC8)
 |=============================
 
 By default the client should use I^2^C bus *Address* 0x31 (0110-001x) but the host and client must support the ability to change this value if necessary.
 
-The *Length* field indicates the number of bytes used by the Parameter field in the Order frame and in the Reply frame.
+The *Length* field indicates the number of bytes used by the Parameter field, the control and the Reply or Order code in the Order frame and in the Reply frame.
 
 The *Error Check Code* field contains a CRC-8 value calculated over all preceding byte values. This also includes the address.
 
@@ -1129,7 +1129,7 @@ If a Parameter is provided the first byte will contain the stepper motors Number
 
 This order configures the end-stop switches which are checked when the specified stepper is moving in either a positive or negative direction. The order also configures whether the end-stop triggers at a high level or low level. The end-stops must be enabled using Enable End-stops before they will cause the end-stop state to affect movement.
 
-All end-stops (including both maximum and minimum) for a single stepper number must specified in the same order. Multiple end-stops can be sepcified for each direction. End-stops are initially disabled and must still be activated using the Activate Endstops command. 
+All end-stops (including both maximum and minimum) for a single stepper number must specified in the same order. Multiple end-stops can be sepcified for each direction. End-stops are initially disabled and must still be activated using the Activate Endstops command.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1424,7 +1424,7 @@ Any axes which are not specified or specified with a movement rate value of 0 wi
 | 2 | max steps per second for stepper 0
 | 2 | max steps per second for stepper 1
 | 2 | max steps per second for stepper 2
-| .. | 
+| .. |
 | 2 | max steps per second for stepper N-1
 |=============================
 
@@ -1435,9 +1435,9 @@ Any axes which are not specified or specified with a movement rate value of 0 wi
 
 ==== Configure Movement Underrun Avoidance Parameters (0x19)
 
-This order configures the parameters for the underrun avoidance algorithm. This algorithm comes into play when the client believes that a movement queue underrun is likely to occur, that is, the command queue will be exhausted without a movement checkpoint command being received. 
+This order configures the parameters for the underrun avoidance algorithm. This algorithm comes into play when the client believes that a movement queue underrun is likely to occur, that is, the command queue will be exhausted without a movement checkpoint command being received.
 
-An example underrun avoidance algorithm is as follows: 
+An example underrun avoidance algorithm is as follows:
 
 - if the remaining movement time (at nominal speed) is less than the specified minimum period, then the client will decelerate at the specified rate until the movement rate equals the lower of the nominal movement rate or the specified underrun avoidance maximum movement rate
 - the client will then limit the movement rate to be less than or equal to the specified underrun avoidance maximum movement rate until the enqueued remaining movement time (at nominal speed) exceeds the specified minimum period.
@@ -1459,7 +1459,7 @@ As usual, acceleration/deceleration and maximum movement rates used by the under
 | 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 1
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 2
 | 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 2
-| .. | 
+| .. |
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper N-1
 | 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper N-1
 |=============================
