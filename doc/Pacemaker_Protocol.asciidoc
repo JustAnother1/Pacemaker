@@ -162,7 +162,14 @@ uint8_t crc8(uint8_t *data, unsigned int length)
 The transport layer consists of the host sending out Order frames that the client responds to with a Reply frame. The transport layer is communication channel dependent; however, the Pacemaker protocol is intended to work over a variety of channels - including bi-directional serial channels and with master-slave communications channels like I^2^C.
 
 === Host-Client Communication
-All communication between the host and the client is started by the host. The client may not send out data if not requested by the host. The host may send out Order frames. The client must answer to each Order frame with a Reply frame. The timeout for this is 100ms. This included the time it takes to send and receive the data and is measured on the host. The client therefore has less than 100ms from the time of reception of the order to the sending of the reply.
+All critical communication between the host and the client is started by the host. Only the host may send out Order frames. The client must answer each Order frame with a Reply frame. The timeout for the client to respond by default is 100ms but should be configurable. This includes the time it takes to send and receive the data and is measured on the host. The client therefore has less than 100ms from the time of reception of the order to the sending of the reply.
+
+==== Unsolicited Client Frames
+In transport mechanisms which support client initiated data transmission, then the client may at times send out best-effort packets. The two main uses for these unsolicited client frames are for sending debug messages and to notify the host that a new event is available for collection. The Host must not respond to these unsolicited frames. 
+
+An unsolicited client frame has the same structure as a normal Reply frame but has bit 7 in the Control Byte set to 1. The client should increment the sequence number in the Control Byte with each unsolicited frame it sends. These sequence numbers have no correlation to the sequence numbers sent & received in normal Order and Reply frames.
+
+For transport mediums which do not support client initiated communications then the host should either poll for the presence of new events or use a separate interrupt line to indicate this state.
 
 === Communication Over a Standard Serial Channel(UART, RS232)
 
@@ -177,10 +184,10 @@ Order frames are only sent by the host.
 |=============================
 |Length in bytes| Field
 | 1             | Sync
-| 1             | Length
+| 1             | Length (=N)
 | 1             | Control
 | 1             | Order code
-| N             | Parameter
+| N-2           | Parameter
 | 1             | Error Check Code (CRC-8)
 |=============================
 
@@ -204,20 +211,20 @@ Replies will only be sent by the Pacemaker client in response to an Order frame 
 |=============================
 |Length in bytes| Field
 | 1             | Sync
-| 1             | Length
+| 1             | Length (=N)
 | 1             | Control
 | 1             | Reply code
-| N             | Parameter
+| N-2           | Parameter
 | 1             | Error Check Code (CRC-8)
 |=============================
 
 The *Sync* field has the value 0x42 and signals the start of the frame.
 
-The *Reply code* field is explained in the Reply section.
+The *Length* field contains the number of bytes consumed by the Control, Reply code and Parameter field. The length of the parameter field is length - 2. The length of 0 and 1 is not valid.
 
 The *Control* byte is currently used to convey a 4-bit rolling sequence number to detect duplicate or out-of-sync transmissions. The sequence number is sent in bits 3-0 (low order nibble) and the value must match that of the Order to which it is replying. Bit 4 is used by the Event Reporting Extension to indicate that event data is available for collection. Bit 7 is used to indicate that the response contains a debug message - these packets can either be ignored without action by the host or routed to a debug console. Bits 6-5 are reserved for future use and must be set to 0.
 
-The *Length* field contains the number of bytes consumed by the Control, Reply code and Parameter field. The length of the parameter field is length - 2. The length of 0 and 1 is not valid.
+The *Reply code* field is explained in the Reply section.
 
 The *Parameter* field is optional and the data depends on the reply. The possible contents of this field are described in the Reply section.
 
@@ -236,10 +243,10 @@ The host initially performs a write of the Order frame:
 |=============================
 |Length in bytes| Field
 | 1             | Address in bit 7 to 1 and R/W in bit 0 = 0
-| 1             | Length
+| 1             | Length (=N)
 | 1             | Control
 | 1             | Order Code
-| N             | Parameter
+| N-2           | Parameter
 | 1             | Error Check Code (CRC8)
 |=============================
 
@@ -253,17 +260,15 @@ and then immediately performs a read of the Reply frame:
 | 1             | Length (=N)
 | 1             | Control
 | 1             | Reply Code
-| N             | Parameter
+| N-2           | Parameter
 | 1             | Error Check Code (CRC8)
 |=============================
 
 By default the client should use I^2^C bus *Address* 0x31 (0110-001x) but the host and client must support the ability to change this value if necessary.
 
-The *Length* field indicates the number of bytes used by the Parameter field, the control and the Reply or Order code in the Order frame and in the Reply frame.
+The *Length*, *Order Code*, *Reply Code*, *Control* and *Parameter* fields are as described for the standard serial communication frame format.
 
 The *Error Check Code* field contains a CRC-8 value calculated over all preceding byte values. This also includes the address.
-
-The *Order Code*, *Reply Code*, *Control* and *Parameter* fields are as described for the standard serial communication frame format.
 
 A repeated Start bit pattern is permitted between writing the Order and reading the Reply.
 
@@ -520,7 +525,8 @@ The *Unrecoverable* state code indicates a fatal, unrecoverable error. A Reset O
 | 0x4 | Device fault (e.g., fault in some other critical connected device)
 | 0x5 | Electrical fault (e.g., supply voltage out of range)
 | 0x6 | Firmware fault (e.g., out of memory, fatal error)
-| 0x7 | Other fault
+| 0x7 | User requested (e.g., emergency stop button hit)
+| 0x8 | Other fault
 |=============================
 
 The *Reset* state code is a specific case indication for the Stopped condition due to a Reset Order or the initial power on condition. A Resume Order should be successful (i.e., the Recovery Option value should be equal to "One time event or condition cleared.").
@@ -624,14 +630,6 @@ The requested Information is specified in the parameter as shown in the followin
 |   9 | minor firmware revision
 |  10 | hardware type
 |  11 | hardware revision
-|  12 | number of available stepper motors
-|  13 | number of available heaters
-|  14 | number of available PWM switched outputs
-|  15 | number of available temperature sensors
-|  16 | number of available switches
-|  17 | number of available output signals
-|  18 | number of available buzzer
-|  19 | number of available buzzer
 | 0x80-0xfe | Experimental/unapproved requestable information
 |================================================
 
@@ -666,22 +664,6 @@ The *hardware type* defines the Hardware Type. See Hardware Types table.
 
 The *hardware revision* defines the Hardware revision.
 
-The *number of available stepper motors* contains the number of stepper motors.
-
-The *number of available heaters* contains the number of heaters.
-
-The *number of available PWM controlled outputs* contains the number of PWM
-controlled outputs.
-
-The *number of available temperature sensors* contains the number of temperature
-sensors.
-
-The *number of available switches* contains the number of input signals.
-
-The *number of available output signals* contains the number of digital output signals. This does not include the PWM outputs.
-
-The *number of buzzers available* contains the number of buzzers.
-
 .Hardware Types
 [width="50%",options="header", cols="30%,70%"]
 |================================================
@@ -697,6 +679,21 @@ The *number of buzzers available* contains the number of buzzers.
 |   0 | Pacemaker
 |   1 | Minnow (Arduino based client implementation - https://github.com/minnow-pmc/Minnow )
 |================================================
+
+==== Request Device Count (0x11)
+
+This order requests the number of available devices of a particular type (e.g., Heaters, Output Switches, Termperature Sensors) on the client. An advertised device may still be non-functional (as indicated by the Request Device Status order).
+
+.Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Byte Number | Content
+| 0 | device type
+|=============================
+
+.Replies
+- OK: The Reply consists of a 1 byte unsigned integer number indicating the number of available devices of that type. 
+- Invalid Device Type: The requested device type is unknown or unsupported by the client.
 
 ==== Request Device Name (0x02)
 
@@ -717,7 +714,7 @@ The first byte of the Parameter indicates the device type. The second byte of th
 
 ==== Request Device Status (0x18)
 
-This order indicates the operational status of the specified device.
+This order indicates the operational status of the specified device. A host may also use this order to determine the state of devices after a stopped condition has occurred - different devices may be disabled depending on the nature of the stopped condition.
 
 .Order Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -730,22 +727,31 @@ This order indicates the operational status of the specified device.
 The first byte of the Parameter indicates the device type. The second byte of the Parameter indicates the desired device number.
 
 .Replies
-- OK: The first byte of the Reply Paramter contains indicates one of the following values:
+- OK: The first byte of the Reply Parameter contains indicates one of the following values:
 
 .Device Status values
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 | value | meaning
-| 0x0 | device available
-| 0x1 | device configuration error
-| 0x2 | device fault
+| 0x0 | device active
+| 0x1 | device inactive
+| 0x2 | device configuration error
+| 0x3 | device fault
 |=============================
+
+A status of *device active* indicates that the device currently has no explicitly detected hardware or configuration errors and has been enabled. The definition of "active" varies by device type. For instance:
+
+- Steppers are active when enabled using the Enable Stepper command.
+- Output Switches are enabled when set to something other than high impedance mode. 
+- Pwm Outputs and Buzzer devices are active when set to a non-zero value.
+- Heaters are active when set to a non-zero target temperature.
+- Input devices such as temperature sensors and input switches are always active when configured correctly.
+
+A status of *device inactive* indicates that there are currently no explicitly detected hardware or configuration errors but the device is not active.
 
 A status of *device configuration error* indicates that the device is not available for use because it has missing or invalid device configuration.
 
-A status of *device fault* indicates that the device has sufficent configuration but is unavailable due to a detected hardware fault (e.g., unconnected or shorted sensor).
-
-A status of *device available* indicates that the device has no explicitly detected hardware or configuration errors currently.
+A status of *device fault* indicates that the device has sufficient configuration but is unavailable due to a detected hardware fault (e.g., unconnected or shorted sensor).
 
 A utf8 string may optionally follow the device status value describing the cause of any device errors.
 
@@ -1073,10 +1079,7 @@ c. disable the end-stop whenever the carriage needs to move all the way to the e
 
 End-stops are always used for homing, but the host can control whether halting on end-stop detection is enabled or disabled for normal movement.
 
-If end-stop halting is enabled, then the client should enter the "End-stop hit" Stopped state if:
-
-a. an axis is homing and the incorrect end-stop transitions from a not-triggered to triggered state.
-b. an axis is not homing and either end-stop transitions from a not-triggered to triggered state.
+If end-stop halting is enabled, then the client should enter the "End-stop hit" Stopped state if an axis is moving but not in homing mode and an enabled endstop for the axis transitions from a not-triggered to triggered state, or remains triggered after the second step.
 
 When the client enters an "End-stop hit" Stopped state then:
 
@@ -1085,6 +1088,8 @@ When the client enters an "End-stop hit" Stopped state then:
 - all other outputs are deactivated (The firmware may be configured to do otherwise to have devices operating that protect the printer)
 - the order queue is flushed,
 - the stopped state is asserted.
+
+If the axis is moving in homing mode, then if an enabled endstop for the axis triggers (or remains triggered) then the axis will stop but the client will not enter the "End-stop hit" stopped state. 
 
 === Orders
 
@@ -1149,7 +1154,6 @@ After the first byte (identifying the target stepper number), the following Para
 
 .Replies
 - OK: No Parameter data.
-- Incorrect mode: Order received when stepper control is not activated.
 
 ==== Enable/Disable End-stops (0x10)
 
@@ -1211,7 +1215,7 @@ Before command blocks are queued, the client should perform reasonable validatio
 
 ==== Clear Command Block Queue (0x17)
 
-This order flushes the order queue. If a queued command is currently executing then it is allowed to continue execution.
+This order gracefully flushes the command block queue. If client is not currently stopped, then the client will attempt to come to a graceful stop at the end of the first movement block where this is possible (for instance by decelerating from the nominal rate to an end-of-block/final speed of zero using the configured underrun avoidance acceleration rate). Once the client is stopped at the end of a movement block (or was staionary to start with) then all remaining items in the command queue are flushed. 
 
 The replies to this order contain a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after this command is issued or a Stopped state entered. For the purposes of this count, each movement block counts as one command. All other queued orders also count as 1 command.
 
@@ -1225,7 +1229,7 @@ The replies to this order contain a count of the executed command blocks since t
 NOTE: the count of executed command blocks does not include command blocks which failed validation (and therefore not inserted in the queue) or were flushed from the queue before execution but it does include all executed commands regardless of whether or not they were successful.
 
 .Replies
-- OK: Queue was cleared successfully (except for any commands currently executing). Bytes 1 & 2 of the Reply parameter indicates the number of move block queue slots are available. Bytes 3 & 4 indicate the number of commands in the queue including any commands currently executing. For this order, the queue count value will only have a value of 0 or 1 depending on whether a command was executing when the Clear Command Block Queue order was received. Bytes 5 & 6 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
+- OK: The order has been accepted. Bytes 1 & 2 of the Reply parameter indicates the number of move block queue slots are available. Bytes 3 & 4 indicate the number of commands in the queue including any commands currently executing. Bytes 5 & 6 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
 
 .OK Reply Parameter Content
 [width="50%",options="header", cols="30%,70%"]
@@ -1415,7 +1419,7 @@ An emergency stop will require the host to re-home axes to determine its positio
 
 This specifies a 2-byte maximum movement rate value (in steps per second) for each stepper. This value is used when the axis is selected as the primary axis for a linear move command block.
 
-Any axes which are not specified or specified with a movement rate value of 0 will assumed to be unused for movement.
+Any axes which are specified with a movement rate value of 0 will assumed to be unused. The number of steppers specified in the order should be equal to the number of devices returned by the client in Request Device Count (regardless of whether they are used).
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1439,29 +1443,32 @@ This order configures the parameters for the underrun avoidance algorithm. This 
 
 An example underrun avoidance algorithm is as follows:
 
-- if the remaining movement time (at nominal speed) is less than the specified minimum period, then the client will decelerate at the specified rate until the movement rate equals the lower of the nominal movement rate or the specified underrun avoidance maximum movement rate
+- if the client determines an underrun is likely, then the client will decelerate at the specified rate until the movement rate equals the lower of the nominal movement rate or the specified underrun avoidance maximum movement rate
 - the client will then limit the movement rate to be less than or equal to the specified underrun avoidance maximum movement rate until the enqueued remaining movement time (at nominal speed) exceeds the specified minimum period.
 - the client will accelerate back up to the nominal speed at the specified rate when the movement queue refills beyonds the specified minimum period or a movement checkpoint is received.
 - the aglorithm will also gracefully decelerate to a stop coinciding with the point where the movement queue is exhausted.
+
+TBD: discuss parameters for entering underrun mode
 
 A client may also choose to implement a simpler underrun avoidance algorithm which simply ensures that the there are no missed steps when an underrun occurs (i.e., the client will decelerate gracefully to a stop at that point). This should be adequate in situations where an underrun is extremely unlikely, for instance, where the Pacemaker host and client are directly connected and the nature of the host makes it unlikely to be blocked for any substantial period.
 
 As usual, acceleration/deceleration and maximum movement rates used by the underrun avoidance algorithm are slected by the currently specified primary axis. A set of maximum movement rates and acceleration values must therefore be specified for each possible axis. Remaining queued movement time also includes other commands which take non-negligible time such as the Delay command block (0x02).
 
+The number of steppers specified in the order should be equal to the number of devices advertised by the client (regardless of whether they are used).
+
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 | Length In Bytes | Content
-| 2 | threshold minimum remaining movement time for underrun avoidance (in 10us units)
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 0
-| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 0
+| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 0
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 1
-| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 1
+| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 1
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 2
-| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 2
+| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 2
 | .. |
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper N-1
-| 2 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper N-1
+| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper N-1
 |=============================
 
 .Replies
@@ -1551,7 +1558,7 @@ The *final acceleration/deceleration step count fraction* is the cumulative frac
 
 If the movement block is accelerating/decelerating for the entire time, then the nominal & end speed should be set equal and the initial & final acceleration/deceleration time should be both equal to 255. By specifying, these acceleration/deceleration time the host is not limited to always accelerating at the maximum rate.
 
-The *nominal speed fraction* is the desired movement speed after initial acceleration/deceleration. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%).
+The *nominal speed fraction* is the desired movement speed after initial acceleration/deceleration. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%). The nominal speed must always be specified as greater than or equal to the implied initial speed and the specified final speed.
 
 The *end speed fraction* is the desired movement speed after all primary axis steps have been taken. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%).
 
@@ -1658,6 +1665,31 @@ For instance, %-03u would correspond to a 4 byte argument; %-3hi corresponds to 
 .Replies
 - OK: Parameter contains the requested UTF8 format string.
 
+== Unsolicited client frames
+
+=== Error/Debug/Warning/Information (0x00-0x03)
+
+The client can use the following Reply Code values to categorizes messages that it sends.
+
+[width="50%",options="header", cols="30%,70%"]
+|============================
+| Type | Meaning
+| 0x00 | Error
+| 0x01 | Debug
+| 0x02 | Warning
+| 0x03 | Information
+|============================
+
+The Parameter contains the utf8 information string.
+
+It should be remembered that delivery of these unsolicited frames is not guaranteed and so should not be used as the primary delivery mechanism for serious error information.
+
+=== New Event (0x05)
+
+This optional frame uses a Reply Code of 0x5. The frame has no Parameter content and simply indicates that a new event is available for collection using the Retrieve Events order. The client may choose to transmit another New Event frame if it does not receive a valid Order within a reasonable period. 
+
+[It should be remembered that bit 4 of the normal Reply frame has the same purpose (i.e., to indicate the presence of new events); however, use of the unsolicited frame mechanism alleviates the need for the host to aggresively poll the client for event discovery.]
+
 == Future Extensions
 
 The following is a list extensions which have been proposed but not currently included in the protocol (but may be included in future versions):
@@ -1679,4 +1711,5 @@ An SD card extension is not intended at this stage. Within the Pacemaker environ
 | 0.1   | 2013-06-17 | Lars Pötter and Robert Fairlie-Cuninghame.| first published draft
 | 0.2   | 2013-07-25 | Lars Pötter and Robert Fairlie-Cuninghame.| changed CRC and Length
 | 0.3   | 2013-08-18 | Lars Pötter and Robert Fairlie-Cuninghame.| added firmware config traversal, change length frame order
+| 0.4   | 2013-10-01 | Lars Pötter and Robert Fairlie-Cuninghame.| changed frame order again, added unsolicited frames
 |=======================================
