@@ -162,12 +162,12 @@ uint8_t crc8(uint8_t *data, unsigned int length)
 The transport layer consists of the host sending out Order frames that the client responds to with a Reply frame. The transport layer is communication channel dependent; however, the Pacemaker protocol is intended to work over a variety of channels - including bi-directional serial channels and with master-slave communications channels like I^2^C.
 
 === Host-Client Communication
-All critical communication between the host and the client is started by the host. Only the host may send out Order frames. The client must answer each Order frame with a Reply frame. The timeout for the client to respond by default is 100ms but should be configurable. This includes the time it takes to send and receive the data and is measured on the host. The client therefore has less than 100ms from the time of reception of the order to the sending of the reply.
+All critical communication between the host and the client is started by the host. Only the host may send out Order frames. The client must answer each Order frame with a Reply frame. The timeout for the client to respond is 100ms (by default). This includes the time it takes to send and receive the data and is measured on the host. The client therefore has less than 100ms from the time of reception of the order to the sending of the reply.
 
 ==== Unsolicited Client Frames
-In transport mechanisms which support client initiated data transmission, then the client may at times send out best-effort packets. The two main uses for these unsolicited client frames are for sending debug messages and to notify the host that a new event is available for collection. The Host must not respond to these unsolicited frames. 
+In transport mechanisms which support client initiated data transmission, then the client may send out unacknowledged packets for certain purposes. The two current uses for these unsolicited client frames are for sending debug messages (primarily to support development) and to notify the host that a new event is available for collection. The host does not respond to these unsolicited frames. 
 
-An unsolicited client frame has the same structure as a normal Reply frame but has bit 7 in the Control Byte set to 1. The client should increment the sequence number in the Control Byte with each unsolicited frame it sends. These sequence numbers have no correlation to the sequence numbers sent & received in normal Order and Reply frames.
+An unsolicited client frame has the same structure as a normal Reply frame but has bit 7 set in the Control Byte. The client should increment the sequence number in the Control Byte with each unsolicited frame it sends. These sequence numbers have no correlation to the sequence numbers sent & received in normal Order and Reply frames.
 
 For transport mediums which do not support client initiated communications then the host should either poll for the presence of new events or use a separate interrupt line to indicate this state.
 
@@ -184,10 +184,10 @@ Order frames are only sent by the host.
 |=============================
 |Length in bytes| Field
 | 1             | Sync
-| 1             | Length (=N)
+| 1             | Length (=N+2)
 | 1             | Control
 | 1             | Order code
-| N-2           | Parameter
+| N             | Parameter
 | 1             | Error Check Code (CRC-8)
 |=============================
 
@@ -211,10 +211,10 @@ Replies will only be sent by the Pacemaker client in response to an Order frame 
 |=============================
 |Length in bytes| Field
 | 1             | Sync
-| 1             | Length (=N)
+| 1             | Length (=N+2)
 | 1             | Control
 | 1             | Reply code
-| N-2           | Parameter
+| N             | Parameter
 | 1             | Error Check Code (CRC-8)
 |=============================
 
@@ -243,10 +243,10 @@ The host initially performs a write of the Order frame:
 |=============================
 |Length in bytes| Field
 | 1             | Address in bit 7 to 1 and R/W in bit 0 = 0
-| 1             | Length (=N)
+| 1             | Length (=N+2)
 | 1             | Control
 | 1             | Order Code
-| N-2           | Parameter
+| N             | Parameter
 | 1             | Error Check Code (CRC8)
 |=============================
 
@@ -257,10 +257,10 @@ and then immediately performs a read of the Reply frame:
 |=============================
 |Length in bytes| Field
 | 1             | Address in bit 7 to 1 and R/W in bit0 = 1
-| 1             | Length (=N)
+| 1             | Length (=N+2)
 | 1             | Control
 | 1             | Reply Code
-| N-2           | Parameter
+| N             | Parameter
 | 1             | Error Check Code (CRC8)
 |=============================
 
@@ -352,7 +352,7 @@ After the host side sends an Order frame to the client, it should wait for a com
 4. If a transport layer error is received, then the order is retransmitted.
 5. If 100ms elapses without a valid application layer response, then the order is retransmitted.
 
-Otherwise, when the host receives a valid frame with matching sequence number and reply code greater than 0x0f, then retransmission stops and the reply is passed to the application layer.
+Otherwise, when the host receives a valid frame with matching sequence number and a reply code greater than 0x0f, then retransmission stops and the reply is passed to the application layer. Valid unsolicited client frames received during this period are passed up to the application layer but do not affect order retransmission or reply reception.
 
 Note however that the host should limit itself to sending no more than 2 retransmissions for reasons other than the 100ms timeout. This limitation is to prevent the client getting stuck in a tight error retransmission loop with the host (for instance, because it is repeatedly trying to frame start sync on a Sync byte value in the data payload). Retransmissions due to the 100ms timeout can however continue to occur until the host decides to give up.
 
@@ -536,10 +536,19 @@ The *End-stop hit* state code is a specific case indication for the Stopped cond
 ==== Order-specific Errors (0x13)
 This Reply code indicates that the Order was unsuccessful for an Order-specific reason. The Order defines the contents of the Parameter field.
 
+=== Unsolicited Client Frames
 
-==== Experimental/Unapproved Reply Codes
+Unsolicited client frames are primarily indicated by bit 7 being set in the Reply Control Byte; however, by convention they also use a separate range of Reply Codes. The allocated range for approved unsolicited reply codes is 0x50-7f.
 
-The Reply Code range 0x80-0xfe is reserved for experimental or unapproved  application layer Reply Code values.
+It should be remembered that unsolicited frames are not acknowledged so delivery is best effort. Information which requires a degree of reliability should be sent using the Event mechanism. 
+
+==== Debug Message (0x50)
+
+This unsolicited client frame simply contains a utf8 string with debug-related information. Its primarily intention is to better support development by providing the ability to send non-delayed output messages from the client.
+
+=== Experimental/Unapproved Reply Codes
+
+The Reply Code range 0x80-0xfe is reserved for experimental or unapproved application layer Reply Code values.
 
 == Basic Functionality
 
@@ -1079,7 +1088,9 @@ c. disable the end-stop whenever the carriage needs to move all the way to the e
 
 End-stops are always used for homing, but the host can control whether halting on end-stop detection is enabled or disabled for normal movement.
 
-If end-stop halting is enabled, then the client should enter the "End-stop hit" Stopped state if an axis is moving but not in homing mode and an enabled endstop for the axis transitions from a not-triggered to triggered state, or remains triggered after the second step.
+The Configure End-stop order allows the host to configure the set of end-stop switches which are checked when each stepper is moving in a particular direction (positive or negative - with different end-stops being possible for each direction). In printers with CoreXY and H-bot drive systems (for instance) then multiple end-stops may need to be checked for a particular stepper direction and a particular end-stop may need to be checked for multiple steppers.
+
+During non-homing movement commands, the client will monitor all enabled and applicable end-stops (as determined by the direction of the movement) and if any of these end-stops matches their triggered state, then the client will enter the "End-stop hit" Stopped state.
 
 When the client enters an "End-stop hit" Stopped state then:
 
@@ -1089,7 +1100,7 @@ When the client enters an "End-stop hit" Stopped state then:
 - the order queue is flushed,
 - the stopped state is asserted.
 
-If the axis is moving in homing mode, then if an enabled endstop for the axis triggers (or remains triggered) then the axis will stop but the client will not enter the "End-stop hit" stopped state. 
+However when the movement is performed with the "homing mode" bit set, if any enabled and applicable end-stop triggers, then the matching steppers will stop but the other steppers will continue moving. The client will not enter the "End-stop hit" stopped state.
 
 === Orders
 
@@ -1215,7 +1226,9 @@ Before command blocks are queued, the client should perform reasonable validatio
 
 ==== Clear Command Block Queue (0x17)
 
-This order gracefully flushes the command block queue. If client is not currently stopped, then the client will attempt to come to a graceful stop at the end of the first movement block where this is possible (for instance by decelerating from the nominal rate to an end-of-block/final speed of zero using the configured underrun avoidance acceleration rate). Once the client is stopped at the end of a movement block (or was staionary to start with) then all remaining items in the command queue are flushed. 
+This order gracefully flushes the command block queue. If the client is currently moving, then the client will attempt to come to a graceful stop at the end of the first movement block where this is possible (for instance by decelerating from the nominal rate using the configured underrun avoidance acceleration rate). Once the client is stopped at the end of a movement block - or was stationary to start with - then all remaining items in the command queue are flushed. 
+
+For consistency, the order reply returns the same information as the reply for the Queue Command order. It should be remembered that the reply to the Clear Command Block Queue order is sent immediately and so therefore the Clear Command Block Queue reply will usually indicate that the queue is not empty (unless the queue was already empty when the order arrived). The host should poll the queue count (for instance) using Queue Command order to determine when the queue is empty and the system stopped.
 
 The replies to this order contain a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after this command is issued or a Stopped state entered. For the purposes of this count, each movement block counts as one command. All other queued orders also count as 1 command.
 
@@ -1454,20 +1467,21 @@ A client may also choose to implement a simpler underrun avoidance algorithm whi
 
 As usual, acceleration/deceleration and maximum movement rates used by the underrun avoidance algorithm are slected by the currently specified primary axis. A set of maximum movement rates and acceleration values must therefore be specified for each possible axis. Remaining queued movement time also includes other commands which take non-negligible time such as the Delay command block (0x02).
 
-The number of steppers specified in the order should be equal to the number of devices advertised by the client (regardless of whether they are used).
+The number of steppers specified in the each block of the order should be equal to the number of stepper devices advertised by the client (regardless of whether they are used).
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 | Length In Bytes | Content
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 0
-| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 0
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 1
-| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 1
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 2
-| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 2
 | .. |
 | 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper N-1
+| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 0
+| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 1
+| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 2
+| .. |
 | 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper N-1
 |=============================
 
@@ -1616,18 +1630,26 @@ The events are identified by a rolling 8-bit sequence number. This is used by th
 .Replies
 - OK: The OK Reply includes the next block of unacknowledged events (which may be zero).
 
-  * Byte 1: Initial Sequence Number of events
-  * ...  Event 1
-  * ...  Event 2
-  * ...  Event 3
-  * ...
+[width="50%",options="header", cols="30%,70%"]
+|============================
+| Length In Bytes | Content
+| 1   | Sequence Number of first Event
+| N   | Event 1
+| M   | Event 2
+| ..  |
+| P   | Event 3
+|============================
 
 Each event is of the form:
 
-  * Byte 1:  Event Type
-  * Byte 2: Length (N)
-  * Byte 3-4: Event Format Id
-  * Byte 5..N+2: Event Arguments (Optional)
+[width="50%",options="header", cols="30%,70%"]
+|============================
+| Length In Bytes | Content
+| 1   | Length (=N)
+| 1   | Event Type
+| 2   | Event Format Id
+| N-3 | Event Arguments (optional)
+|============================
 
 Note: Events are only considered acknowledged when a Retrieve Event Order is received with a sequence number which is greater than or equal to the event number.
 
@@ -1665,30 +1687,27 @@ For instance, %-03u would correspond to a 4 byte argument; %-3hi corresponds to 
 .Replies
 - OK: Parameter contains the requested UTF8 format string.
 
-== Unsolicited client frames
+=== Unsolicited client frames
 
-=== Error/Debug/Warning/Information (0x00-0x03)
+==== New Event (0x51)
 
-The client can use the following Reply Code values to categorizes messages that it sends.
+This optional unsolicited frame uses a Reply Code of 0x51 to increase the responsiveness of the host to events.  The order indicates that a new event is available for collection using the Retrieve Events order and may optionally include a copy of the first outstanding event (which may be different to the most recent event).
 
+The frame has the following optional Parameter value content:
+
+.Unsolicited Frame Parameter
 [width="50%",options="header", cols="30%,70%"]
 |============================
-| Type | Meaning
-| 0x00 | Error
-| 0x01 | Debug
-| 0x02 | Warning
-| 0x03 | Information
+| Length In Bytes | Content
+| 1   | Sequence Number of Event [optional]
+| 1   | Event Type  [optional]
+| 2   | Event Format Id [optional]
+| N-3 | Event Arguments (optional)
 |============================
 
-The Parameter contains the utf8 information string.
+NOTE: This does NOT replace normal event collection. The host must still acknowledge the received event and collect additional events using the Retrieve Events order.
 
-It should be remembered that delivery of these unsolicited frames is not guaranteed and so should not be used as the primary delivery mechanism for serious error information.
-
-=== New Event (0x05)
-
-This optional frame uses a Reply Code of 0x5. The frame has no Parameter content and simply indicates that a new event is available for collection using the Retrieve Events order. The client may choose to transmit another New Event frame if it does not receive a valid Order within a reasonable period. 
-
-[It should be remembered that bit 4 of the normal Reply frame has the same purpose (i.e., to indicate the presence of new events); however, use of the unsolicited frame mechanism alleviates the need for the host to aggresively poll the client for event discovery.]
+The host may retransmit the New Event frame if it does not receive a valid Order frame within a reasonable period. An unsolicited New Event frame should not be generated by the client when a reply is currently outstanding/in-progress for a normal host order frame. 
 
 == Future Extensions
 
