@@ -165,11 +165,11 @@ The transport layer consists of the host sending out Order frames that the clien
 All critical communication between the host and the client is started by the host. Only the host may send out Order frames. The client must answer each Order frame with a Reply frame. The timeout for the client to respond is 100ms (by default). This includes the time it takes to send and receive the data and is measured on the host. The client therefore has less than 100ms from the time of reception of the order to the sending of the reply.
 
 ==== Unsolicited Client Frames
-In transport mechanisms which support client initiated data transmission, then the client may send out unacknowledged packets for certain purposes. The two current uses for these unsolicited client frames are for sending debug messages (primarily to support development) and to notify the host that a new event is available for collection. The host does not respond to these unsolicited frames. 
+In transport mechanisms which support client initiated data transmission, then the client may send out unacknowledged packets for certain purposes. The two current uses for these unsolicited client frames are for sending debug messages (primarily to support development) and to quickly notify the host that a new event is available for collection. The host does not respond to these unsolicited frames. 
 
-An unsolicited client frame has the same structure as a normal Reply frame but has bit 7 set in the Control Byte. The client should increment the sequence number in the Control Byte with each unsolicited frame it sends. These sequence numbers have no correlation to the sequence numbers sent & received in normal Order and Reply frames.
+An unsolicited client frame has the same structure as a normal Reply frame but has bit 7 set in the Control Byte. The client should increment the sequence number in the Control Byte with each unsolicited frame it sends. These sequence numbers however have no correlation to the sequence numbers sent & received in normal Order and Reply frames.
 
-For transport mediums which do not support client initiated communications then the host should either poll for the presence of new events or use a separate interrupt line to indicate this state.
+For transport mediums which do not support client initiated communications then the host should either poll for the presence of new events or use a separate interrupt line to indicate a change in state.
 
 === Communication Over a Standard Serial Channel(UART, RS232)
 
@@ -352,9 +352,9 @@ After the host side sends an Order frame to the client, it should wait for a com
 4. If a transport layer error is received, then the order is retransmitted.
 5. If 100ms elapses without a valid application layer response, then the order is retransmitted.
 
-Otherwise, when the host receives a valid frame with matching sequence number and a reply code greater than 0x0f, then retransmission stops and the reply is passed to the application layer. Valid unsolicited client frames received during this period are passed up to the application layer but do not affect order retransmission or reply reception.
+Otherwise, when the host receives a valid frame with matching sequence number and a reply code greater than 0x0f, then retransmission stops and the reply is passed to the application layer. Valid unsolicited client frames received during this period do not affect the retransmission of orders or reception of replies.
 
-Note however that the host should limit itself to sending no more than 2 retransmissions for reasons other than the 100ms timeout. This limitation is to prevent the client getting stuck in a tight error retransmission loop with the host (for instance, because it is repeatedly trying to frame start sync on a Sync byte value in the data payload). Retransmissions due to the 100ms timeout can however continue to occur until the host decides to give up.
+Note that the host should limit itself to sending no more than 2 order retransmissions for reasons other than the 100ms timeout. This limitation is to prevent the client getting stuck in a tight error retransmission loop with the host (for instance, because it is repeatedly trying to frame start sync on a Sync byte value in the data payload). Retransmissions due to the 100ms timeout can however continue to occur until the host decides to give up.
 
 Retransmission with I^2^C is simpler as the client will simply hold the clock low until it is able to return a response or generate an error. Framing is also inherent in the I^2^C bus protocol. However, retransmission due to malformed frames, invalid sequence numbers, bad error check codes, time outs and transport layer errors remains unchanged.
 
@@ -544,7 +544,9 @@ It should be remembered that unsolicited frames are not acknowledged so delivery
 
 ==== Debug Message (0x50)
 
-This unsolicited client frame simply contains a utf8 string with debug-related information. Its primarily intention is to better support development by providing the ability to send non-delayed output messages from the client.
+This unsolicited client frame simply contains an ASCI string with debug-related information. The primarily intention of this frame is to better support development by providing a non-delayed output message mechanism from the client. If the Debug Message string contains non-printable characters, then it is desirable that the user interface renders these using their hexadecimal value.
+
+Text output which is intended for a normal user should be sent using the reliable delivery mechanism provided by the Event extension.
 
 === Experimental/Unapproved Reply Codes
 
@@ -1086,8 +1088,6 @@ c. disable the end-stop whenever the carriage needs to move all the way to the e
 
 === End-stop behavior
 
-End-stops are always used for homing, but the host can control whether halting on end-stop detection is enabled or disabled for normal movement.
-
 The Configure End-stop order allows the host to configure the set of end-stop switches which are checked when each stepper is moving in a particular direction (positive or negative - with different end-stops being possible for each direction). In printers with CoreXY and H-bot drive systems (for instance) then multiple end-stops may need to be checked for a particular stepper direction and a particular end-stop may need to be checked for multiple steppers.
 
 During non-homing movement commands, the client will monitor all enabled and applicable end-stops (as determined by the direction of the movement) and if any of these end-stops matches their triggered state, then the client will enter the "End-stop hit" Stopped state.
@@ -1100,7 +1100,7 @@ When the client enters an "End-stop hit" Stopped state then:
 - the order queue is flushed,
 - the stopped state is asserted.
 
-However when the movement is performed with the "homing mode" bit set, if any enabled and applicable end-stop triggers, then the matching steppers will stop but the other steppers will continue moving. The client will not enter the "End-stop hit" stopped state.
+However when the movement is performed with the "homing mode" bit set, if any enabled and applicable end-stops trigger, then the stepper devices specifying this end-stop will stop their movement but the other stepper devices will continue moving. The client will not enter the "End-stop hit" stopped state.
 
 === Orders
 
@@ -1143,9 +1143,9 @@ If a Parameter is provided the first byte will contain the stepper motors Number
 
 ==== Configure End-stops (0x0F)
 
-This order configures the end-stop switches which are checked when the specified stepper is moving in either a positive or negative direction. The order also configures whether the end-stop triggers at a high level or low level. The end-stops must be enabled using Enable End-stops before they will cause the end-stop state to affect movement.
+This order configures the set of end-stop switches which are checked when the specified stepper is moving in either a positive or negative direction. The order also configures whether the end-stop triggers at a high level or low level. 
 
-All end-stops (including both maximum and minimum) for a single stepper number must specified in the same order. Multiple end-stops can be sepcified for each direction. End-stops are initially disabled and must still be activated using the Activate Endstops command.
+All end-stops (including both maximum and minimum) for a single stepper number must specified in the same order. Multiple end-stops can be specified for each direction. End-stops are initially disabled and must still be enabled using the Enable/Disable End-stops order before they will cause the end-stop state to affect movement.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1161,7 +1161,7 @@ All end-stops (including both maximum and minimum) for a single stepper number m
 | .. |
 |================================================
 
-After the first byte (identifying the target stepper number), the following Parameter data is made up of three byte tuplets which configure the set of max or min end-stops to be checked when the stepper is moving in the specified direction. Multiple steppers can share the same endstop - which is common in a CoreXY configuration.
+After the first byte (identifying the target stepper number), the following Parameter data is made up of three byte tuplets each of which configures an end-stop to be checked (if enabled) when the stepper is moving in the specified direction. More than one stepper can share the same end-stop - which is common in a CoreXY configuration.
 
 .Replies
 - OK: No Parameter data.
@@ -1170,7 +1170,7 @@ After the first byte (identifying the target stepper number), the following Para
 
 The host enables or disables end-stops using this order. Attempting to enable an end-stop which hasn't been enabled with Configure End-stops will result in an error.
 
-The order Parameter consists of byte pairs which specifies an end-stop device number and whether the end-stop is enabled or disabled.
+The order Parameter consists of byte pairs which specify an end-stop device number and whether the end-stop is to be enabled or disabled.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1228,9 +1228,7 @@ Before command blocks are queued, the client should perform reasonable validatio
 
 This order gracefully flushes the command block queue. If the client is currently moving, then the client will attempt to come to a graceful stop at the end of the first movement block where this is possible (for instance by decelerating from the nominal rate using the configured underrun avoidance acceleration rate). Once the client is stopped at the end of a movement block - or was stationary to start with - then all remaining items in the command queue are flushed. 
 
-For consistency, the order reply returns the same information as the reply for the Queue Command order. It should be remembered that the reply to the Clear Command Block Queue order is sent immediately and so therefore the Clear Command Block Queue reply will usually indicate that the queue is not empty (unless the queue was already empty when the order arrived). The host should poll the queue count (for instance) using Queue Command order to determine when the queue is empty and the system stopped.
-
-The replies to this order contain a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after this command is issued or a Stopped state entered. For the purposes of this count, each movement block counts as one command. All other queued orders also count as 1 command.
+For consistency, the order reply returns the same information as the reply for the Queue Command Block order. It should be remembered that the reply to the Clear Command Block Queue order is sent immediately and so therefore the Clear Command Block Queue reply will usually indicate that the queue is not empty (unless the queue was already empty when the order arrived). The host should poll the queue count using Queue Command order (for instance) to determine when the queue is empty and the system stopped.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1238,8 +1236,6 @@ The replies to this order contain a count of the executed command blocks since t
 |Byte Number | Content
 | n/a | This command has no Parameter
 |=============================
-
-NOTE: the count of executed command blocks does not include command blocks which failed validation (and therefore not inserted in the queue) or were flushed from the queue before execution but it does include all executed commands regardless of whether or not they were successful.
 
 .Replies
 - OK: The order has been accepted. Bytes 1 & 2 of the Reply parameter indicates the number of move block queue slots are available. Bytes 3 & 4 indicate the number of commands in the queue including any commands currently executing. Bytes 5 & 6 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
@@ -1253,13 +1249,13 @@ NOTE: the count of executed command blocks does not include command blocks which
 | 2 | Number of executed command blocks since last the last Stopped state was cleared (a rolling 16-bit integer).
 |============================
 
+See the Queue Command Blocks order for a description of these reply parameter values.
+
 ==== Queue Command Blocks (0x12)
 
 This order adds new command blocks to the Pacemaker command queue. If the client cannot queue all requested command blocks then it must reply with an Order Specific Error reply as described below but it _may_ still queue an initial portion of the command blocks (in which case the Error reply will indicate the number of successfully queued blocks). The reply will also contain the number of free slots in the queue.
 
 If the client detects an error in any requested command block then it must reply with the Order Specific Error reply as described below. In this case the client may queue previous command blocks but must not queue command block following the errored block.
-
-The replies to this order contain a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after a stop print is issued or a Stopped state entered. For the purposes of this count, each movement block counts as one command. All other queued orders also count as 1 command.
 
 The Parameter contains the sequence of command blocks.
 
@@ -1278,11 +1274,15 @@ The Parameter contains the sequence of command blocks.
 
 Each block begins with a length byte and a command block type: the length byte indicates the number of following bytes in the block (including the command block byte) and the command block byte indicates the command block type. The currently defined movement block types are described in the next section (along with the associated extension).
 
-If an empty Parameter is sent then no orders are queued but the Order Queued reply is sent as usual (and can be used to monitor print progress).
+If an empty Parameter is sent then no orders are queued but the order reply is sent as usual (which can be used to monitor print progress).
 
 NOTE: if a queued command blocks is currently being executed, then this is treated as still being in the queue for the purposes of counting available queue slots and command blocks queue counts.
 
-NOTE: the count of executed command blocks does not include command blocks which failed validation (and therefore not inserted in the queue) or were flushed from the queue before execution but it does include all executed commands regardless of whether or not they were successful. The count does include currently executing command blocks.
+NOTE: the reply to this order contains a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after this command is issued or a Stopped state entered. For the purposes of this count:
+
+- Each movement block counts as 1 command. All other queued orders also count as 1 command.
+- The count of executed command blocks does not include command blocks which failed validation (and therefore were not inserted in the queue) or were flushed from the queue before execution.
+- The count does include all command blocks for which execution was attempted - regardless of whether or not they were successful.
 
 .Replies
 - OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply Parameter indicates the number of move block queue slots are available. Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
@@ -1416,7 +1416,9 @@ Some printers use extruder advance algorithms to non-linearly modify the extrusi
 The Pacemaker framework has been specifically optimized to allow non-linear behaviors to be efficiently implemented using sequences of short linear segments. Similarly to implementing non-linear movement in the XYZ axes (for delta or polar bots), this technique can also be used for implementing non-linear advance algorithms in the extruder axes. The advantage of this approach is that the client requires no additional logic to implement an arbitrary advance scheme.
 
 ==== What happens if the communication is disrupted during movement?
-A movement wind-down algorithm can be implemented to limit the maximum speed when a disruption is anticipated, i.e., a limited number of movement blocks are queued with a non-zero end speed on the final block. This ensures that missed steps do not occur as the result of a queue underrun.
+An underrun avoidance algorithm can be implemented to reduce the maximum speed when a disruption is anticipated, for instance, a limited number of movement blocks remain in the command queue and the host has not inidcated that this is the end of movement. The underrun avoidance algorithm also ensures that missed steps do not occur as the result of a queue underrun. 
+
+The details of the algorithm are discussed in more detail in the Basic Movement Extension.
 
 === Recovery after stop
 
@@ -1424,7 +1426,7 @@ The protocol currently doesn't require the client to track the position of each 
 
 The client always returns an executed command block count in the "Queue Command Block" Reply Parameter which can be used to determine position even after a orderly "stop print" command has been issued. The executed command block count is a count of all command blocks which have attempted execution (including those which encountered an error) since the last the last Stopped state was cleared.
 
-An emergency stop will require the host to re-home axes to determine its position - an emergency stop and certain or Stopped errors can result in skipped steps. Thus even if the client maintained an exact step count it wouldn't necessarily be accurate.
+An emergency stop will require the host to re-home axes to determine its position - an emergency stop and certain other Stopped errors can result in skipped steps. Thus even if the client maintained an exact step count in these cases, it wouldn't necessarily be accurate.
 
 === Extension Orders
 
@@ -1432,7 +1434,7 @@ An emergency stop will require the host to re-home axes to determine its positio
 
 This specifies a 2-byte maximum movement rate value (in steps per second) for each stepper. This value is used when the axis is selected as the primary axis for a linear move command block.
 
-Any axes which are specified with a movement rate value of 0 will assumed to be unused. The number of steppers specified in the order should be equal to the number of devices returned by the client in Request Device Count (regardless of whether they are used).
+Any axes which are specified with a movement rate value of 0 will be treated as unused. For simplicity and future extensibility the number of steppers specified in the order should always be equal to the number of devices returned by the client in Request Device Count.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1467,7 +1469,7 @@ A client may also choose to implement a simpler underrun avoidance algorithm whi
 
 As usual, acceleration/deceleration and maximum movement rates used by the underrun avoidance algorithm are slected by the currently specified primary axis. A set of maximum movement rates and acceleration values must therefore be specified for each possible axis. Remaining queued movement time also includes other commands which take non-negligible time such as the Delay command block (0x02).
 
-The number of steppers specified in the each block of the order should be equal to the number of stepper devices advertised by the client (regardless of whether they are used).
+For simplicity and future extensibility the number of steppers specified in the each section of the order should be equal to the number of stepper devices returned by the client in Request Device Count.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1691,7 +1693,7 @@ For instance, %-03u would correspond to a 4 byte argument; %-3hi corresponds to 
 
 ==== New Event (0x51)
 
-This optional unsolicited frame uses a Reply Code of 0x51 to increase the responsiveness of the host to events.  The order indicates that a new event is available for collection using the Retrieve Events order and may optionally include a copy of the first outstanding event (which may be different to the most recent event).
+This optional unsolicited frame uses a Reply Code value of 0x51 to increase the responsiveness of the host to events.  The order indicates that a new event is available for collection using the Retrieve Events order and may optionally include a copy of the first outstanding event (which may be different to the most recent event).
 
 The frame has the following optional Parameter value content:
 
@@ -1707,7 +1709,7 @@ The frame has the following optional Parameter value content:
 
 NOTE: This does NOT replace normal event collection. The host must still acknowledge the received event and collect additional events using the Retrieve Events order.
 
-The host may retransmit the New Event frame if it does not receive a valid Order frame within a reasonable period. An unsolicited New Event frame should not be generated by the client when a reply is currently outstanding/in-progress for a normal host order frame. 
+The host may retransmit the New Event frame if it does not receive a valid Order frame within a reasonable period. An unsolicited New Event frame should not be generated by the client when a host order frame is currently being processed, that is, when a reply frame is pending. 
 
 == Future Extensions
 
