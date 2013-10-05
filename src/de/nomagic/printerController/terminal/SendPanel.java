@@ -28,6 +28,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -35,6 +38,7 @@ import javax.swing.JTextField;
  */
 public class SendPanel implements ActionListener
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private JPanel pane;
     private ClientChannel client;
     private JTextField Order;
@@ -184,7 +188,7 @@ public class SendPanel implements ActionListener
             {
                 paraLengthI = Integer.parseInt(paraLengthS);
             }
-            client.sendFrame(orderI, paraLengthI, data);
+            log.info(client.sendFrame(orderI, paraLengthI, data));
         }
         // else ignore command
     }

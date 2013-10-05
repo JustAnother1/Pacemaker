@@ -19,14 +19,6 @@ import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.Vector;
 
 import javax.swing.BorderFactory;
@@ -47,15 +39,16 @@ import org.slf4j.LoggerFactory;
 public class MacroPanel implements ActionListener
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     private JPanel pane;
-    private final static String CONFIG_FILE_NAME = "PacemakerTerminal.cfg";
     private final static String ACTION_COMMAND_PREFIX = "Macro";
     private final static String ACTION_COMMAND_REMOVE = "remove";
-    private Vector<Macro> Macros = new Vector<Macro>();
+    private Vector<Macro> Macros;
     private ClientChannel client;
     private JFrame terminalWindow;
+    private TerminalConfiguration cfg;
 
-    public MacroPanel(ClientChannel client, JFrame terminalWindow)
+    public MacroPanel(ClientChannel client, JFrame terminalWindow, TerminalConfiguration cfg)
     {
         this.client = client;
         pane = new JPanel();
@@ -63,59 +56,8 @@ public class MacroPanel implements ActionListener
                        BorderFactory.createLineBorder(Color.black),
                        "Macros"));
         pane.setLayout(new FlowLayout(FlowLayout.LEADING));
-        readConfig();
-    }
-
-    private void readConfig()
-    {
-        File f = new File(CONFIG_FILE_NAME);
-        if(true == f.canRead())
-        {
-            ObjectInputStream oin = null;
-            try
-            {
-                oin = new ObjectInputStream(new FileInputStream(f));
-                Macro curM = null;
-                do
-                {
-                    curM = (Macro)oin.readObject();
-                    if(null != curM)
-                    {
-                        Macros.add(curM);
-                    }
-                } while(curM != null);
-            }
-            catch(EOFException e)
-            {
-                // ok
-            }
-            catch(FileNotFoundException e)
-            {
-                e.printStackTrace();
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-            }
-            catch(ClassNotFoundException e)
-            {
-                e.printStackTrace();
-            }
-            finally
-            {
-                if(null != oin)
-                {
-                    try
-                    {
-                        oin.close();
-                    }
-                    catch(IOException e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }
+        this.cfg = cfg;
+        Macros = cfg.getMacros();
         updatePanel();
     }
 
@@ -144,64 +86,8 @@ public class MacroPanel implements ActionListener
         pane.revalidate();
     }
 
-    private void writeConfig()
-    {
-        if(0 < Macros.size())
-        {
-            File f = new File(CONFIG_FILE_NAME);
-            try
-            {
-                f.createNewFile();
-                if(true == f.canWrite())
-                {
-                    ObjectOutputStream oOut = null;
-                    try
-                    {
-                        oOut = new ObjectOutputStream(new FileOutputStream(f));
-                        for(int i = 0; i < Macros.size(); i++)
-                        {
-                            oOut.writeObject(Macros.get(i));
-                        }
-                    }
-                    catch(FileNotFoundException e)
-                    {
-                        e.printStackTrace();
-                    }
-                    catch(IOException e)
-                    {
-                        e.printStackTrace();
-                    }
-                    finally
-                    {
-                        if(null != oOut)
-                        {
-                            try
-                            {
-                                oOut.close();
-                            }
-                            catch(IOException e)
-                            {
-                                e.printStackTrace();
-                            }
-                        }
-                    }
-                }
-                else
-                {
-                    log.error("Could not save the Macros !");
-                }
-            }
-            catch(IOException e1)
-            {
-                e1.printStackTrace();
-                log.error("IO Exception! Could not save the Macros !");
-            }
-        }
-    }
-
     public void close()
     {
-        writeConfig();
     }
 
     public Component getPanel()
@@ -217,9 +103,9 @@ public class MacroPanel implements ActionListener
         {
             int i = Integer.parseInt((command.substring(ACTION_COMMAND_PREFIX.length())));
             Macro m = Macros.get(i);
-            client.sendFrame(m.getOrder(),
+            log.info(client.sendFrame(m.getOrder(),
                              m.getParameterLength(),
-                             m.getParameter());
+                             m.getParameter()));
         }
         else if(true == ACTION_COMMAND_REMOVE.equals(command))
         {
@@ -246,6 +132,7 @@ public class MacroPanel implements ActionListener
                 String num = s.substring(0, s.indexOf(':'));
                 int opt = Integer.parseInt(num.trim());
                 Macros.remove(opt);
+                cfg.updateMacros(Macros);
                 updatePanel();
             }
         }

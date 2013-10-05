@@ -34,6 +34,7 @@ public class TerminalWindow extends JFrame
     protected CloseApplication Closer;
     private ControlPane control;
     private LogPane logging;
+    private TerminalConfiguration cfg;
 
     public TerminalWindow(CloseApplication Close)
     {
@@ -48,8 +49,10 @@ public class TerminalWindow extends JFrame
             }
         });
 
+        cfg = new TerminalConfiguration();
+
         // add all sub Panes
-        control = new ControlPane(this);
+        control = new ControlPane(this, cfg);
         logging = new LogPane();
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
@@ -64,6 +67,8 @@ public class TerminalWindow extends JFrame
     public void close()
     {
         control.close();
+        logging.close();
+        cfg.close();
     }
 
     public JTextArea getTextArea()

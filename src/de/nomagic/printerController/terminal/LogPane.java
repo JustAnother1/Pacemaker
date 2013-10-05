@@ -48,4 +48,9 @@ public class LogPane
         return textArea;
     }
 
+    public void close()
+    {
+
+    }
+
 }

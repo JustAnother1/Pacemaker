@@ -39,15 +39,20 @@ public class ClientChannel
         }
     }
 
-    public void sendFrame(int order, int parameterLength, int[] parameter)
+    public String sendFrame(int order, int parameterLength, int[] parameter)
     {
         if(null != cc)
         {
             Reply r = cc.sendRequest(order, parameter, 0, parameterLength);
             if(null != r)
             {
-                r.toString();
+                return r.toString();
             }
+            return "No Reply !";
+        }
+        else
+        {
+            return "Not connected !";
         }
     }
 

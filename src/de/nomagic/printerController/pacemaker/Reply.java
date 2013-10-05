@@ -15,7 +15,8 @@
 package de.nomagic.printerController.pacemaker;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
+
+import de.nomagic.printerController.Tool;
 
 /**
  * @author Lars P&ouml;tter
@@ -23,24 +24,35 @@ import java.util.Arrays;
  */
 public class Reply
 {
-    private final static int POS_OF_REPLY_CODE = 1;
-    private final static int POS_OF_LENGTH = 3;
+    private final static int POS_OF_LENGTH = 1;
     private final static int POS_OF_CONTROL = 2;
+    private final static int POS_OF_REPLY_CODE = 3;
     private final static int POS_OF_PARAMETER_START = 4;
 
     private final byte[] data;
     private final int length;
+    private final boolean valid;
 
     public Reply(byte[] data)
     {
-        this.data = data;
-        length = (0xff & data[POS_OF_LENGTH]);
+        if(null == data)
+        {
+            valid = false;
+            this.data = new byte[0];
+            length = 0;
+        }
+        else
+        {
+            valid = true;
+            this.data = data;
+            length = (0xff & data[POS_OF_LENGTH]);
+        }
     }
 
     @Override
     public String toString()
     {
-        return "Reply [data=" + Arrays.toString(data) + ", length=" + length + "]";
+        return "Reply " + Tool.fromByteBufferToHexString(data);
     }
 
     public byte getReplyCode()
@@ -67,8 +79,8 @@ public class Reply
 
     public byte[] getParameter()
     {
-        byte[] res = new byte[length];
-        for(int i = 0; i < length; i ++)
+        byte[] res = new byte[length - 2];
+        for(int i = 0; i < length - 2; i ++)
         {
             res[i] = data[i + POS_OF_PARAMETER_START];
         }
@@ -94,6 +106,11 @@ public class Reply
         {
             return false;
         }
+    }
+
+    public boolean isValid()
+    {
+        return valid;
     }
 
 }

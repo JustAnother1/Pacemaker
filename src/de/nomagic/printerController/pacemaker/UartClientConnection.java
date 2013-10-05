@@ -340,6 +340,7 @@ public class UartClientConnection extends ClientConnection
     @Override
     public void close()
     {
+        super.close();
         if(null != port)
         {
             port.close();

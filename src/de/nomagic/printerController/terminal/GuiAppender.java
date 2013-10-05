@@ -48,17 +48,16 @@ public class GuiAppender extends AppenderBase<ILoggingEvent>
         {
             return;
         }
-
         Level l = e.getLevel();
         long startTime = e.getLoggerContextVO().getBirthTime();
         long eventTime = e.getTimeStamp() - startTime;
         if(Level.ERROR == l)
         {
-            message = "" + eventTime + ": ERROR : " + e.getMessage() + "\n";
+            message = "" + eventTime + ": ERROR : " + e.getFormattedMessage() + "\n";
         }
         else
         {
-            message = "" + eventTime + ": " + e.getMessage() + "\n";
+            message = "" + eventTime + ": " + e.getFormattedMessage() + "\n";
         }
 
         SwingUtilities.invokeLater(new Runnable() {

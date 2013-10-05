@@ -85,6 +85,7 @@ public class TcpClientConnection extends ClientConnection
     @Override
     public void close()
     {
+        super.close();
         if(null != pms)
         {
             try

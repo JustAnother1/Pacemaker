@@ -32,15 +32,17 @@ public class ControlPane
     private SendPanel SendPanel;
     private MacroPanel MacroPanel;
     private ClientChannel Client;
+    private TerminalConfiguration cfg;
 
-    public ControlPane(JFrame terminalWindow)
+    public ControlPane(JFrame terminalWindow, TerminalConfiguration cfg)
     {
+        this.cfg = cfg;
         MainPanel = new JPanel();
         MainPanel.setLayout(new BoxLayout(MainPanel, BoxLayout.PAGE_AXIS));
         Client = new ClientChannel();
-        ConnectPanel = new ConnectionPanel(Client, terminalWindow);
+        ConnectPanel = new ConnectionPanel(Client, terminalWindow, cfg);
         MainPanel.add(ConnectPanel.getPanel());
-        MacroPanel = new MacroPanel(Client, terminalWindow);
+        MacroPanel = new MacroPanel(Client, terminalWindow, cfg);
         SendPanel = new SendPanel(Client, MacroPanel, terminalWindow);
         MainPanel.add(SendPanel.getPanel());
         MainPanel.add(MacroPanel.getPanel());

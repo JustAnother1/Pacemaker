@@ -32,9 +32,11 @@ import de.nomagic.printerController.Tool;
 public abstract class ClientConnection extends Thread
 {
     private final static Logger log = LoggerFactory.getLogger("ClientConnection");
+    private final static boolean useNonBlocking = true;
 
-    public final static int MAX_MS_BETWEEN_TWO_BYTES = 100;
-    public final static int MAX_TRANSMISSIONS = 4;
+    public final static int MAX_MS_BETWEEN_TWO_BYTES = 20;
+    public final static int MAX_MS_UNTIL_REPLY_ARRIVES = 100;
+    public final static int MAX_TRANSMISSIONS = 4; // number of tries to send the frame
 
     protected InputStream in;
     protected OutputStream out;
@@ -45,38 +47,23 @@ public abstract class ClientConnection extends Thread
 
     private static byte crc_array[] =
     {
-        (byte)0x00, (byte)0xa6, (byte)0xea, (byte)0x4c, (byte)0x72, (byte)0xd4, (byte)0x98, (byte)0x3e,
-        (byte)0xe4, (byte)0x42, (byte)0x0e, (byte)0xa8, (byte)0x96, (byte)0x30, (byte)0x7c, (byte)0xda,
-        (byte)0x6e, (byte)0xc8, (byte)0x84, (byte)0x22, (byte)0x1c, (byte)0xba, (byte)0xf6, (byte)0x50,
-        (byte)0x8a, (byte)0x2c, (byte)0x60, (byte)0xc6, (byte)0xf8, (byte)0x5e, (byte)0x12, (byte)0xb4,
-        (byte)0xdc, (byte)0x7a, (byte)0x36, (byte)0x90, (byte)0xae, (byte)0x08, (byte)0x44, (byte)0xe2,
-        (byte)0x38, (byte)0x9e, (byte)0xd2, (byte)0x74, (byte)0x4a, (byte)0xec, (byte)0xa0, (byte)0x06,
-        (byte)0xb2, (byte)0x14, (byte)0x58, (byte)0xfe, (byte)0xc0, (byte)0x66, (byte)0x2a, (byte)0x8c,
-        (byte)0x56, (byte)0xf0, (byte)0xbc, (byte)0x1a, (byte)0x24, (byte)0x82, (byte)0xce, (byte)0x68,
-        (byte)0x1e, (byte)0xb8, (byte)0xf4, (byte)0x52, (byte)0x6c, (byte)0xca, (byte)0x86, (byte)0x20,
-        (byte)0xfa, (byte)0x5c, (byte)0x10, (byte)0xb6, (byte)0x88, (byte)0x2e, (byte)0x62, (byte)0xc4,
-        (byte)0x70, (byte)0xd6, (byte)0x9a, (byte)0x3c, (byte)0x02, (byte)0xa4, (byte)0xe8, (byte)0x4e,
-        (byte)0x94, (byte)0x32, (byte)0x7e, (byte)0xd8, (byte)0xe6, (byte)0x40, (byte)0x0c, (byte)0xaa,
-        (byte)0xc2, (byte)0x64, (byte)0x28, (byte)0x8e, (byte)0xb0, (byte)0x16, (byte)0x5a, (byte)0xfc,
-        (byte)0x26, (byte)0x80, (byte)0xcc, (byte)0x6a, (byte)0x54, (byte)0xf2, (byte)0xbe, (byte)0x18,
-        (byte)0xac, (byte)0x0a, (byte)0x46, (byte)0xe0, (byte)0xde, (byte)0x78, (byte)0x34, (byte)0x92,
-        (byte)0x48, (byte)0xee, (byte)0xa2, (byte)0x04, (byte)0x3a, (byte)0x9c, (byte)0xd0, (byte)0x76,
-        (byte)0x3c, (byte)0x9a, (byte)0xd6, (byte)0x70, (byte)0x4e, (byte)0xe8, (byte)0xa4, (byte)0x02,
-        (byte)0xd8, (byte)0x7e, (byte)0x32, (byte)0x94, (byte)0xaa, (byte)0x0c, (byte)0x40, (byte)0xe6,
-        (byte)0x52, (byte)0xf4, (byte)0xb8, (byte)0x1e, (byte)0x20, (byte)0x86, (byte)0xca, (byte)0x6c,
-        (byte)0xb6, (byte)0x10, (byte)0x5c, (byte)0xfa, (byte)0xc4, (byte)0x62, (byte)0x2e, (byte)0x88,
-        (byte)0xe0, (byte)0x46, (byte)0x0a, (byte)0xac, (byte)0x92, (byte)0x34, (byte)0x78, (byte)0xde,
-        (byte)0x04, (byte)0xa2, (byte)0xee, (byte)0x48, (byte)0x76, (byte)0xd0, (byte)0x9c, (byte)0x3a,
-        (byte)0x8e, (byte)0x28, (byte)0x64, (byte)0xc2, (byte)0xfc, (byte)0x5a, (byte)0x16, (byte)0xb0,
-        (byte)0x6a, (byte)0xcc, (byte)0x80, (byte)0x26, (byte)0x18, (byte)0xbe, (byte)0xf2, (byte)0x54,
-        (byte)0x22, (byte)0x84, (byte)0xc8, (byte)0x6e, (byte)0x50, (byte)0xf6, (byte)0xba, (byte)0x1c,
-        (byte)0xc6, (byte)0x60, (byte)0x2c, (byte)0x8a, (byte)0xb4, (byte)0x12, (byte)0x5e, (byte)0xf8,
-        (byte)0x4c, (byte)0xea, (byte)0xa6, (byte)0x00, (byte)0x3e, (byte)0x98, (byte)0xd4, (byte)0x72,
-        (byte)0xa8, (byte)0x0e, (byte)0x42, (byte)0xe4, (byte)0xda, (byte)0x7c, (byte)0x30, (byte)0x96,
-        (byte)0xfe, (byte)0x58, (byte)0x14, (byte)0xb2, (byte)0x8c, (byte)0x2a, (byte)0x66, (byte)0xc0,
-        (byte)0x1a, (byte)0xbc, (byte)0xf0, (byte)0x56, (byte)0x68, (byte)0xce, (byte)0x82, (byte)0x24,
-        (byte)0x90, (byte)0x36, (byte)0x7a, (byte)0xdc, (byte)0xe2, (byte)0x44, (byte)0x08, (byte)0xae,
-        (byte)0x74, (byte)0xd2, (byte)0x9e, (byte)0x38, (byte)0x06, (byte)0xa0, (byte)0xec, (byte)0x4a
+        //       0           1           2           3           4           5           6           7           8           9           A           B           C           D           E           F
+    /* 0*/ (byte)0x00, (byte)0xa6, (byte)0xea, (byte)0x4c, (byte)0x72, (byte)0xd4, (byte)0x98, (byte)0x3e, (byte)0xe4, (byte)0x42, (byte)0x0e, (byte)0xa8, (byte)0x96, (byte)0x30, (byte)0x7c, (byte)0xda,
+    /* 1*/ (byte)0x6e, (byte)0xc8, (byte)0x84, (byte)0x22, (byte)0x1c, (byte)0xba, (byte)0xf6, (byte)0x50, (byte)0x8a, (byte)0x2c, (byte)0x60, (byte)0xc6, (byte)0xf8, (byte)0x5e, (byte)0x12, (byte)0xb4,
+    /* 2*/ (byte)0xdc, (byte)0x7a, (byte)0x36, (byte)0x90, (byte)0xae, (byte)0x08, (byte)0x44, (byte)0xe2, (byte)0x38, (byte)0x9e, (byte)0xd2, (byte)0x74, (byte)0x4a, (byte)0xec, (byte)0xa0, (byte)0x06,
+    /* 3*/ (byte)0xb2, (byte)0x14, (byte)0x58, (byte)0xfe, (byte)0xc0, (byte)0x66, (byte)0x2a, (byte)0x8c, (byte)0x56, (byte)0xf0, (byte)0xbc, (byte)0x1a, (byte)0x24, (byte)0x82, (byte)0xce, (byte)0x68,
+    /* 4*/ (byte)0x1e, (byte)0xb8, (byte)0xf4, (byte)0x52, (byte)0x6c, (byte)0xca, (byte)0x86, (byte)0x20, (byte)0xfa, (byte)0x5c, (byte)0x10, (byte)0xb6, (byte)0x88, (byte)0x2e, (byte)0x62, (byte)0xc4,
+    /* 5*/ (byte)0x70, (byte)0xd6, (byte)0x9a, (byte)0x3c, (byte)0x02, (byte)0xa4, (byte)0xe8, (byte)0x4e, (byte)0x94, (byte)0x32, (byte)0x7e, (byte)0xd8, (byte)0xe6, (byte)0x40, (byte)0x0c, (byte)0xaa,
+    /* 6*/ (byte)0xc2, (byte)0x64, (byte)0x28, (byte)0x8e, (byte)0xb0, (byte)0x16, (byte)0x5a, (byte)0xfc, (byte)0x26, (byte)0x80, (byte)0xcc, (byte)0x6a, (byte)0x54, (byte)0xf2, (byte)0xbe, (byte)0x18,
+    /* 7*/ (byte)0xac, (byte)0x0a, (byte)0x46, (byte)0xe0, (byte)0xde, (byte)0x78, (byte)0x34, (byte)0x92, (byte)0x48, (byte)0xee, (byte)0xa2, (byte)0x04, (byte)0x3a, (byte)0x9c, (byte)0xd0, (byte)0x76,
+    /* 8*/ (byte)0x3c, (byte)0x9a, (byte)0xd6, (byte)0x70, (byte)0x4e, (byte)0xe8, (byte)0xa4, (byte)0x02, (byte)0xd8, (byte)0x7e, (byte)0x32, (byte)0x94, (byte)0xaa, (byte)0x0c, (byte)0x40, (byte)0xe6,
+    /* 9*/ (byte)0x52, (byte)0xf4, (byte)0xb8, (byte)0x1e, (byte)0x20, (byte)0x86, (byte)0xca, (byte)0x6c, (byte)0xb6, (byte)0x10, (byte)0x5c, (byte)0xfa, (byte)0xc4, (byte)0x62, (byte)0x2e, (byte)0x88,
+    /* A*/ (byte)0xe0, (byte)0x46, (byte)0x0a, (byte)0xac, (byte)0x92, (byte)0x34, (byte)0x78, (byte)0xde, (byte)0x04, (byte)0xa2, (byte)0xee, (byte)0x48, (byte)0x76, (byte)0xd0, (byte)0x9c, (byte)0x3a,
+    /* B*/ (byte)0x8e, (byte)0x28, (byte)0x64, (byte)0xc2, (byte)0xfc, (byte)0x5a, (byte)0x16, (byte)0xb0, (byte)0x6a, (byte)0xcc, (byte)0x80, (byte)0x26, (byte)0x18, (byte)0xbe, (byte)0xf2, (byte)0x54,
+    /* C*/ (byte)0x22, (byte)0x84, (byte)0xc8, (byte)0x6e, (byte)0x50, (byte)0xf6, (byte)0xba, (byte)0x1c, (byte)0xc6, (byte)0x60, (byte)0x2c, (byte)0x8a, (byte)0xb4, (byte)0x12, (byte)0x5e, (byte)0xf8,
+    /* D*/ (byte)0x4c, (byte)0xea, (byte)0xa6, (byte)0x00, (byte)0x3e, (byte)0x98, (byte)0xd4, (byte)0x72, (byte)0xa8, (byte)0x0e, (byte)0x42, (byte)0xe4, (byte)0xda, (byte)0x7c, (byte)0x30, (byte)0x96,
+    /* E*/ (byte)0xfe, (byte)0x58, (byte)0x14, (byte)0xb2, (byte)0x8c, (byte)0x2a, (byte)0x66, (byte)0xc0, (byte)0x1a, (byte)0xbc, (byte)0xf0, (byte)0x56, (byte)0x68, (byte)0xce, (byte)0x82, (byte)0x24,
+    /* F*/ (byte)0x90, (byte)0x36, (byte)0x7a, (byte)0xdc, (byte)0xe2, (byte)0x44, (byte)0x08, (byte)0xae, (byte)0x74, (byte)0xd2, (byte)0x9e, (byte)0x38, (byte)0x06, (byte)0xa0, (byte)0xec, (byte)0x4a
     };
 
     public Reply sendRequest(final byte order, final byte[] parameter)
@@ -118,7 +105,7 @@ public abstract class ClientConnection extends Thread
         {
             final byte[] buf = new byte[length + 5];
             buf[0] = Protocol.START_OF_HOST_FRAME;
-            buf[1] = Order;
+            buf[1] = (byte)(length + 2); // length also includes Control and Order
             if(false == needsToRetransmitt)
             {
                 incrementSequenceNumber();
@@ -130,16 +117,17 @@ public abstract class ClientConnection extends Thread
             }
             else
             {
-                buf[2] = (byte)(0x08 | sequenceNumber);
+                // signal the client that host has reset so hat the client flushes all cached responses
+                buf[2] = (byte)(0x10 | sequenceNumber);
                 isFirstOrder = false;
             }
-            buf[3] = (byte)(length);
+            buf[3] = Order;
             for(int i = 0; i < length; i++)
             {
                 buf[4 + i] = parameter[i + offset];
             }
             // log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(buf, 4 + length));
-            buf[4 + length] = getCRCfor(buf, 4 + length);
+            buf[4 + length] = getCRCfor(buf, 3 + length, 1);
             try
             {
                 log.info("Sending Frame: " + Tool.fromByteBufferToHexString(buf));
@@ -153,15 +141,44 @@ public abstract class ClientConnection extends Thread
                 log.error("Failed to send Request - Exception !");
                 return null;
             }
-            if(null == r)
+            if(false == r.isValid())
             {
+                log.error("received invalid Frame !");
                 needsToRetransmitt = true;
             }
             else
             {
                 // Transport error -> Retransmission ?
-                if((-1 < r.getReplyCode()) && (0x10 > r.getReplyCode()))
+                if((-1 < r.getReplyCode()) && (Protocol.RESPONSE_OK > r.getReplyCode()))
                 {
+                    // Reply codes as defined in Pacemaker Protocol
+                    if(Protocol.RESPONSE_FRAME_RECEIPT_ERROR == r.getReplyCode())
+                    {
+                        byte[] para = r.getParameter();
+                        switch(para[0])
+                        {
+                        case Protocol.RESPONSE_BAD_FRAME:
+                            log.error("received Bad Frame error Frame !");
+                            break;
+
+                        case Protocol.RESPONSE_BAD_ERROR_CHECK_CODE:
+                            log.error("received bad CRC error Frame !");
+                            break;
+
+                        case Protocol.RESPONSE_UNABLE_TO_ACCEPT_FRAME:
+                            log.error("received unable to accept error Frame !");
+                            break;
+
+                        default:
+                            log.error("received error Frame with invalid parameter !");
+                            break;
+                        }
+                    }
+                    // new error frames would be here with else if()
+                    else
+                    {
+                        log.error("received invalid error Frame !");
+                    }
                     needsToRetransmitt = true;
                 }
                 else
@@ -171,11 +188,6 @@ public abstract class ClientConnection extends Thread
             }
         } while((true == needsToRetransmitt) && (numberOfTransmissions < MAX_TRANSMISSIONS));
         return r;
-    }
-
-    public static byte getCRCfor(final byte[] buf)
-    {
-        return getCRCfor(buf, buf.length, 1/* Byte 0 is Sync and is not included in CRC*/);
     }
 
     public static byte getCRCfor(final byte[] buf, final int length)
@@ -196,47 +208,52 @@ public abstract class ClientConnection extends Thread
          return crc;
     }
 
-    protected int getAByte() throws IOException
+    protected int getAByte() throws IOException, TimeoutException
     {
-        final int res =  in.read();
-        if(-1 == res)
+        if(false == useNonBlocking)
         {
-            throw new IOException("Channel closed");
+            final int res =  in.read();
+            if(-1 == res)
+            {
+                throw new IOException("Channel closed");
+            }
+            log.info("Received the Byte: " + String.format("%02X", res));
+            return res;
         }
-        log.info("Received the Byte: " + String.format("%02X", res));
-        return res;
+        else
+        {
+            if(1 > in.available())
+            {
+                int timeoutCounter = 0;
+                do{
+                    try
+                    {
+                        Thread.sleep(1);
+                    }
+                    catch(InterruptedException e)
+                    {
+                    }
+                    if(true == isSynced)
+                    {
+                        timeoutCounter++;
+                        if(MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter)
+                        {
+                            throw new TimeoutException();
+                        }
+                    }
+                    // else pause between two frames can be as long as it wants to be.
+                }while(1 > in.available());
+            }
+            // else a byte is already available
+            final int res =  in.read();
+            if(-1 == res)
+            {
+                throw new IOException("Channel closed");
+            }
+            log.info("Received the Byte: " + String.format("%02X", res));
+            return res;
+        }
     }
-    /* non blocking:
-    protected int getAByte() throws IOException
-    {
-        if(1 > in.available())
-        {
-            int timeoutCounter = 0;
-            do{
-                try
-                {
-                    Thread.sleep(1);
-                }
-                catch(InterruptedException e)
-                {
-                }
-                timeoutCounter++;
-                if(MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter)
-                {
-                    log.error("Timeout !");
-                    throw new TimeoutException();
-                }
-            }while(1 > in.available());
-        }
-        // else a byte is already available
-        final int res =  in.read();
-        if(-1 == res)
-        {
-            throw new IOException("Channel closed");
-        }
-        return res;
-    }
-    */
 
     protected void incrementSequenceNumber()
     {
@@ -266,11 +283,10 @@ public abstract class ClientConnection extends Thread
             }
             timeoutCounter++;
             r = receiveQueue.poll();
-            if((null == r) && (MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter))
+            if((null == r) && (MAX_MS_UNTIL_REPLY_ARRIVES < timeoutCounter))
             {
                 log.error("Timeout !");
-                // throw new TimeoutException();
-                return r;
+                return new Reply(null);
             }
         }while(null == r);
         return r;
@@ -282,11 +298,12 @@ public abstract class ClientConnection extends Thread
         {
             while(false == isInterrupted())
             {
-                try
-                {
-                    // Sync
-                    do{
-                        final int sync = getAByte();
+                // Sync
+                int sync;
+                do{
+                    try
+                    {
+                        sync = getAByte();
                         if((sync != Protocol.START_OF_CLIENT_FRAME) && (true == isSynced))
                         {
                             // Protocol Error
@@ -300,65 +317,108 @@ public abstract class ClientConnection extends Thread
                                 isSynced = true;
                             }
                         }
-                    } while (false == isSynced);
-
-                    // Reply Code
-                    final byte reply =  (byte)getAByte();
-                    if(Protocol.RESPONSE_MAX < reply)
-                    {
-                        // Protocol Error
-                        log.error("Invalid reply code !");
-                        continue;
                     }
+                    catch(TimeoutException e)
+                    {
+                        isSynced = false;
+                    }
+                } while (false == isSynced);
+                log.info("Synced to client!");
+
+                final int replyLength;
+                final int control;
+                final byte reply;
+                final byte[] buf;
+                try
+                {
+                    // Length
+                    replyLength = getAByte();
+                    buf = new byte[3 + replyLength]; // Sync, length and CRC are not included in length
+                    buf[0] = Protocol.START_OF_CLIENT_FRAME;
+                    buf[1] = (byte)(replyLength & 0xff);
 
                     // Control
-                    final int control =  (byte)getAByte();
-                    if(control != sequenceNumber)
-                    {
-                        // Protocol Error
-                        log.error("Wrong Sequence Number !(Received: {}; Expected: {})", control, sequenceNumber);
-                        continue;
-                    }
-
-                    // Length
-                    final int replyLength = getAByte();
-                    final byte[] buf = new byte[5 + replyLength];
-                    buf[0] = Protocol.START_OF_CLIENT_FRAME;
-                    buf[1] = reply;
+                    control =  (byte)getAByte();
+                    // check control later
                     buf[2] = (byte)(control & 0xff);
-                    buf[3] = (byte)(replyLength & 0xff);
+
+                    // Reply Code
+                    reply =  (byte)getAByte();
+                    // check reply later
+                    buf[3] = reply;
 
                     // Parameter
-                    for(int i = 0; i < replyLength;i++)
+                    for(int i = 0; i < replyLength-2;i++) // Control and reply code is also in the length
                     {
                         buf[4 + i] = (byte)getAByte();
                         // log.traceSystem.out.print(" " + i);
                     }
 
                     // Error Check Code (CRC-8)
-                    buf[4 + replyLength] = (byte)getAByte();
-                    if(getCRCfor(buf, replyLength + 4) != buf[4 + replyLength])
+                    buf[2 + replyLength] = (byte)getAByte();
+                }
+                catch(TimeoutException e)
+                {
+                    receiveQueue.put(new Reply(null));
+                    isSynced = false;
+                    continue;
+                }
+
+                byte expectedCRC = getCRCfor(buf, replyLength + 1);
+                if(expectedCRC != buf[2 + replyLength])
+                {
+                    log.error("Wrong CRC ! expected : " + String.format("%02X", expectedCRC)
+                                       + " received : " + String.format("%02X", buf[2 + replyLength]));
+                    receiveQueue.put(new Reply(null));
+                    isSynced = false;
+                    continue;
+                }
+
+                if(Protocol.RESPONSE_MAX < reply)
+                {
+                    // Protocol Error
+                    log.error("Invalid reply code !");
+                    receiveQueue.put(new Reply(null));
+                    isSynced = false;
+                    continue;
+                }
+
+                if((control & 0xf) != sequenceNumber)
+                {
+                    // debug frames might not always have the correct sequence number.
+                    if(Protocol.DEBUG_FLAG == (Protocol.DEBUG_FLAG & control))
                     {
-                        log.error("Wrong CRC ! expected : " + String.format("%02X", getCRCfor(buf, replyLength + 4))
-                                           + " received : " + String.format("%02X", buf[4 + replyLength]));
-                        continue;
+                        // ok
                     }
-                    Reply curReply = new Reply(buf);
-                    if(true == curReply.isDebugFrame())
+                    // if there has been a bit error in the transmission and
+                    // the client did not receive the request frame correctly
+                    // then it might answer with a wrong reply code, but the
+                    // reply will be "bad crc"
+                    else if(   (Protocol.RESPONSE_FRAME_RECEIPT_ERROR == reply)
+                       && (Protocol.RESPONSE_BAD_ERROR_CHECK_CODE == buf[4]) )
                     {
-                        log.info(curReply.toString());
+                        // ok
                     }
                     else
                     {
-                        receiveQueue.put(curReply);
+                        // Protocol Error
+                        log.error("Wrong Sequence Number !(Received: {}; Expected: {})",
+                                                         (control & 0xf), sequenceNumber);
+                        receiveQueue.put(new Reply(null));
+                        isSynced = false;
+                        continue;
                     }
                 }
-                catch (final IOException e)
+
+                Reply curReply = new Reply(buf);
+                if(true == curReply.isDebugFrame())
                 {
-                    e.printStackTrace();
+                    log.info(curReply.toString());
                 }
-                log.error("Failed to read Reply - Exception !");
-                return;
+                else
+                {
+                    receiveQueue.put(curReply);
+                }
             }
         }
         catch(InterruptedException ie)
@@ -366,10 +426,17 @@ public abstract class ClientConnection extends Thread
             log.info("Has been Interrupted !");
             // end the thread
         }
+        catch (final IOException e)
+        {
+            log.error("Failed to read Reply - Exception !");
+            e.printStackTrace();
+        }
+        log.info("Receive Thread stopped !");
     }
 
     public void close()
     {
+        this.interrupt();
     }
 
 }

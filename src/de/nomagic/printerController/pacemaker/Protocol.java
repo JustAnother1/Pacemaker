@@ -110,7 +110,7 @@ public class Protocol
 
 // Client
     public final static int START_OF_CLIENT_FRAME = 0x42;
-    public static final int DEBUG_FLAG = 0x10;
+    public static final int DEBUG_FLAG = 0x80;
 
     public final static byte RESPONSE_FRAME_RECEIPT_ERROR = 0;
     public final static int RESPONSE_BAD_FRAME = 0;

@@ -41,15 +41,18 @@ public class ConnectionPanel implements ActionListener
     private JButton connectDisconnect;
     private JTextField ConnectionDescription;
     private JFrame terminalWindow;
+    private TerminalConfiguration cfg;
 
     private final static String COMMAND_SELECT_INTERFACE = "select";
     private final static String COMMAND_CONNECT = "connect";
     private final static String COMMAND_DISCONNECT = "disconnect";
 
-    public ConnectionPanel(ClientChannel client, JFrame terminalWindow)
+    public ConnectionPanel(ClientChannel client, JFrame terminalWindow, TerminalConfiguration cfg)
     {
         this.client = client;
         this.terminalWindow = terminalWindow;
+        this.cfg = cfg;
+
         pane = new JPanel();
         pane.setBorder(BorderFactory.createTitledBorder(
                        BorderFactory.createLineBorder(Color.black),
@@ -60,6 +63,7 @@ public class ConnectionPanel implements ActionListener
         pane.add(selectInterface);
 
         ConnectionDescription = new JTextField(40);
+        ConnectionDescription.setText(cfg.getConnectionString());
         pane.add(ConnectionDescription);
 
         connectDisconnect = new JButton("Connect");
@@ -70,6 +74,7 @@ public class ConnectionPanel implements ActionListener
 
     public void close()
     {
+        cfg.setConnectionString(ConnectionDescription.getText());
         client.disconnect();
     }
 

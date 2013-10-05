@@ -776,14 +776,14 @@ public class ProtocolClient
     {
         final byte[] data = new byte[length + 4];
         data[0] = Protocol.START_OF_HOST_FRAME;
-        data[1] = (byte)order;
-        data[2] = (byte)length;
-        data[3] = (byte)control;
+        data[1] = (byte)length;
+        data[2] = (byte)control;
+        data[3] = (byte)order;
         for(int i = 0; i < length; i++)
         {
             data[i + 4] = (byte)parameter[i];
         }
-        int res =  0xff & ClientConnection.getCRCfor(data);
+        int res =  0xff & ClientConnection.getCRCfor(data, length + 4);
         System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data) + " -> " + String.format("%02X", res));
         return res;
     }
