@@ -165,7 +165,7 @@ The transport layer consists of the host sending out Order frames that the clien
 All critical communication between the host and the client is started by the host. Only the host may send out Order frames. The client must answer each Order frame with a Reply frame. The timeout for the client to respond is 100ms (by default). This includes the time it takes to send and receive the data and is measured on the host. The client therefore has less than 100ms from the time of reception of the order to the sending of the reply.
 
 ==== Unsolicited Client Frames
-In transport mechanisms which support client initiated data transmission, then the client may send out unacknowledged packets for certain purposes. The two current uses for these unsolicited client frames are for sending debug messages (primarily to support development) and to quickly notify the host that a new event is available for collection. The host does not respond to these unsolicited frames. 
+In transport mechanisms which support client initiated data transmission, then the client may send out unacknowledged packets for certain purposes. The two current uses for these unsolicited client frames are for sending debug messages (primarily to support development) and to quickly notify the host that a new event is available for collection. The host does not respond to these unsolicited frames.
 
 An unsolicited client frame has the same structure as a normal Reply frame but has bit 7 set in the Control Byte. The client should increment the sequence number in the Control Byte with each unsolicited frame it sends. These sequence numbers however have no correlation to the sequence numbers sent & received in normal Order and Reply frames.
 
@@ -540,13 +540,19 @@ This Reply code indicates that the Order was unsuccessful for an Order-specific 
 
 Unsolicited client frames are primarily indicated by bit 7 being set in the Reply Control Byte; however, by convention they also use a separate range of Reply Codes. The allocated range for approved unsolicited reply codes is 0x50-7f.
 
-It should be remembered that unsolicited frames are not acknowledged so delivery is best effort. Information which requires a degree of reliability should be sent using the Event mechanism. 
+It should be remembered that unsolicited frames are not acknowledged so delivery is best effort. Information which requires a degree of reliability should be sent using the Event mechanism.
 
 ==== Debug Message (0x50)
 
-This unsolicited client frame simply contains an ASCI string with debug-related information. The primarily intention of this frame is to better support development by providing a non-delayed output message mechanism from the client. If the Debug Message string contains non-printable characters, then it is desirable that the user interface renders these using their hexadecimal value.
+This unsolicited client frame simply contains an utf8 string with debug-related information. The primarily intention of this frame is to better support development by providing a non-delayed output message mechanism from the client. If the Debug Message string contains non-printable characters, then it is desirable that the user interface renders these using their hexadecimal value.
 
 Text output which is intended for a normal user should be sent using the reliable delivery mechanism provided by the Event extension.
+
+==== Debug Data (0x51)
+This unsolicited client frame simply contains data bytes. The interpretation of this data is Firmware and probably Firmware version specific. It is the responsibility of the Firmware to document their meaning.
+
+The host will present them a hexadecimal values.
+
 
 === Experimental/Unapproved Reply Codes
 
@@ -703,7 +709,7 @@ This order requests the number of available devices of a particular type (e.g., 
 |=============================
 
 .Replies
-- OK: The Reply consists of a 1 byte unsigned integer number indicating the number of available devices of that type. 
+- OK: The Reply consists of a 1 byte unsigned integer number indicating the number of available devices of that type.
 - Invalid Device Type: The requested device type is unknown or unsupported by the client.
 
 ==== Request Device Name (0x02)
@@ -753,7 +759,7 @@ The first byte of the Parameter indicates the device type. The second byte of th
 A status of *device active* indicates that the device currently has no explicitly detected hardware or configuration errors and has been enabled. The definition of "active" varies by device type. For instance:
 
 - Steppers are active when enabled using the Enable Stepper command.
-- Output Switches are enabled when set to something other than high impedance mode. 
+- Output Switches are enabled when set to something other than high impedance mode.
 - Pwm Outputs and Buzzer devices are active when set to a non-zero value.
 - Heaters are active when set to a non-zero target temperature.
 - Input devices such as temperature sensors and input switches are always active when configured correctly.
@@ -1143,7 +1149,7 @@ If a Parameter is provided the first byte will contain the stepper motors Number
 
 ==== Configure End-stops (0x0F)
 
-This order configures the set of end-stop switches which are checked when the specified stepper is moving in either a positive or negative direction. The order also configures whether the end-stop triggers at a high level or low level. 
+This order configures the set of end-stop switches which are checked when the specified stepper is moving in either a positive or negative direction. The order also configures whether the end-stop triggers at a high level or low level.
 
 All end-stops (including both maximum and minimum) for a single stepper number must specified in the same order. Multiple end-stops can be specified for each direction. End-stops are initially disabled and must still be enabled using the Enable/Disable End-stops order before they will cause the end-stop state to affect movement.
 
@@ -1226,7 +1232,7 @@ Before command blocks are queued, the client should perform reasonable validatio
 
 ==== Clear Command Block Queue (0x17)
 
-This order gracefully flushes the command block queue. If the client is currently moving, then the client will attempt to come to a graceful stop at the end of the first movement block where this is possible (for instance by decelerating from the nominal rate using the configured underrun avoidance acceleration rate). Once the client is stopped at the end of a movement block - or was stationary to start with - then all remaining items in the command queue are flushed. 
+This order gracefully flushes the command block queue. If the client is currently moving, then the client will attempt to come to a graceful stop at the end of the first movement block where this is possible (for instance by decelerating from the nominal rate using the configured underrun avoidance acceleration rate). Once the client is stopped at the end of a movement block - or was stationary to start with - then all remaining items in the command queue are flushed.
 
 For consistency, the order reply returns the same information as the reply for the Queue Command Block order. It should be remembered that the reply to the Clear Command Block Queue order is sent immediately and so therefore the Clear Command Block Queue reply will usually indicate that the queue is not empty (unless the queue was already empty when the order arrived). The host should poll the queue count using Queue Command order (for instance) to determine when the queue is empty and the system stopped.
 
@@ -1416,7 +1422,7 @@ Some printers use extruder advance algorithms to non-linearly modify the extrusi
 The Pacemaker framework has been specifically optimized to allow non-linear behaviors to be efficiently implemented using sequences of short linear segments. Similarly to implementing non-linear movement in the XYZ axes (for delta or polar bots), this technique can also be used for implementing non-linear advance algorithms in the extruder axes. The advantage of this approach is that the client requires no additional logic to implement an arbitrary advance scheme.
 
 ==== What happens if the communication is disrupted during movement?
-An underrun avoidance algorithm can be implemented to reduce the maximum speed when a disruption is anticipated, for instance, a limited number of movement blocks remain in the command queue and the host has not inidcated that this is the end of movement. The underrun avoidance algorithm also ensures that missed steps do not occur as the result of a queue underrun. 
+An underrun avoidance algorithm can be implemented to reduce the maximum speed when a disruption is anticipated, for instance, a limited number of movement blocks remain in the command queue and the host has not inidcated that this is the end of movement. The underrun avoidance algorithm also ensures that missed steps do not occur as the result of a queue underrun.
 
 The details of the algorithm are discussed in more detail in the Basic Movement Extension.
 
@@ -1709,7 +1715,7 @@ The frame has the following optional Parameter value content:
 
 NOTE: This does NOT replace normal event collection. The host must still acknowledge the received event and collect additional events using the Retrieve Events order.
 
-The host may retransmit the New Event frame if it does not receive a valid Order frame within a reasonable period. An unsolicited New Event frame should not be generated by the client when a host order frame is currently being processed, that is, when a reply frame is pending. 
+The host may retransmit the New Event frame if it does not receive a valid Order frame within a reasonable period. An unsolicited New Event frame should not be generated by the client when a host order frame is currently being processed, that is, when a reply frame is pending.
 
 == Future Extensions
 
