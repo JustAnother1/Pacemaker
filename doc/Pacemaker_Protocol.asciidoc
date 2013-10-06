@@ -548,7 +548,7 @@ This unsolicited client frame simply contains an utf8 string with debug-related 
 
 Text output which is intended for a normal user should be sent using the reliable delivery mechanism provided by the Event extension.
 
-==== Debug Data (0x51)
+==== Debug Data (0x52)
 This unsolicited client frame simply contains data bytes. The interpretation of this data is Firmware and probably Firmware version specific. It is the responsibility of the Firmware to document their meaning.
 
 The host will present them a hexadecimal values.
