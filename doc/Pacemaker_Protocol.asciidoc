@@ -471,33 +471,18 @@ This Reply code indicates that the order was rejected because the machine is cur
 When in the Stopped state:
 
 - All outputs are returned to their inactive state unless firmware configuration dictates otherwise.
-- The Stopped reply code will be returned for all Orders until the Stopped state is acknowledged, that is, Resume has been requested.
-- The Stopped reply code will be returned for any Order which attempts to cause the system to activate motors or heaters if the Stopped state has been acknowledged but not cleared.
-- Once the stopped state is acknowledged, other requests - including requests to change switch, buzzer or GPIO output devices - should still be permitted unless firmware configuration dictates otherwise.
+- The Stopped reply code will be returned for all Orders until the Stopped state is cleared, that is, Resume has been requested.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
-|Parameter| Meaning
-| 0 | Acknowledged State
+|length| Meaning
 | 1 | Recovery Options
-| 2 | Cause
+| 1 | Cause
 | n | Reason [Optional]
 |=============================
 
-The first byte of the Parameter indicates whether or not the stopped state has been acknowledged. The second byte of the Parameter indicates the options for recovery of the fault. The third byte of the Parameter indicates the broad cause for being in the stopped state. Following the third byte of the Parameter, an optional UTF8 string is expected giving the human readable reason for the error.
-
-.Acknowledged State
-[width="50%",options="header", cols="30%,70%"]
-|=============================
-|Parameter| Meaning
-| 0x0 | Unacknowledged
-| 0x1 | Acknowledged
-|=============================
-
-The *Unacknowledged* state indicates that Resume has not been called since this stopped state occurred. Unacknowledged stopped states return the Stopped reply code for all Orders.
-
-The *Acknowledged* state indicates that Resume has been called since this stopped state occurred. Acknowledged stopped states return the Stopped reply code for any order which would cause motors or heaters to activate.
+The first byte of the Parameter indicates the options for recovery of the fault. The second byte of the Parameter indicates the broad cause for being in the stopped state. Following the second byte of the Parameter, an optional UTF8 string is expected giving the human readable reason for the error.
 
 .Recovery Options
 [width="50%",options="header", cols="30%,70%"]
@@ -611,14 +596,15 @@ This order will attempt to acknowledge and/or clear a stopped client condition. 
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Byte Number | Content
-| 0 | Acknowledge / query/ clear
+| 0 | query/ clear
 |=============================
 
-The first byte of the Parameter indicates whether the host wants to query(=0), acknowledge(=1) or clear(=2) the stopped state. Attempting to clear a stopped state will also acknowledge it.
+The first byte of the Parameter indicates whether the host wants to query(=0) or clear(=1) the stopped state.
 
 .Replies
-- OK: Error/reset state has been cleared or acknowledged.
-- Stopped: The stopped state was not cleared (see Reply Code description).
+- OK: Error/reset state has been cleared.
+- OK: With parameter bytes as defined for the Stopped error reply if a query has been requested
+
 
 ==== Request Information (0x01)
 
