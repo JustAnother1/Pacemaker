@@ -1043,7 +1043,7 @@ This command allows the read properties of a firmware configuration element.
 
 The host should be able to restore the dynamic configuration state of a client following a reset by re-applying all "Dynamic Configuration" element values. Note: this does not imply that restoring the dynamic configuration elements will also restore all dynamic and protocol-controlled runtime state.
 
-==== Traverse Firmware Configuration Values (0x18)
+==== Traverse Firmware Configuration Values (0x1b)
 
 This command allows the host to traverse all firmware configuration values supported by the client. This allows the host to save a copy of the current client configuration and also allows the host to provide a richer configuration interface to the user.
 
