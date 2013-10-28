@@ -441,6 +441,7 @@ The first byte of the Parameter indicates the cause of the error. The following 
 | 0x7 | Busy (e.g., if command can't be executed while Orders queued)
 | 0x8 | Failed
 | 0x9 | Firmware Error
+| 0xa | Cannot Activate Device
 |============================
 
 Following the first byte of the Parameter, an optional UTF8 string is expected giving the human readable reason for the error.
@@ -463,6 +464,8 @@ The *Failed* reply code is a generic code which can be used to indicate that the
 
 The *Firmware error* reply code indicates that a client firmware error prevented the correct handling of the message (for instance, the command handler returned without generating a response).
 
+The *Cannot Activate Device* reply code indicates that a configuration, device or client state error prevents the device being activated. The Get Device Status order (see order description) can be used to obtain more categorized information on the cause.
+
 If additional Parameter information must be returned (beyond a possible error reason string), then an Order Specific Error can be used.
 
 ==== Stopped (0x12)
@@ -471,12 +474,15 @@ This Reply code indicates that the order was rejected because the machine is cur
 When in the Stopped state:
 
 - All outputs are returned to their inactive state unless firmware configuration dictates otherwise.
-- The Stopped reply code will be returned for all Orders until the Stopped state is cleared, that is, Resume has been requested.
+- The Stopped reply code will be returned for all Orders until the Stopped state is acknowledged (or cleared), that is, until a Resume order has been recieved.
+- The Stopped reply code will also be returned for all Resume Orders until the Stopped state is successfully cleared (see Resume Order description).
+- After the stopped state has been acknowledged, the client will returned the "Cannot activate device" reply code for any Order which attempts to activate motor or heater devices until the Stopped state has been clear. The client may also return this error code for any other devices which the client knows might pose a safety concern in the Stopped state (determined for instance through firmware configuration).
+- Otherwise, after the stopped state has been acknowledged, other requests (including requests to change general switch, buzzer or PWM output device states) should be permitted.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
-|length| Meaning
+|Length| Meaning
 | 1 | Recovery Options
 | 1 | Cause
 | n | Reason [Optional]
@@ -529,15 +535,10 @@ It should be remembered that unsolicited frames are not acknowledged so delivery
 
 ==== Debug Message (0x50)
 
-This unsolicited client frame simply contains an utf8 string with debug-related information. The primarily intention of this frame is to better support development by providing a non-delayed output message mechanism from the client. If the Debug Message string contains non-printable characters, then it is desirable that the user interface renders these using their hexadecimal value.
+This unsolicited client frame simply contains an utf8 string with debug-related information. The primarily intention of this frame is to better support development by providing a non-delayed output message mechanism from the client. 
+Any Parameter data following a 0x00 value in the message should be treated as binary data and displayed using a hexidecimal representation. The 0x00 value is not considered part of the data.
 
 Text output which is intended for a normal user should be sent using the reliable delivery mechanism provided by the Event extension.
-
-==== Debug Data (0x52)
-This unsolicited client frame simply contains data bytes. The interpretation of this data is Firmware and probably Firmware version specific. It is the responsibility of the Firmware to document their meaning.
-
-The host will present them a hexadecimal values.
-
 
 === Experimental/Unapproved Reply Codes
 
@@ -590,21 +591,26 @@ An emergency stop must be accepted at any time.
 
 ==== Resume (0x00)
 
-This order will attempt to acknowledge and/or clear a stopped client condition. After initial power on or after reset the client will assert a stopped condition which must be cleared using this command. Other error conditions can also trigger a stopped condition. The Resume Order ensures that the host is aware that the client has reset/stopped and that further movement or heater commands will be rejected.
+This order will attempt to acknowledge or clear a stopped client condition. After initial power on or after reset the client will always assert a stopped condition which must be cleared using this command. Other error conditions can also trigger a stopped condition. The Resume Order ensures that the host is aware that the client has reset or stopped.
+
+Typically a host will automatically acknowledge a Stopped condition so that it may continue to query the client or manipulate devices which do not pose a safety concern (for instance turning off cooling fans or warning LEDs when the device's temperature reaches safe levels again).
+
+Conversely, a host might typically wait for user interaction before attempting to actually clear a Stopped condition.
+
+A Stopped response is always returned for a Resume order if the client is still in a Stopped state after processing the order (for instance because the Resume order was only acknowledging the Stopped state or because the condition could not be cleared).
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Byte Number | Content
-| 0 | query/ clear
+| 0 | Acknowledge(0x0) / Clear(0x1)
 |=============================
 
-The first byte of the Parameter indicates whether the host wants to query(=0) or clear(=1) the stopped state.
+The first byte of the Parameter indicates whether the host wants to Acknowledge(=0) or Clear(=1) the stopped state.
 
 .Replies
-- OK: Error/reset state has been cleared.
-- OK: With parameter bytes as defined for the Stopped error reply if a query has been requested
-
+- OK: The Stopped state has been successfully cleared.
+- Stopped: The stopped state was not cleared either because the condition persists, is unrecoverable or the Resume only requested that the Stopped state is acknowledged (see Reply Code description for content). 
 
 ==== Request Information (0x01)
 
@@ -633,6 +639,7 @@ The requested Information is specified in the parameter as shown in the followin
 |   9 | minor firmware revision
 |  10 | hardware type
 |  11 | hardware revision
+|  12 | maximum supported step rate
 | 0x80-0xfe | Experimental/unapproved requestable information
 |================================================
 
@@ -667,6 +674,8 @@ The *hardware type* defines the Hardware Type. See Hardware Types table.
 
 The *hardware revision* defines the Hardware revision.
 
+The *maximum supported step rate* returns the maximum supported step rate of the client for any axis (in steps per second).
+
 .Hardware Types
 [width="50%",options="header", cols="30%,70%"]
 |================================================
@@ -695,7 +704,7 @@ This order requests the number of available devices of a particular type (e.g., 
 |=============================
 
 .Replies
-- OK: The Reply consists of a 1 byte unsigned integer number indicating the number of available devices of that type.
+- OK: The Reply consists of a 1 byte unsigned integer number indicating the number of available devices of that type. 
 - Invalid Device Type: The requested device type is unknown or unsupported by the client.
 
 ==== Request Device Name (0x02)
@@ -740,9 +749,10 @@ The first byte of the Parameter indicates the device type. The second byte of th
 | 0x1 | device inactive
 | 0x2 | device configuration error
 | 0x3 | device fault
+| 0x4 | client stopped
 |=============================
 
-A status of *device active* indicates that the device currently has no explicitly detected hardware or configuration errors and has been enabled. The definition of "active" varies by device type. For instance:
+A status of *device active* indicates that the device currently has no detected hardware or configuration errors and has been enabled. The definition of "active" varies by device type. For instance:
 
 - Steppers are active when enabled using the Enable Stepper command.
 - Output Switches are enabled when set to something other than high impedance mode.
@@ -750,11 +760,13 @@ A status of *device active* indicates that the device currently has no explicitl
 - Heaters are active when set to a non-zero target temperature.
 - Input devices such as temperature sensors and input switches are always active when configured correctly.
 
-A status of *device inactive* indicates that there are currently no explicitly detected hardware or configuration errors but the device is not active.
+A status of *device inactive* indicates that there are currently no detected hardware or configuration errors but the device is not active.
 
 A status of *device configuration error* indicates that the device is not available for use because it has missing or invalid device configuration.
 
 A status of *device fault* indicates that the device has sufficient configuration but is unavailable due to a detected hardware fault (e.g., unconnected or shorted sensor).
+
+A status of *client stopped* indicates that the device has sufficient configuration and not in a fault state but is currently unavailable due to the client currently being stopped.
 
 A utf8 string may optionally follow the device status value describing the cause of any device errors.
 
@@ -840,7 +852,7 @@ This order can also be queued using the Queue Command Wrapper if the queued comm
 - OK:No Parameter data.
 - Invalid Number Specified: the requested number is not correct for the heater.
 - Invalid Parameter Value: Invalid set temperature.
-- Failed: the temperature sensor is unconfigured or out-of-range (e.g., open or short circuit) or other configuration error.
+- Cannot Activate Device: Cannot activate the heater because client is in the Stopped stated or device has not been fully configured (e.g., unconfigured temperature sensor) or is faulty. Use Get Device Status order to determine categorized cause (although a descriptive error string should also be returned in this reply).
 
 ==== Request State of Switch (0x07)
 
@@ -901,7 +913,7 @@ This order can also be queued using the Queue Command Wrapper if the queued comm
 
 ==== Set PWM Output Value (0x09)
 
-This will set the average on-time value of the specified PWM outputs (e.g., fans or buzzers). The PWM on-time value is represented as a 16-bit value: 0x0000 indicate 0% on time; 0xFFFF indicates 100% on time.
+This will set the average on-time value of the specified PWM outputs (e.g., fans). The PWM on-time value is represented as a 16-bit value: 0x0000 indicate 0% on time; 0xFFFF indicates 100% on time.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -920,6 +932,28 @@ This order can also be queued using the Queue Command Wrapper if the queued comm
 .Replies
 - OK: No Parameter data (used when immediate execution is requested).
 - Invalid Device Type: This is returned if any specified device does not support this order.
+
+==== Set Output Tone (0x11)
+
+This order will generate an audio tone of the specified frequency on the specified output device (e.g., buzzer devices). Setting a value of 0 will stop the tone generation thereby deactivating the device. The output level when the device is deactivated can be assumed to be the logic level zero unless explicit firmware configuration specifies otherwise.
+
+.Parameter
+[width="50%",options="header", cols="30%,70%"]
+|=============================
+|Length in Bytes| Content
+| 1 | device type
+| 1 | device number
+| 2 | frequency (in hertz)
+|=============================
+
+The first byte of the Parameter contains the device type (see Definitions), the second byte contains the number of the device. The third and fourth byte specify the target output frequency specified in hertzs.
+
+This order can also be queued using the Queue Command Wrapper if the queued command extension is supported.
+
+.Replies
+- OK: No Parameter data (used when immediate execution is requested).
+- Invalid Device Type: This is returned if any specified device does not support this order.
+- Invalid Device Number: The requested device is not available.
 
 ==== Write Firmware Configuration Value (0x0A)
 
@@ -1003,6 +1037,8 @@ This command allows the read properties of a firmware configuration element.
 |Length | Content
 | 1 | Element type
 | 1 | Element modes
+| 1 | Device Type
+| 1 | Device Number
 |=============================
 
 .Element Type
@@ -1015,7 +1051,6 @@ This command allows the read properties of a firmware configuration element.
 | 3 | Firmware-specific operation. These elements are used to invoke firmware-specific operations.
 | 4 | Diagnostic & Debug. These elements are used to aid development of debugging of the client system.
 | 0x80-0xfe | Experimental
-| 0xff | End of configuration tree (no more elements)
 |=============================
 
 .Element Modes
@@ -1026,6 +1061,8 @@ This command allows the read properties of a firmware configuration element.
 | 1 | Element Writeable? (0 = Not Writeable, 1 = Writeable)
 | 2 | Default value? (0 = No, 1 = Yes). This indicates that the configuration value has not been explicitly set and that this is the compile-time default value currently in use.
 |=============================
+
+The Device Type and Device Number fields will return non-zero values if the firmware configuration element is associated with a particular device instance. This mechanism allows a host program to display the firmware configuration items associated with particular devices should it choose to.
 
 The host should be able to restore the dynamic configuration state of a client following a reset by re-applying all "Dynamic Configuration" element values. Note: this does not imply that restoring the dynamic configuration elements will also restore all dynamic and protocol-controlled runtime state.
 
@@ -1054,10 +1091,10 @@ If a Write Firmware Configuration Value order is sent in the middle of traversin
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 |Length | Content
-| N | Configuration element name (utf8 string)
+| N | Next configuration element name (utf8 string)
 |=============================
 
-The end of the configuration traversal is indicated by the order returning an element type of 0xff.
+The end of the configuration traversal is indicated by the order returning an empty element name.
 
 ==== Experimental & Unapproved Orders
 Experimental or unapproved orders must use order codes from the range 0x80 to 0xfe. Experimental or unapproved orders that need additional order-specific Reply Codes should use Reply Code values of 0x80-0xfe.
@@ -1131,7 +1168,8 @@ If a Parameter is provided the first byte will contain the stepper motors Number
 .Replies
 - OK: No Parameter data.
 - Incorrect mode: Order received when stepper control is not activated.
-- Stopped: Order rejected because client is in stopped stated.
+- Cannot Activate Device: Cannot activate the stepper because client is in the stopped stated or device has not been fully configured or is faulty. Use Get Device Status order to determine categorized cause (although a descriptive error string should also be returned in this reply).
+
 
 ==== Configure End-stops (0x0F)
 
@@ -1416,7 +1454,7 @@ The details of the algorithm are discussed in more detail in the Basic Movement 
 
 The protocol currently doesn't require the client to track the position of each axis and therefore doesn't include a "get position" command. However, in situations other than an emergency stop or a Stopped state (where steps might have been missed anyway), the host should be able to determine the position on all axes by simply knowing how many command blocks have been executed.
 
-The client always returns an executed command block count in the "Queue Command Block" Reply Parameter which can be used to determine position even after a orderly "stop print" command has been issued. The executed command block count is a count of all command blocks which have attempted execution (including those which encountered an error) since the last the last Stopped state was cleared.
+The client always returns an executed command block count in the "Queue Command Block" Reply Parameter which can be used to determine position even after a orderly "Clear Command Block Queue" command has been issued. The executed command block count is a count of all command blocks which have attempted execution (including those which encountered an error) since the last the last Stopped state was cleared.
 
 An emergency stop will require the host to re-home axes to determine its position - an emergency stop and certain other Stopped errors can result in skipped steps. Thus even if the client maintained an exact step count in these cases, it wouldn't necessarily be accurate.
 
@@ -1424,25 +1462,23 @@ An emergency stop will require the host to re-home axes to determine its positio
 
 ==== Configure Axis Movement Rates (0x13)
 
-This specifies a 2-byte maximum movement rate value (in steps per second) for each stepper. This value is used when the axis is selected as the primary axis for a linear move command block.
+This specifies a 4-byte maximum movement rate value (in steps per second) for each stepper. This value is used when the stepper is selected as the primary axis for a linear move command block. 
 
-Any axes which are specified with a movement rate value of 0 will be treated as unused. For simplicity and future extensibility the number of steppers specified in the order should always be equal to the number of devices returned by the client in Request Device Count.
+A stepper must be configured with a non-zero maximum movement rate before it can be selected as a primary axis in a linear move block.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 | Length In Bytes | Content
-| 2 | max steps per second for stepper 0
-| 2 | max steps per second for stepper 1
-| 2 | max steps per second for stepper 2
-| .. |
-| 2 | max steps per second for stepper N-1
+| 1 | stepper number
+| 4 | max steps per second
 |=============================
 
 .Replies
 - OK: No Parameter data.
 - Busy: Order received when Order Queue is not empty.
 - Incorrect mode: Order received when stepper control is not activated.
+- Invalid Parameter Value: Requested step rate exceeds maximum supported by client.
 
 ==== Configure Movement Underrun Avoidance Parameters (0x19)
 
@@ -1461,22 +1497,15 @@ A client may also choose to implement a simpler underrun avoidance algorithm whi
 
 As usual, acceleration/deceleration and maximum movement rates used by the underrun avoidance algorithm are slected by the currently specified primary axis. A set of maximum movement rates and acceleration values must therefore be specified for each possible axis. Remaining queued movement time also includes other commands which take non-negligible time such as the Delay command block (0x02).
 
-For simplicity and future extensibility the number of steppers specified in the each section of the order should be equal to the number of stepper devices returned by the client in Request Device Count.
+A stepper must be configured to have non-zero underrun maximum movement and acceleration/deceleration rates before it can be selected as a primary axis in a linear move block.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
 |=============================
 | Length In Bytes | Content
-| 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 0
-| 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 1
-| 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper 2
-| .. |
-| 2 | maximum movement rate (in steps per second) during underrun avoidance for stepper N-1
-| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 0
-| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 1
-| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper 2
-| .. |
-| 4 | accelation/deceleration rate for underrun avoidance (in steps per second per second) for stepper N-1
+| 1 | stepper number
+| 4 | maximum movement rate (in steps per second) during underrun avoidance 
+| 4 | acceleration/deceleration rate for underrun avoidance (in steps per second per second)
 |=============================
 
 .Replies
@@ -1497,8 +1526,8 @@ Each block includes the following information:
 * the primary axis to use for movement rate values
 * a desired nominal speed
 * a desired end speed
-* a step count fraction to reach nominal speed (which conveys an initial nominal acceleration rate)
-* a step count fraction to reach final speed (which conveys a final acceleration rate)
+* a step count to reach nominal speed (which conveys an initial nominal acceleration rate)
+* a step count to reach final speed (which conveys the final deceleration rate)
 
 The nominal starting speed for each block can be deduced from end speed of the previous movement block; queue underrun avoidance algorithms however may mean that the actual starting speed when executed is different to specified speed.
 
@@ -1519,13 +1548,13 @@ The command supports up to 15 stepper axes.
 |     | bit4: homing mode (0 = no, 1= yes)
 |   1 | nominal speed fraction
 |   1 | end speed fraction
-|   1 | initial acceleration/deceleration step count fraction
-|   1 | final acceleration/deceleration step count fraction
-| 1 or 2 | Steps on selected axis 1 [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
-| 1 or 2 | Steps on selected axis 2
-| 1 or 2 | steps on selected axis 3
+| 1 or 2 | initial acceleration step count [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
+| 1 or 2 | final deceleration step count
+| 1 or 2 | steps on first selected axis [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
+| 1 or 2 | steps on second selected axis
+| 1 or 2 | steps on third selected axis
 |  .. | ..
-| 1 or 2 | steps on selected axis n
+| 1 or 2 | steps on n'th selected axis
 |============================
 
 .2 byte axis selection bitmask format (allows up to 15 axes)
@@ -1541,13 +1570,13 @@ The command supports up to 15 stepper axes.
 |     | bit4: homing mode (0 = no, 1= yes)
 |   1 | nominal speed fraction
 |   1 | end speed fraction
-|   1 | initial acceleration/deceleration step count fraction
-|   1 | final acceleration/deceleration step count fraction
-| 1 or 2 | Steps on selected axis 1 [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
-| 1 or 2 | Steps on selected axis 2
-| 1 or 2 | steps on selected axis 3
+| 1 or 2 | initial acceleration step count [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
+| 1 or 2 | final deceleration step count
+| 1 or 2 | steps on first selected axis [2 bytes if bit 15 of Directions Field is 1; 1 byte otherwise]
+| 1 or 2 | steps on second selected axis
+| 1 or 2 | steps on third selected axis
 |  .. | ..
-| 1 or 2 | steps on selected axis n
+| 1 or 2 | steps on n'th selected axis
 |============================
 
 The *Axis Selection Field* does a couple of things: the MSB indicates whether a 1 or 2 byte axis selection bitmask will be used, then the remaining 6 bits contains the axis selection bitmask which indicates the stepper number indexes which will be moving in this block. For instance, if bit 2 is set, then stepper number 2 will be moved in the current movement block. If bit msb of the Axis Selection Field is equal to 1, then the first two bytes of the movement block should be consider as making up the axis selection bitmask (supporting up to 15 axes instead of 6 axes).
@@ -1560,21 +1589,21 @@ NOTE: The host has to make sure that the other axes do not get more steps than t
 
 The *homing mode* bit indicates how the movement is affected by end-stop triggering. If the homing mode is not set, then any if relevant end-stops triggers (i.e., end-stops which are associated with the direction of movement of all selected axes), then the system will immediately enter a "End-stop Hit" stopped state. If the homing mode bit is set, then the client will simply stop movement in any axis when an enabled end-stop is triggered but continue movement in all other axes (until either an end-stop is hit or the command block movement is completed).
 
-The *initial acceleration/deceleration step count fraction* is the fraction of the total movement distance which is taken to accelerate/decelerate from the starting speed to the nominal speed. For instance, for a segment with 200 steps, a value of 50 would mean that the client would attempt to reach nominal speed at 39 steps into the block (50/255 * 200).
-
-The *final acceleration/deceleration step count fraction* is the cumulative fraction of the total movement distance at which point the client starts to accelerate/decelerate from the nominal speed to the end speed. For instance, for a segment with 200 steps, a value of 200 would mean that the client would start to accelerate/decelerate to the end speed after 156 steps into the block (200/255 * 200).
-
-If the movement block is accelerating/decelerating for the entire time, then the nominal & end speed should be set equal and the initial & final acceleration/deceleration time should be both equal to 255. By specifying, these acceleration/deceleration time the host is not limited to always accelerating at the maximum rate.
-
-The *nominal speed fraction* is the desired movement speed after initial acceleration/deceleration. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%). The nominal speed must always be specified as greater than or equal to the implied initial speed and the specified final speed.
+The *nominal speed fraction* is the desired movement speed after initial acceleration. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%). The nominal speed must always be specified as greater than or equal to the implied initial speed and the specified final speed.
 
 The *end speed fraction* is the desired movement speed after all primary axis steps have been taken. It is expressed as a fraction of the configured maximum speed for the primary axis (where 0 = 0% and 255 = 100%).
 
-The steps on each of the selected axes are always specified as unsigned step count values (indicating movement not position). The step counts in each movement block are always specified in order of the stepper number index but it only includes selected axes for the block. This is a 1 byte unsigned integer if 1 byte step values are being used; otherwise it is a 2 byte unsigned integer.
+The *initial acceleration step count* is the number of steps on the primary axis which are taken to accelerate from the starting speed to the nominal speed. This allows control of the acceleration rate of the linear move. This is a 1 byte unsigned integer if 1 byte step counts are being used; otherwise it is a 2 byte unsigned integer.
+
+The *final deceleration step count* is the number of steps on the primary axis which are taken to decelerate from the nominal speed to the end speed (at the end of the movement block). For instance, a value of 30 for a 200 step movement block would mean that after 170 steps on the primary axis the client starts to decelerate to the end speed. This allows control of the deceleration rate of the linear move. This is a 1 byte unsigned integer if 1 byte step counts are being used; otherwise it is a 2 byte unsigned integer.
+
+If the movement block is accelerating for the entire time, then the nominal & end speed should be set equal and the deceleration step count set equal to 0. If the movement block is decelerating for the entire time, then the nominal speed should be set equal to the (implied) initial speed and the acceleration step count set equal to 0.
+
+The steps on each of the selected axes are always specified as unsigned step count values (indicating movement not position). The step counts in each movement block are always specified in order of the stepper number index but it only includes selected axes for the block. This is a 1 byte unsigned integer if 1 byte step counts are being used; otherwise it is a 2 byte unsigned integer.
 
 The steps on the other selected axes are simply generated to be evenly distributed (in distance not time) along the path for the primary axis; thus, this implies that all axes will also undergo the same acceleration & deceleration. The movement of all selected axes occurs simultaneously.
 
-It is recommended that the host decomposes long, slow, straight moves into multiple smaller segments so that an orderly Stop Print order takes effect in a reasonable time.
+It is recommended that the host decomposes long, slow, straight moves into multiple smaller segments so that an orderly Clear Command Block Queue request (e.g., for pausing a print) can take effect rapidly.
 
 ==== Set Active Toolhead (0x4)
 
@@ -1685,7 +1714,7 @@ For instance, %-03u would correspond to a 4 byte argument; %-3hi corresponds to 
 
 ==== New Event (0x51)
 
-This optional unsolicited frame uses a Reply Code value of 0x51 to increase the responsiveness of the host to events.  The order indicates that a new event is available for collection using the Retrieve Events order and may optionally include a copy of the first outstanding event (which may be different to the most recent event).
+This optional unsolicited frame uses a Reply Code value of 0x51 to increase the responsiveness of the host to events.  The order indicates that a new event is available for collection using the Retrieve Events order and may optionally include a copy of the new event.
 
 The frame has the following optional Parameter value content:
 
