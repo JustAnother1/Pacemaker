@@ -392,7 +392,7 @@ public class ActionHandler extends Thread implements EventSource
                         {
                             if(false == theFan.setSpeed((Integer)e.getParameter2()))
                             {
-                                lastErrorReason = move.getLastErrorReason();
+                                lastErrorReason = theFan.getLastErrorReason();
                                 reportFailed(e);
                             }
                             else
@@ -414,7 +414,7 @@ public class ActionHandler extends Thread implements EventSource
                             {
                                 if(false == theHeater.setTemperature((Double)e.getParameter()))
                                 {
-                                    lastErrorReason = move.getLastErrorReason();
+                                    lastErrorReason = theHeater.getLastErrorReason();
                                     reportFailed(e);
                                 }
                                 else

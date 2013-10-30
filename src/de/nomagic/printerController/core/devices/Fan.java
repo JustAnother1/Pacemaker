@@ -25,6 +25,7 @@ public class Fan
 {
     private final Protocol pro;
     private final int num;
+    private String lastErrorReason = null;
 
     public Fan(final Protocol pro, final int number)
     {
@@ -32,9 +33,22 @@ public class Fan
         this.num = number;
     }
 
+    public String getLastErrorReason()
+    {
+        return lastErrorReason;
+    }
+
     public boolean setSpeed(Integer speed)
     {
-        return pro.setFanSpeedfor(num, speed);
+        if(false == pro.setFanSpeedfor(num, speed))
+        {
+            lastErrorReason = pro.getLastErrorReason();
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
 
 }

@@ -24,12 +24,18 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class Heater
 {
+    private String lastErrorReason = null;
     private Protocol pro;
     private int num;
     private TemperatureSensor sensor;
 
     public Heater()
     {
+    }
+
+    public String getLastErrorReason()
+    {
+        return lastErrorReason;
     }
 
     public void setHeaterNumber(int number, final Protocol pro)
@@ -40,7 +46,15 @@ public class Heater
 
     public boolean setTemperature(Double temperature)
     {
-        return pro.setTemperature(num, temperature);
+        if(false == pro.setTemperature(num, temperature))
+        {
+            lastErrorReason = pro.getLastErrorReason();
+            return false;
+        }
+        else
+        {
+            return true;
+        }
     }
 
     public void setTemperatureSenor(TemperatureSensor sensor)

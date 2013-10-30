@@ -163,9 +163,8 @@ public class Protocol
 
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private String lastErrorReason = null;
 
-    // resolution of Delay : 10us
-    private final double DELAY_TICK_LENGTH = 0.00001;
     // the client needs at lest this(in milliseconds) time to free up one slot in the Queue
     private final long QUEUE_POLL_DELAY = 10;
     // blocking command will try not more than MAX_ENQUEUE_DELAY times to enqueue the block
@@ -533,16 +532,19 @@ public class Protocol
         return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param);
     }
 
-    public boolean addPauseToQueue(final Double seconds)
+    /** adds a pause to the Queue.
+     *
+     * @param ticks allowed 0..65535 (0xffff)
+     * @return
+     */
+    public boolean addPauseToQueue(final int ticks)
     {
         if(true == di.hasExtensionQueuedCommand())
         {
-            final Double ticks = seconds / DELAY_TICK_LENGTH;
-            final int tick = ticks.intValue();
             final byte[] param = new byte[3];
             param[0] = MOVEMENT_BLOCK_TYPE_DELAY;
-            param[1] = (byte)(0xff & (tick/256));
-            param[2] = (byte)(tick & 0xff);
+            param[1] = (byte)(0xff & (ticks/256));
+            param[2] = (byte)(ticks & 0xff);
             return enqueueCommandBlocking(param);
         }
         else
@@ -779,6 +781,11 @@ public class Protocol
         {
             return true;
         }
+    }
+
+    public String getLastErrorReason()
+    {
+        return lastErrorReason;
     }
 
 }

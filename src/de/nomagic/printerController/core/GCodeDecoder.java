@@ -301,19 +301,32 @@ public class GCodeDecoder
 
     private RelativeMove getRelativeMovefor(final GCode code)
     {
-        RelativeMove move = new RelativeMove(
-                getRelativeMoveForAxis(code, 'x'),
-                getRelativeMoveForAxis(code, 'y'),
-                getRelativeMoveForAxis(code, 'z'),
-                getRelativeMoveForAxis(code, 'e'),
-                getRelativeMoveForAxis(code, 'f')
-                );
-
-        curPosition[0] = curPosition[0] + getRelativeMoveForAxis(code, 'x');
-        curPosition[1] = curPosition[1] + getRelativeMoveForAxis(code, 'y');
-        curPosition[2] = curPosition[2] + getRelativeMoveForAxis(code, 'z');
-        curPosition[3] = curPosition[3] + getRelativeMoveForAxis(code, 'e');
-        curPosition[4] = curPosition[4] + getRelativeMoveForAxis(code, 'f');
+        RelativeMove move = new RelativeMove();
+        if(true == code.hasWord('x'))
+        {
+            move.setX(getRelativeMoveForAxis(code, 'x'));
+            curPosition[0] = curPosition[0] + getRelativeMoveForAxis(code, 'x');
+        }
+        if(true == code.hasWord('y'))
+        {
+            move.setY(getRelativeMoveForAxis(code, 'y'));
+            curPosition[1] = curPosition[1] + getRelativeMoveForAxis(code, 'y');
+        }
+        if(true == code.hasWord('z'))
+        {
+            move.setZ(getRelativeMoveForAxis(code, 'z'));
+            curPosition[2] = curPosition[2] + getRelativeMoveForAxis(code, 'z');
+        }
+        if(true == code.hasWord('e'))
+        {
+            move.setE(getRelativeMoveForAxis(code, 'e'));
+            curPosition[3] = curPosition[3] + getRelativeMoveForAxis(code, 'e');
+        }
+        if(true == code.hasWord('f'))
+        {
+            move.setF(getRelativeMoveForAxis(code, 'f'));
+            curPosition[4] = curPosition[4] + getRelativeMoveForAxis(code, 'f');
+        }
         return move;
     }
 

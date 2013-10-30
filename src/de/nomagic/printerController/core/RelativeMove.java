@@ -14,53 +14,83 @@
  */
 package de.nomagic.printerController.core;
 
+import de.nomagic.printerController.Axis_enum;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
 public class RelativeMove
 {
-    private final double x;
-    private final double y;
-    private final double z;
-    private final double e;
-    private final double f;
+    private double x;
+    private boolean hasX = false;
+    private double y;
+    private boolean hasY = false;
+    private double z;
+    private boolean hasZ = false;
+    private double e;
+    private boolean hasE = false;
+    private double f;
+    private boolean hasF = false;
 
-    public RelativeMove(final double x,
-                        final double y,
-                        final double z,
-                        final double e,
-                        final double f)
+    public RelativeMove()
+    {
+    }
+
+    public boolean has(Axis_enum axis)
+    {
+        switch(axis)
+        {
+        case X: return hasX;
+        case Y: return hasY;
+        case Z: return hasZ;
+        case E: return hasE;
+        case F: return hasF;
+        default: return false;
+        }
+    }
+
+    public double get(Axis_enum axis)
+    {
+        switch(axis)
+        {
+        case X: return x;
+        case Y: return y;
+        case Z: return z;
+        case E: return e;
+        case F: return f;
+        default: return 0.0;
+        }
+    }
+
+    public void setX(double x)
     {
         this.x = x;
+        hasX = true;
+    }
+
+    public void setY(double y)
+    {
         this.y = y;
+        hasY = true;
+    }
+
+    public void setZ(double z)
+    {
         this.z = z;
+        hasZ = true;
+    }
+
+    public void setE(double e)
+    {
         this.e = e;
+        hasE = true;
+    }
+
+    public void setF(double f)
+    {
         this.f = f;
+        hasF = true;
     }
 
-    public double getX()
-    {
-        return x;
-    }
-
-    public double getY()
-    {
-        return y;
-    }
-
-    public double getZ()
-    {
-        return z;
-    }
-
-    public double getE()
-    {
-        return e;
-    }
-
-    public double getF()
-    {
-        return f;
-    }
 }

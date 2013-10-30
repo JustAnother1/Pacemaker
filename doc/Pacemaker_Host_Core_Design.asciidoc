@@ -18,10 +18,10 @@ The G-Code that comes in that way is passed to the GCodeDecoder. The GCodeDecode
 The GCode decoder calls the appropriate methods to execute the detected G-Code. These methods are provided by the Executor class. As it might be more sensible for the GUI of the host the GUI may access the Executor directly.
 The Executor creates a instance of a Action class that correspondent to the requested action defined in the GCode. This action is then put into the Queue for the ActionHandler.
 
-The ActionHandler is a Thread. It receives Actions through a Queue from the Executor. Is opens all connections to the clients and Sends and receives from the clients. The Action Handler is the heart of the process. Here is the logic that decides what actions have to be executes and how the host has to react to the data coming in from the clients.
+The ActionHandler is a Thread. It receives Actions through a Queue from the Executor. Is opens all connections to the clients. It Sends to and receives from the clients. The Action Handler is the heart of the process. Here is the logic that decides what actions have to be executes and how the host has to react to the data coming in from the clients.
 
 To do this in a clear manner the Action Handler has several Devices that represent the functions of the printer. These devices are connected to the features of the clients. These devices are therefore responsible to map the abstract functions of the printer like move X axis, heat up Extruder one, .. to the concrete actions of the clients like do steps on stepper 3 of the first client, set the target temperature of heater 0 on client 2,..
-To translate these concrete actions to the needed data packets to send out to the client a instance of the protocol class is used for each client connection.
+The devices use an instance of the protocol class for each connection to translate these concrete actions to the needed data packets to send out to the client.
 
 The protocol class uses a Client Connection class to send the bytes to the client.
 
