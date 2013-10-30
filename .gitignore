@@ -9,3 +9,5 @@ PacemakerTest.jar
 /PacemakerWizard.jar
 /PacemakerTerminal.jar
 /PacemakerTerminal.cfg
+/*.gcode
+/*.sh
