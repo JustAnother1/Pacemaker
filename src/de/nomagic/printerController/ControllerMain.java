@@ -225,6 +225,26 @@ public class ControllerMain implements CloseApplication
         // set up the printer
         core = new CoreStateMachine(cfg);
         final CloseApplication Closer = this;
+        // If we want the GUI then we want it even with non operational core!
+        if(true == shallStartGui)
+        {
+            SwingUtilities.invokeLater(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try
+                    {
+                        @SuppressWarnings("unused")
+                        final MainWindow gui = new MainWindow(cfg, core, Closer);
+                    }
+                    catch(final Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }
         if(false == core.isOperational())
         {
             System.err.println("Could not Connect to Pacemaker Client !");
@@ -249,25 +269,6 @@ public class ControllerMain implements CloseApplication
             StandardStreamInterface stdStream = new StandardStreamInterface();
             stdStream.start();
             interfaces.add(stdStream);
-        }
-        if(true == shallStartGui)
-        {
-            SwingUtilities.invokeLater(new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try
-                    {
-                        @SuppressWarnings("unused")
-                        final MainWindow gui = new MainWindow(cfg, core, Closer);
-                    }
-                    catch(final Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
-            });
         }
     }
 

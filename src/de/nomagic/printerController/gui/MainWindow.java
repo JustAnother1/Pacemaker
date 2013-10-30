@@ -47,6 +47,7 @@ public class MainWindow extends JFrame
             public void windowClosing(WindowEvent e)
             {
                 Closer.close();
+                System.exit(0);
             }
         });
         // add all sub Panes
