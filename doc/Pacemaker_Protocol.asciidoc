@@ -766,7 +766,7 @@ A status of *device configuration error* indicates that the device is not availa
 
 A status of *device fault* indicates that the device has sufficient configuration but is unavailable due to a detected hardware fault (e.g., unconnected or shorted sensor).
 
-A status of *client stopped* indicates that the device has sufficient configuration and not in a fault state but is currently unavailable due to the client currently being stopped.
+A status of *client stopped* indicates that the device has sufficient configuration and not in a fault state but is currently unavailable due to the client currently being stopped (this would be eqivalent to the *device inactive* status were the client not in a Stopped state).
 
 A utf8 string may optionally follow the device status value describing the cause of any device errors.
 
@@ -933,7 +933,7 @@ This order can also be queued using the Queue Command Wrapper if the queued comm
 - OK: No Parameter data (used when immediate execution is requested).
 - Invalid Device Type: This is returned if any specified device does not support this order.
 
-==== Set Output Tone (0x11)
+==== Set Output Tone (0x1c)
 
 This order will generate an audio tone of the specified frequency on the specified output device (e.g., buzzer devices). Setting a value of 0 will stop the tone generation thereby deactivating the device. The output level when the device is deactivated can be assumed to be the logic level zero unless explicit firmware configuration specifies otherwise.
 
