@@ -29,6 +29,19 @@ import de.nomagic.printerController.Tool;
  */
 public class Protocol
 {
+    public final static int ORDER_POS_OF_SYNC               = 0;
+    public final static int ORDER_POS_OF_LENGTH             = 1;
+    public final static int ORDER_POS_OF_CONTROL            = 2;
+    public final static int ORDER_POS_OF_ORDER_CODE         = 3;
+    public final static int ORDER_POS_OF_START_OF_PARAMETER = 4;
+
+    public final static int REPLY_POS_OF_SYNC               = 0;
+    public final static int REPLY_POS_OF_LENGTH             = 1;
+    public final static int REPLY_POS_OF_CONTROL            = 2;
+    public final static int REPLY_POS_OF_REPLY_CODE         = 3;
+    public final static int REPLY_POS_OF_START_OF_PARAMETER = 4;
+
+
     // Magic Number from Protocol Definition:
 // Host
     public final static int START_OF_HOST_FRAME = 0x23;
@@ -120,14 +133,16 @@ public class Protocol
     public final static byte RESPONSE_OK = 0x10;
     public final static byte RESPONSE_GENERIC_APPLICATION_ERROR = 0x11;
 
-    public final static int RESPONSE_UNKNOWN_ORDER = 0;
-    public final static int RESPONSE_BAD_PARAMETER_FORMAT = 1;
-    public final static int RESPONSE_BAD_PARAMETER_VALUE = 2;
-    public final static int RESPONSE_INVALID_DEVICE_TYPE = 3;
-    public final static int RESPONSE_INVALID_DEVICE_NUMBER = 4;
-    public final static int RESPONSE_INCORRECT_MODE = 5;
-    public final static int RESPONSE_BUSY = 6;
-    public final static int RESPONSE_FAILED = 7;
+    public final static int RESPONSE_UNKNOWN_ORDER = 1;
+    public final static int RESPONSE_BAD_PARAMETER_FORMAT = 2;
+    public final static int RESPONSE_BAD_PARAMETER_VALUE = 3;
+    public final static int RESPONSE_INVALID_DEVICE_TYPE = 4;
+    public final static int RESPONSE_INVALID_DEVICE_NUMBER = 5;
+    public final static int RESPONSE_INCORRECT_MODE = 6;
+    public final static int RESPONSE_BUSY = 7;
+    public final static int RESPONSE_FAILED = 8;
+    public final static int RESPONSE_FIRMWARE_ERROR = 9;
+    public final static int RESPONSE_CANNOT_ACTIVATE_DEVICE = 10;
 
     public final static byte RESPONSE_STOPPED = 0x12;
     public final static byte STOPPED_UNACKNOWLEADGED = 0;
@@ -423,7 +438,7 @@ public class Protocol
             param[3] = (byte)(0xff & speed);
             if(false == sendOrderExpectOK(ORDER_SET_PWM, param))
             {
-                log.error("Falied to enable the Steppers !");
+                log.error("Falied to set Speed on the Fan !");
                 return false;
             }
             else

@@ -31,7 +31,7 @@ public class ClientMain
     private StatusWindow sw;
     private boolean shouldRun = true;
 
-    public ClientMain() throws IOException
+    public ClientMain()
     {
     }
 
@@ -54,42 +54,67 @@ public class ClientMain
         });
     }
 
-    public void startCommunicating(int port) throws IOException
+    public void startCommunicating(int port)
     {
         // create TCP Port and Listen to connections
         System.out.println("Starting to listen on Port " + port);
-        final ServerSocket server = new ServerSocket(port);
-        while(true== shouldRun)
-        {
-            final Socket s = server.accept();
-            System.out.println("Received a Connection !");
-            s.setTcpNoDelay(true);
-            final InputStream in = s.getInputStream();
-            final OutputStream out = s.getOutputStream();
-            final ProtocolClient pc = new ProtocolClient(in, out, sw);
-            if(null != sw)
-            {
-                sw.setProtocolClient(pc);
-            }
-            pc.communicate();
-            s.close();
-        }
-        server.close();
-    }
-
-    public static void main(final String[] args) throws IOException
-    {
+        ServerSocket server = null;
         try
         {
-            final ClientMain cm = new ClientMain();
-            cm.startGui();
-            cm.startCommunicating(12345);
+            server = new ServerSocket(port);
         }
         catch(final IOException e)
         {
             System.out.println(e.getMessage());
             System.exit(1);
         }
+        while(true== shouldRun)
+        {
+            try
+            {
+                final Socket s = server.accept();
+                System.out.println("Received a Connection !");
+                s.setTcpNoDelay(true);
+                final InputStream in = s.getInputStream();
+                final OutputStream out = s.getOutputStream();
+                final ProtocolClient pc = new ProtocolClient(in, out, sw);
+                if(null != sw)
+                {
+                    sw.setProtocolClient(pc);
+                }
+                try
+                {
+                    pc.communicate();
+                }
+                catch(final IOException e)
+                {
+                    System.out.println(e.getMessage());
+                }
+                s.close();
+            }
+            catch(final IOException e)
+            {
+                System.out.println(e.getMessage());
+            }
+        }
+        try
+        {
+            server.close();
+        }
+        catch(final IOException e)
+        {
+            System.out.println(e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    public static void main(final String[] args) throws IOException
+    {
+
+            final ClientMain cm = new ClientMain();
+            cm.startGui();
+            cm.startCommunicating(12345);
+
     }
 
 }

@@ -35,7 +35,7 @@ public class Reply
 
     public Reply(byte[] data)
     {
-        if(null == data)
+        if((null == data) || (5 > data.length))
         {
             valid = false;
             this.data = new byte[0];
@@ -57,54 +57,96 @@ public class Reply
 
     public byte getReplyCode()
     {
-        return data[POS_OF_REPLY_CODE];
+        if(false == valid)
+        {
+            return (byte) 0xff;
+        }
+        else
+        {
+            return data[POS_OF_REPLY_CODE];
+        }
     }
 
     public boolean isOKReply()
     {
-        if(Protocol.RESPONSE_OK == data[POS_OF_REPLY_CODE])
+        if(false == valid)
         {
-            return true;
+            return false;
         }
         else
         {
-            return false;
+            if(Protocol.RESPONSE_OK == data[POS_OF_REPLY_CODE])
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 
     public byte getControl()
     {
-        return data[POS_OF_CONTROL];
+        if(false == valid)
+        {
+            return (byte) 0xff;
+        }
+        else
+        {
+            return data[POS_OF_CONTROL];
+        }
     }
 
     public byte[] getParameter()
     {
-        byte[] res = new byte[length - 2];
-        for(int i = 0; i < length - 2; i ++)
+        if(false == valid)
         {
-            res[i] = data[i + POS_OF_PARAMETER_START];
+            return new byte[0];
         }
-        return res;
+        else
+        {
+            byte[] res = new byte[length - 2];
+            for(int i = 0; i < length - 2; i ++)
+            {
+                res[i] = data[i + POS_OF_PARAMETER_START];
+            }
+            return res;
+        }
     }
 
     public String getParameterAsString(final int offset)
     {
-        final String res = new String(data,
-                                      offset + POS_OF_PARAMETER_START,
-                                      length - offset,
-                                      Charset.forName("UTF-8"));
-        return res;
+        if(false == valid)
+        {
+            return "";
+        }
+        else
+        {
+            final String res = new String(data,
+                                          offset + POS_OF_PARAMETER_START,
+                                          (length - 2) - offset,
+                                          Charset.forName("UTF-8"));
+            return res;
+        }
     }
 
     public boolean isDebugFrame()
     {
-        if(Protocol.DEBUG_FLAG == (Protocol.DEBUG_FLAG & data[POS_OF_CONTROL]))
+        if(false == valid)
         {
-            return true;
+            return false;
         }
         else
         {
-            return false;
+            if(Protocol.DEBUG_FLAG == (Protocol.DEBUG_FLAG & data[POS_OF_CONTROL]))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 

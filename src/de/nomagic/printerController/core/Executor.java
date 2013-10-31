@@ -230,13 +230,7 @@ public class Executor
     {
         if(true == setCurrentExtruderTemperatureNoWait(temperature))
         {
-            switch(currentExtruder)
-            {
-            case 0: return setTemperatureNoWait(Heater_enum.Extruder_0, temperature);
-            case 1: return setTemperatureNoWait(Heater_enum.Extruder_1, temperature);
-            case 2: return setTemperatureNoWait(Heater_enum.Extruder_2, temperature);
-            default: lastErrorReason = "Invalid Extruder Number !"; return false;
-            }
+            return waitForEverythingInLimits();
         }
         else
         {

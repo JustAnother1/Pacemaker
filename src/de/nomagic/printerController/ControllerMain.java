@@ -184,17 +184,22 @@ public class ControllerMain implements CloseApplication
         String line;
         try
         {
+            int linecount = 0;
             final InputStream fis = new FileInputStream(fileToPrint);
             final BufferedReader br = new BufferedReader(
                     new InputStreamReader(fis, Charset.forName("UTF-8")) );
             while ((line = br.readLine()) != null)
             {
+                System.out.print("\rNow sending Line " + linecount);
+                linecount ++;
                 if(false == pp.executeGCode(line))
                 {
                     log.error("Failed to send the Line : {} !", line);
+                    log.error("The Problem was : {} !", pp.getLastErrorReason());
                     break;
                 }
             }
+            System.out.println("Closing G-Code File,..");
             br.close();
         }
         catch (final FileNotFoundException e)
@@ -287,6 +292,7 @@ public class ControllerMain implements CloseApplication
         else
         {
             cm.sendGCodeFile();
+            System.exit(0);
         }
     }
 

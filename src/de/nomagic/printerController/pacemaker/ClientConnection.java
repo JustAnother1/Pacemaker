@@ -143,7 +143,7 @@ public abstract class ClientConnection extends Thread
             }
             if(false == r.isValid())
             {
-                log.error("received invalid Frame !");
+                log.error("received invalid Frame ({})!", r);
                 needsToRetransmitt = true;
             }
             else
@@ -192,7 +192,7 @@ public abstract class ClientConnection extends Thread
 
     public static byte getCRCfor(final byte[] buf, final int length)
     {
-        return getCRCfor(buf, length, 1/* Byte 0 is Sync and is not included in CRC*/);
+        return getCRCfor(buf, length -1, 1/* Byte 0 is Sync and is not included in CRC*/);
     }
 
     public static byte getCRCfor(final byte[] buf, int length, final int offset)
@@ -201,13 +201,14 @@ public abstract class ClientConnection extends Thread
         int pos = offset;
         while (length > 0)
         {
-             crc = crc_array[0xff & (buf[pos] ^ crc)];
-             pos = pos + 1;
-             length = length - 1;
-         }
-         return crc;
+            crc = crc_array[0xff & (buf[pos] ^ crc)];
+            pos = pos + 1;
+            length = length - 1;
+        }
+        return crc;
     }
 
+    @SuppressWarnings("unused")
     protected int getAByte() throws IOException, TimeoutException
     {
         if(false == useNonBlocking)
@@ -217,7 +218,7 @@ public abstract class ClientConnection extends Thread
             {
                 throw new IOException("Channel closed");
             }
-            log.info("Received the Byte: " + String.format("%02X", res));
+            log.debug("Received the Byte: " + String.format("%02X", res));
             return res;
         }
         else
@@ -250,7 +251,7 @@ public abstract class ClientConnection extends Thread
             {
                 throw new IOException("Channel closed");
             }
-            log.info("Received the Byte: " + String.format("%02X", res));
+            log.debug("Received the Byte: " + String.format("%02X", res));
             return res;
         }
     }
@@ -323,7 +324,7 @@ public abstract class ClientConnection extends Thread
                         isSynced = false;
                     }
                 } while (false == isSynced);
-                log.info("Synced to client!");
+                log.debug("Synced to client!");
 
                 final int replyLength;
                 final int control;
@@ -333,7 +334,12 @@ public abstract class ClientConnection extends Thread
                 {
                     // Length
                     replyLength = getAByte();
-                    buf = new byte[3 + replyLength]; // Sync, length and CRC are not included in length
+                    if(0 > replyLength)
+                    {
+                        isSynced = false;
+                        continue;
+                    }
+                    buf = new byte[4 + replyLength]; // Sync, length and CRC are not included in length
                     buf[0] = Protocol.START_OF_CLIENT_FRAME;
                     buf[1] = (byte)(replyLength & 0xff);
 
@@ -359,17 +365,15 @@ public abstract class ClientConnection extends Thread
                 }
                 catch(TimeoutException e)
                 {
-                    receiveQueue.put(new Reply(null));
                     isSynced = false;
                     continue;
                 }
 
-                byte expectedCRC = getCRCfor(buf, replyLength + 1);
+                byte expectedCRC = getCRCfor(buf, replyLength + 2);
                 if(expectedCRC != buf[2 + replyLength])
                 {
                     log.error("Wrong CRC ! expected : " + String.format("%02X", expectedCRC)
                                        + " received : " + String.format("%02X", buf[2 + replyLength]));
-                    receiveQueue.put(new Reply(null));
                     isSynced = false;
                     continue;
                 }
@@ -378,7 +382,6 @@ public abstract class ClientConnection extends Thread
                 {
                     // Protocol Error
                     log.error("Invalid reply code !");
-                    receiveQueue.put(new Reply(null));
                     isSynced = false;
                     continue;
                 }
@@ -404,7 +407,6 @@ public abstract class ClientConnection extends Thread
                         // Protocol Error
                         log.error("Wrong Sequence Number !(Received: {}; Expected: {})",
                                                          (control & 0xf), sequenceNumber);
-                        receiveQueue.put(new Reply(null));
                         isSynced = false;
                         continue;
                     }

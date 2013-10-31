@@ -107,7 +107,7 @@ public class Movement
                             motor.addStepper(i,
                                              thisProtocolIdx,
                                              maxAccelerationOfThisStepper,
-                                             cfg.isMovementDirectionInverted(ClientNumber, ae),
+                                             cfg.isMovementDirectionInverted(ClientNumber, i),
                                              cfg.getStepsPerMillimeterFor(ClientNumber, i));
                             Steppers.put(ae, motor);
                             // update max Acceleration Values

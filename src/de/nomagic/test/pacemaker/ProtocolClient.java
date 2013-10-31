@@ -57,12 +57,28 @@ public class ProtocolClient
         this.in = in;
         this.out = out;
         this.hw = hw;
-        response[0] = Protocol.START_OF_CLIENT_FRAME;
+        response[Protocol.REPLY_POS_OF_SYNC] = Protocol.START_OF_CLIENT_FRAME;
     }
 
     public boolean isConnected()
     {
         return isConnected;
+    }
+
+    private int calculateChecksum(final int order, final int length, final int control, final int[] parameter)
+    {
+        final byte[] data = new byte[length + 2];
+        data[Protocol.ORDER_POS_OF_SYNC] = Protocol.START_OF_HOST_FRAME;
+        data[Protocol.ORDER_POS_OF_LENGTH] = (byte)length;
+        data[Protocol.ORDER_POS_OF_CONTROL] = (byte)control;
+        data[Protocol.ORDER_POS_OF_ORDER_CODE] = (byte)order;
+        for(int i = 0; i < length - 2; i++)
+        {
+            data[i + Protocol.ORDER_POS_OF_START_OF_PARAMETER] = (byte)parameter[i];
+        }
+        int res =  0xff & ClientConnection.getCRCfor(data, length + Protocol.ORDER_POS_OF_START_OF_PARAMETER - 2);
+        System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data) + " -> " + String.format("%02X", res));
+        return res;
     }
 
     public void communicate() throws IOException
@@ -91,18 +107,19 @@ public class ProtocolClient
                 {
                     isSynced = true;
                     // A new frame is coming in...
-                    order =  getAByte();
                     length = getAByte();
                     control = getAByte();
-                    for(int i = 0; i < length; i++)
+                    order =  getAByte();
+                    for(int i = 0; i < length -2; i++)
                     {
                         final int h = getAByte();
                         parameter[i] = h;
                     }
                     final int checksum = 0xff & getAByte();
-                    if(checksum != calculateChecksum(order, length, control, parameter))
+                    int calculatedCheckSum = calculateChecksum(order, length, control, parameter);
+                    if(checksum != calculatedCheckSum)
                     {
-                        System.err.println("BAD CRC ! (" +checksum + " - " + calculateChecksum(order, length, control, parameter) + ") !" );
+                        System.err.println("BAD CRC ! (" +checksum + " - " + calculatedCheckSum + ") !" );
                         sendReply(Protocol.RESPONSE_FRAME_RECEIPT_ERROR, Protocol.RESPONSE_BAD_ERROR_CHECK_CODE);
                     }
                     else
@@ -279,7 +296,9 @@ public class ProtocolClient
                 break;
 
             // New Orders go here
-            default: sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+            default:
+                System.err.println("Received Invalid Order Code : " +  order);
+                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                                Protocol.RESPONSE_UNKNOWN_ORDER);
             }
         }
@@ -491,7 +510,7 @@ public class ProtocolClient
 
     private void handleOrderReqDeviceName() throws IOException
     {
-        if(2 != length)
+        if(4 != length)
         {
             sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                       Protocol.RESPONSE_BAD_PARAMETER_FORMAT);
@@ -594,7 +613,7 @@ public class ProtocolClient
 
     private void handleOrderReqInformation() throws IOException
     {
-        if(1 != length)
+        if(3 != length)
         {
             sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR, Protocol.RESPONSE_BAD_PARAMETER_FORMAT);
         }
@@ -667,88 +686,88 @@ public class ProtocolClient
 
     private void sendStoppedReply() throws IOException
     {
-        response[1] = Protocol.RESPONSE_STOPPED;
-        response[2] = 3; // length 3 byte parameter
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_STOPPED;
+        response[Protocol.REPLY_POS_OF_LENGTH] = 3 + 2; // length 3 byte parameter
         if(true == stoppedStateAcknowleadged)
         {
-            response[4] = Protocol.STOPPED_ACKNOWLEADGED;
+            response[Protocol.REPLY_POS_OF_START_OF_PARAMETER] = Protocol.STOPPED_ACKNOWLEADGED;
         }
         else
         {
-            response[4] = Protocol.STOPPED_UNACKNOWLEADGED;
+            response[Protocol.REPLY_POS_OF_START_OF_PARAMETER] = Protocol.STOPPED_UNACKNOWLEADGED;
         }
-        response[5] = Protocol.RECOVERY_CLEARED;
-        response[6] = Protocol.CAUSE_RESET;
-        addChecksumControlAndSend(6);
+        response[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 1] = Protocol.RECOVERY_CLEARED;
+        response[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 2] = Protocol.CAUSE_RESET;
+        addChecksumControlAndSend(Protocol.REPLY_POS_OF_START_OF_PARAMETER + 2);
     }
 
     private void sendI16(final int parameterInt) throws IOException
     {
-        response[1] = Protocol.RESPONSE_OK;
-        response[2] = 2; // length 2 byte parameter
-        response[4] = (byte)((parameterInt >>8) & 0xff);
-        response[5] = (byte)(0xff & parameterInt);
-        addChecksumControlAndSend(5);
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_OK;
+        response[Protocol.REPLY_POS_OF_LENGTH] = 2 + 2; // length 2 byte parameter
+        response[Protocol.REPLY_POS_OF_START_OF_PARAMETER] = (byte)((parameterInt >>8) & 0xff);
+        response[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 1] = (byte)(0xff & parameterInt);
+        addChecksumControlAndSend(Protocol.REPLY_POS_OF_START_OF_PARAMETER + 1);
     }
 
     private void sendByteArray(final byte[] list) throws IOException
     {
-        response[1] = Protocol.RESPONSE_OK;
-        response[2] = (byte)(list.length);
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_OK;
+        response[Protocol.REPLY_POS_OF_LENGTH] = (byte) (list.length + 2);
         // 3 = control
         for(int i = 0; i < list.length; i++)
         {
-            response[4 + i] = list[i];
+            response[Protocol.REPLY_POS_OF_START_OF_PARAMETER + i] = list[i];
         }
-        addChecksumControlAndSend(list.length + 3);
+        addChecksumControlAndSend(list.length + Protocol.REPLY_POS_OF_START_OF_PARAMETER - 1);
     }
 
     private void sendByteArray(final int[] list) throws IOException
     {
-        response[1] = Protocol.RESPONSE_OK;
-        response[2] = (byte)(list.length);
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_OK;
+        response[Protocol.REPLY_POS_OF_LENGTH] = (byte)(list.length + 2);
         // 3 = control
         for(int i = 0; i < list.length; i++)
         {
-            response[4 + i] = (byte)list[i];
+            response[Protocol.REPLY_POS_OF_START_OF_PARAMETER + i] = (byte)list[i];
         }
-        addChecksumControlAndSend(list.length + 3);
+        addChecksumControlAndSend(list.length + (Protocol.REPLY_POS_OF_START_OF_PARAMETER - 1));
     }
 
     private void sendByte(final int parameterByte) throws IOException
     {
-        response[1] = Protocol.RESPONSE_OK;
-        response[2] = 1; // length 1 byte parameter
-        response[4] = (byte)parameterByte;
-        addChecksumControlAndSend(4);
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_OK;
+        response[Protocol.REPLY_POS_OF_LENGTH] = 1 + 2; // length 1 byte parameter
+        response[Protocol.REPLY_POS_OF_START_OF_PARAMETER] = (byte)parameterByte;
+        addChecksumControlAndSend(Protocol.REPLY_POS_OF_START_OF_PARAMETER);
     }
 
     private void sendOK() throws IOException
     {
-        response[1] = Protocol.RESPONSE_OK;
-        response[2] = 0; // length 0 byte parameter
-        addChecksumControlAndSend(3);
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_OK;
+        response[Protocol.REPLY_POS_OF_LENGTH] = 0 + 2; // length 0 byte parameter
+        addChecksumControlAndSend(Protocol.REPLY_POS_OF_START_OF_PARAMETER -1);
     }
 
     private void sendString(final String theString) throws IOException
     {
         final byte[] str = theString.getBytes(Charset.forName("UTF-8"));
-        response[1] = Protocol.RESPONSE_OK;
-        response[2] = (byte)(str.length);
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_OK;
+        response[Protocol.REPLY_POS_OF_LENGTH] = (byte)(str.length + 2);
         // 3 = control
         for(int i = 0; i < str.length; i++)
         {
-            response[4 + i] = str[i];
+            response[Protocol.REPLY_POS_OF_START_OF_PARAMETER + i] = str[i];
         }
-        addChecksumControlAndSend(str.length + 3);
+        addChecksumControlAndSend(str.length + (Protocol.REPLY_POS_OF_START_OF_PARAMETER -1));
     }
 
     private void sendReply(final byte replyCode, final int parameterByte) throws IOException
     {
-        response[1] = replyCode;
-        response[2] = 1; // length 1 byte parameter
-        response[4] = (byte)parameterByte;
-        addChecksumControlAndSend(4);
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = replyCode;
+        response[Protocol.REPLY_POS_OF_LENGTH] = 1 + 2; // length 1 byte parameter
+        response[Protocol.REPLY_POS_OF_START_OF_PARAMETER] = (byte)parameterByte;
+        addChecksumControlAndSend(Protocol.REPLY_POS_OF_START_OF_PARAMETER);
     }
 
     private void addChecksumControlAndSend(final int lastUsedIndex) throws IOException
@@ -757,11 +776,11 @@ public class ProtocolClient
         final int bytesToSend = lastUsedIndex + 2;
         if(true == hasEvent)
         {
-            response[3] = (byte)(0x10 | (0x0f & control));
+            response[Protocol.REPLY_POS_OF_CONTROL] = (byte)(0x10 | (0x0f & control));
         }
         else
         {
-            response[3] = (byte)(0x0f & control);
+            response[Protocol.REPLY_POS_OF_CONTROL] = (byte)(0x0f & control);
         }
         response[cspos] = ClientConnection.getCRCfor(response, cspos);
         System.out.println("sending : " + Tool.fromByteBufferToHexString(response, bytesToSend));
@@ -770,22 +789,6 @@ public class ProtocolClient
         cachedResponse = response;
         cachedResponseLength = bytesToSend;
         cachedResponseSequenceNumber = control & 0x0f;
-    }
-
-    private int calculateChecksum(final int order, final int length, final int control, final int[] parameter)
-    {
-        final byte[] data = new byte[length + 4];
-        data[0] = Protocol.START_OF_HOST_FRAME;
-        data[1] = (byte)length;
-        data[2] = (byte)control;
-        data[3] = (byte)order;
-        for(int i = 0; i < length; i++)
-        {
-            data[i + 4] = (byte)parameter[i];
-        }
-        int res =  0xff & ClientConnection.getCRCfor(data, length + 4);
-        System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data) + " -> " + String.format("%02X", res));
-        return res;
     }
 
 }

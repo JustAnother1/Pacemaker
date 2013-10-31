@@ -47,10 +47,15 @@ public final class Tool
 
     public static String fromByteBufferToHexString(final byte[] buf)
     {
-        return fromByteBufferToHexString(buf, buf.length);
+        return fromByteBufferToHexString(buf, buf.length, 0);
     }
 
     public static String fromByteBufferToHexString(final byte[] buf, int length)
+    {
+        return fromByteBufferToHexString(buf, length, 0);
+    }
+
+    public static String fromByteBufferToHexString(final byte[] buf, int length, int offset)
     {
         if(null == buf)
         {
@@ -59,7 +64,7 @@ public final class Tool
         final StringBuffer sb = new StringBuffer();
         for(int i = 0; i < length; i++)
         {
-            sb.append(String.format("%02X", buf[i]));
+            sb.append(String.format("%02X", buf[i + offset]));
             sb.append(" ");
         }
         return "[" + (sb.toString()).trim() + "]";

@@ -57,18 +57,27 @@ public class ActionHandler extends Thread implements EventSource
     public ActionHandler(Cfg cfg)
     {
         super("ActionHandler");
-        connectToPrinter(cfg);
-        isOperational = checkIfOperational();
+        if(true ==connectToPrinter(cfg))
+        {
+            isOperational = checkIfOperational();
+        }
+        else
+        {
+            log.error("Initialization of Client failed !");
+            isOperational = false;
+        }
     }
 
     private boolean checkIfOperational()
     {
-        if((null == move) || (null == print))
+        if(null == move)
         {
+            log.error("Move is missing !");
             return false;
         }
-        if((true == fans.isEmpty()) || (true == heaters.isEmpty()))
+        if(null == print)
         {
+            log.error("Print is missing !");
             return false;
         }
         return true;
@@ -112,13 +121,21 @@ public class ActionHandler extends Thread implements EventSource
                 // get available Devices
                 // check for all devices if they are configured
                 // if yet then create the instances for them
-                di.readDeviceInformationFrom(pro);
+                if(false == di.readDeviceInformationFrom(pro))
+                {
+                    log.error("Failed to read the Device Information from this client !");
+                    return false;
+                }
                 log.info("Connected to : " + di);
                 print.put(i, new Printer(pro));
                 mapFans(di, cfg, pro, i);
                 mapHeaters(di, cfg, pro, i);
                 move.addConnection(di, cfg, pro, i);
-                return applyConfiguration(cfg, pro, i);
+                if(false == applyConfiguration(cfg, pro, i))
+                {
+                    return false;
+                }
+                // else go on with next client
             }
             catch(IOException e)
             {
@@ -133,17 +150,26 @@ public class ActionHandler extends Thread implements EventSource
     private boolean applyConfiguration(Cfg cfg, Protocol pro, int connectionNumber)
     {
         HashMap<String,String> settings = cfg.getAllFirmwareSettingsFor(connectionNumber);
-        Set<String> settingsSet = settings.keySet();
-        Iterator<String> its = settingsSet.iterator();
-        while(its.hasNext())
+        if(null == settings)
         {
-            String setting = its.next();
-            if(false == pro.writeFirmwareConfigurationValue(setting, settings.get(setting)))
-            {
-                return false;
-            }
+            // nothing to configure for this client -> successfull
+            return true;
         }
-        return true;
+        else
+        {
+            Set<String> settingsSet = settings.keySet();
+            Iterator<String> its = settingsSet.iterator();
+            while(its.hasNext())
+            {
+                String setting = its.next();
+                if(false == pro.writeFirmwareConfigurationValue(setting, settings.get(setting)))
+                {
+                    log.error("Failed to apply Fimrware specific configuration!");
+                    return false;
+                }
+            }
+            return true;
+        }
     }
 
     private void mapFans(DeviceInformation di, Cfg cfg, Protocol pro, int connectionNumber)
@@ -153,7 +179,7 @@ public class ActionHandler extends Thread implements EventSource
             Fan_enum func = cfg.getFunctionOfFan(connectionNumber, i);
             if(null != func)
             {
-                // this heater is used
+                // this Fan is used
                 Fan f = new Fan(pro, i);
                 fans.put(func, f);
             }
@@ -195,51 +221,6 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
-    /*
-
-    public boolean applyConfigurationToClient()
-    {
-        // use or not use the "Stepper Control Extension"
-        if((true == cfg.shouldUseSteppers()) && (true == di.hasExtensionStepperControl()))
-        {
-            if(false == sendOrderExpectOK(ORDER_ACTIVATE_STEPPER_CONTROL, (byte)0x01))
-            {
-                log.error("Failed to activate Stepper Control Extension !");
-                return false;
-            }
-        }
-        // else no extension- no support for command
-
-        // Configure heater (Heater-Temperature sensor mapping)
-        int[] heaters = cfg.getHeaterMapping();
-        int[] sensors = cfg.getTemperatureSensorMapping();
-        byte[] parameter = new byte[2];
-        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
-        {
-            int heaterNum = heaters[i];
-            int sensorNum = sensors[i];
-            if((-1 < heaterNum) && (-1 < sensorNum))
-            {
-                parameter[0] = (byte)heaterNum;
-                parameter[1] = (byte)sensorNum;
-                if(false == sendOrderExpectOK(ORDER_CONFIGURE_HEATER, parameter))
-                {
-                    log.error("Failed to configure Heater {} to use Temperature sensor {} !", heaterNum, sensorNum);
-                    return false;
-                }
-            }
-            // else invalid configuration -> skip
-        }
-
-        // send all Firmware configuration Values to the Client
-        String[] keys = cfg.getAllFirmwareKeys();
-        for(int i = 0; i < keys.length; i++)
-        {
-            writeFirmwareConfigurationValue(keys[i], cfg.getFirmwareSetting(keys[i]));
-        }
-        return true;
-    }
-*/
     public void run()
     {
         Event e;
@@ -520,12 +501,8 @@ public class ActionHandler extends Thread implements EventSource
         switch(theAction)
         {
         case doShutDown:
-            e = new Event(Action_enum.doShutDown, null, this);
-            eventQueue.add(e);
-            return getResult();
-
         case doImmediateShutDown:
-            e = new Event(Action_enum.doImmediateShutDown, null, this);
+            e = new Event(theAction, null, this);
             eventQueue.add(e);
             return getResult();
 
@@ -541,17 +518,9 @@ public class ActionHandler extends Thread implements EventSource
         switch(theAction)
         {
         case pauseMovement:
-            e = new Event(Action_enum.pauseMovement, param, this);
-            eventQueue.add(e);
-            return getResult();
-
         case relativeMove:
-            e = new Event(Action_enum.relativeMove, param, this);
-            eventQueue.add(e);
-            return getResult();
-
         case homeAxis:
-            e = new Event(Action_enum.homeAxis, param, this);
+            e = new Event(theAction, param, this);
             eventQueue.add(e);
             return getResult();
 
@@ -567,12 +536,9 @@ public class ActionHandler extends Thread implements EventSource
         switch(theAction)
         {
         case relativeMove:
-            e = new Event(Action_enum.relativeMove, param, param2, this);
-            eventQueue.add(e);
-            return getResult();
-
         case setFanSpeed:
-            e = new Event(Action_enum.setFanSpeed, param, param2, this);
+        case setHeaterTemperature:
+            e = new Event(theAction, param, param2, this);
             eventQueue.add(e);
             return getResult();
 
@@ -607,7 +573,6 @@ public class ActionHandler extends Thread implements EventSource
             e = new Event(Action_enum.getHeaterTemperature, param, this);
             eventQueue.add(e);
             return getResponse();
-
 
         default:
             lastErrorReason = "Action " + theAction + " not implemented !";

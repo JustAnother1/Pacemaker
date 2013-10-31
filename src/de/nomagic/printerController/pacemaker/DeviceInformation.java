@@ -35,7 +35,7 @@ public class DeviceInformation
     private int NumberOutputSignals = -1;
     private int NumberBuzzer = -1;
 
-    private Protocol uartProtocol;
+    private Protocol pro;
 
     private String[] stepperNames;
     private String[] heaterNames;
@@ -44,6 +44,8 @@ public class DeviceInformation
     private String[] switchesNames;
     private String[] outputSignalNames;
     private String[] buzzerNames;
+
+    private boolean hasBeenRead = false;
 
     public DeviceInformation()
     {
@@ -108,33 +110,41 @@ public class DeviceInformation
     private int readValueOf(int which, String Name) throws IOException
     {
         int res = requestInteger(which);
-        if(-1 == res)
+        if(0 > res)
         {
             log.error("Could not read the {} !", Name);
         }
         return res;
     }
 
-    public boolean readDeviceInformationFrom(final Protocol uartProtocol) throws IOException
+    public boolean readDeviceInformationFrom(final Protocol pro) throws IOException
     {
-        this.uartProtocol = uartProtocol;
-
+        this.pro = pro;
+        hasBeenRead = true;
         FirmwareName = requestString(Protocol.INFO_FIRMWARE_NAME_STRING);
+        if(false == hasBeenRead) { return false;}
         SerialNumber = requestString(Protocol.INFO_SERIAL_NUMBER_STRING);
+        if(false == hasBeenRead) { return false;}
         BoardName = requestString(Protocol.INFO_BOARD_NAME_STRING);
+        if(false == hasBeenRead) { return false;}
         givenName = requestString(Protocol.INFO_GIVEN_NAME_STRING);
+        if(false == hasBeenRead) { return false;}
         majorVersionsSupported = requestList(Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR);
+        if(false == hasBeenRead) { return false;}
         if(null == majorVersionsSupported)
         {
             log.error("Could not read the supported protocol major versions !");
+            hasBeenRead = false;
             return false;
         }
         minorVersionSupportedUpTo = requestInteger(Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MINOR);
-
+        if(false == hasBeenRead) { return false;}
         final Vector<Integer> extensions = requestList(Protocol.INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS);
+        if(false == hasBeenRead) { return false;}
         if(null == extensions)
         {
             log.error("Could not read the supported protocol extensions !");
+            hasBeenRead = false;
             return false;
         }
         for(int i = 0; i < extensions.size(); i++)
@@ -159,23 +169,35 @@ public class DeviceInformation
         }
 
         FirmwareType = readValueOf(Protocol.INFO_FIRMWARE_TYPE, "Firmware Type");
+        if(false == hasBeenRead) { return false;}
         FirmwareRevisionMajor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MAJOR, "Firmware Revision Major");
+        if(false == hasBeenRead) { return false;}
         FirmwareRevisionMinor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MINOR, "Firmware Revision Minor");
+        if(false == hasBeenRead) { return false;}
         HardwareType = readValueOf(Protocol.INFO_FIRMWARE_TYPE, "Hardware Type");
+        if(false == hasBeenRead) { return false;}
         HardwareRevision =readValueOf(Protocol.INFO_HARDWARE_REVISION, "Hardware Revision");
+        if(false == hasBeenRead) { return false;}
         NumberSteppers = readValueOf(Protocol.INFO_NUMBER_STEPPERS, "number of stepper motors");
+        if(false == hasBeenRead) { return false;}
         NumberHeaters = readValueOf(Protocol.INFO_NUMBER_HEATERS, "number of Heaters");
+        if(false == hasBeenRead) { return false;}
         NumberPwmSwitchedOutputs = readValueOf(Protocol.INFO_NUMBER_PWM, "number of PWM switched Outputs");
+        if(false == hasBeenRead) { return false;}
         NumberTemperatureSensors = readValueOf(Protocol.INFO_NUMBER_TEMP_SENSOR, "number of Temperature Sensors");
+        if(false == hasBeenRead) { return false;}
         NumberSwitches = readValueOf(Protocol.INFO_NUMBER_INPUT, "number of Switches");
+        if(false == hasBeenRead) { return false;}
         NumberOutputSignals = readValueOf(Protocol.INFO_NUMBER_OUTPUT, "number of Output Signals");
+        if(false == hasBeenRead) { return false;}
         NumberBuzzer = readValueOf(Protocol.INFO_NUMBER_BUZZER, "number of buzzers");
-        return true;
+        if(false == hasBeenRead) { return false;}
+        return hasBeenRead;
     }
 
     public boolean readConnectorNames() throws IOException
     {
-        if(null == uartProtocol)
+        if(null == pro)
         {
             return false;
         }
@@ -225,7 +247,7 @@ public class DeviceInformation
 
     private String requestDeviceNameString(final byte type, final int index) throws IOException
     {
-        final Reply r = uartProtocol.sendDeviceNameRequest(type, index);
+        final Reply r = pro.sendDeviceNameRequest(type, index);
         if(null == r)
         {
             log.error("Device Name Request Failed !");
@@ -236,14 +258,21 @@ public class DeviceInformation
 
     private int requestInteger(final int which) throws IOException
     {
-        final Reply r = uartProtocol.sendInformationRequest(which);
+        final Reply r = pro.sendInformationRequest(which);
         if(null == r)
         {
+            hasBeenRead = false;
             return -1;
+        }
+        if(false == r.isOKReply())
+        {
+            hasBeenRead = false;
+            return -4;
         }
         final byte[] p = r.getParameter();
         if(null == p)
         {
+            hasBeenRead = false;
             return -2;
         }
         int res = -3;
@@ -257,20 +286,34 @@ public class DeviceInformation
 
     private String requestString(final int which) throws IOException
     {
-        final Reply r = uartProtocol.sendInformationRequest(which);
+        final Reply r = pro.sendInformationRequest(which);
         if(null == r)
         {
+            hasBeenRead = false;
             return "";
         }
-        return r.getParameterAsString(0);
+        if(true == r.isOKReply())
+        {
+            return r.getParameterAsString(0);
+        }
+        else
+        {
+            hasBeenRead = false;
+            return "";
+        }
     }
 
     private Vector<Integer> requestList(final int which) throws IOException
     {
-        final Reply r = uartProtocol.sendInformationRequest(which);
+        final Reply r = pro.sendInformationRequest(which);
         if(null == r)
         {
             log.error("Received no Reply !");
+            return null;
+        }
+        if(false == r.isOKReply())
+        {
+            log.error("Received Error Reply !");
             return null;
         }
         final byte[] p = r.getParameter();
