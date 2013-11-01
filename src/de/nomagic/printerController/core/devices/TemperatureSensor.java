@@ -37,4 +37,10 @@ public class TemperatureSensor
         return pro.readTemperatureFrom(num);
     }
 
+    @Override
+    public String toString()
+    {
+        return "Sensor num=" + num;
+    }
+
 }

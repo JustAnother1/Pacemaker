@@ -210,6 +210,12 @@ public class Protocol
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "operational =" + isOperational + " , Client Location = " + cc.toString();
+    }
+
     /**
      *
      * @return true if everything is ready to start.

@@ -67,4 +67,10 @@ public class Heater
         return sensor;
     }
 
+    @Override
+    public String toString()
+    {
+        return "Heater num=" + num + ", sensor=" + sensor;
+    }
+
 }

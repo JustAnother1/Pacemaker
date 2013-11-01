@@ -44,6 +44,7 @@ import de.nomagic.printerController.pacemaker.Protocol;
 public class ActionHandler extends Thread implements EventSource
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private Cfg cfg;
     private boolean isOperational = false;
     private String lastErrorReason = null;
     private BlockingQueue<Event> eventQueue = new LinkedBlockingQueue<Event>();
@@ -57,7 +58,8 @@ public class ActionHandler extends Thread implements EventSource
     public ActionHandler(Cfg cfg)
     {
         super("ActionHandler");
-        if(true ==connectToPrinter(cfg))
+        this.cfg = cfg;
+        if(true ==connectToPrinter())
         {
             isOperational = checkIfOperational();
         }
@@ -83,6 +85,40 @@ public class ActionHandler extends Thread implements EventSource
         return true;
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+        int numClients = cfg.getNumberOfClients();
+        for(int i = 0; i < numClients; i++)
+        {
+            sb.append("Connection " + i + " : " + print.get(i).toString() + "\n");
+        }
+        sb.append("Configured Fans:\n");
+        for (Fan_enum fe : Fan_enum.values())
+        {
+            Fan f = fans.get(fe);
+            if(null != f)
+            {
+                sb.append(fe.toString() + " : " +  f.toString() + "\n");
+            }
+        }
+        sb.append("Configured Heaters:\n");
+        for (Heater_enum he : Heater_enum.values())
+        {
+            Heater h = heaters.get(he);
+            if(null != h)
+            {
+                sb.append(he.toString() + " : " +  h.toString() + "\n");
+            }
+        }
+        return "ActionHandler:\n" +
+               "operational : " + isOperational + "\n" +
+               "Last Error : " + lastErrorReason + " \n" +
+               move.toString() + " \n" +
+               sb.toString();
+    }
+
     /**
      *
      * @return true if everything is ready to start.
@@ -92,7 +128,7 @@ public class ActionHandler extends Thread implements EventSource
         return isOperational;
     }
 
-    private boolean connectToPrinter(Cfg cfg)
+    private boolean connectToPrinter()
     {
         int numClients = cfg.getNumberOfClients();
         log.info("Connecting to {} Client(s).", numClients);
@@ -128,10 +164,10 @@ public class ActionHandler extends Thread implements EventSource
                 }
                 log.info("Connected to : " + di);
                 print.put(i, new Printer(pro));
-                mapFans(di, cfg, pro, i);
-                mapHeaters(di, cfg, pro, i);
+                mapFans(di, pro, i);
+                mapHeaters(di, pro, i);
                 move.addConnection(di, cfg, pro, i);
-                if(false == applyConfiguration(cfg, pro, i))
+                if(false == applyConfiguration(pro, i))
                 {
                     return false;
                 }
@@ -147,12 +183,13 @@ public class ActionHandler extends Thread implements EventSource
         return true;
     }
 
-    private boolean applyConfiguration(Cfg cfg, Protocol pro, int connectionNumber)
+    private boolean applyConfiguration(Protocol pro, int connectionNumber)
     {
+        // TODO read all firmware configurations from client
         HashMap<String,String> settings = cfg.getAllFirmwareSettingsFor(connectionNumber);
         if(null == settings)
         {
-            // nothing to configure for this client -> successfull
+            // nothing to configure for this client -> successful
             return true;
         }
         else
@@ -172,7 +209,7 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
-    private void mapFans(DeviceInformation di, Cfg cfg, Protocol pro, int connectionNumber)
+    private void mapFans(DeviceInformation di, Protocol pro, int connectionNumber)
     {
         for(int i = 0; i < di.getNumberPwmSwitchedOutputs(); i++)
         {
@@ -186,7 +223,7 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
-    private void mapHeaters(DeviceInformation di, Cfg cfg, Protocol pro, int connectionNumber)
+    private void mapHeaters(DeviceInformation di, Protocol pro, int connectionNumber)
     {
         for(int i = 0; i < di.getNumberHeaters(); i++)
         {
@@ -366,8 +403,8 @@ public class ActionHandler extends Thread implements EventSource
                         Fan theFan = fans.get((Integer)e.getParameter());
                         if(null == theFan)
                         {
-                            lastErrorReason = "Tried to set Fan Speed for invalid Fan!";
-                            reportFailed(e);
+                            log.warn("Tried to set Fan Speed for invalid Fan!");
+                            reportSuccess(e); // We do not need to stop the printing - we just ignore that fan.
                         }
                         else
                         {

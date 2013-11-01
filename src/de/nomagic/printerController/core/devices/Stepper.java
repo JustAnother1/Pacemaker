@@ -57,7 +57,27 @@ public class Stepper
 
     public void setStepsPerMillimeter(Double steps)
     {
+        int num = StepsPerMillimeterVect.size();
+        StepsPerMillimeterVect.clear();
+        for(int i = 0; i < num; i++)
+        {
+            StepsPerMillimeterVect.add(steps);
+        }
+    }
 
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+        for(int i = 0; i < StepperNumberVect.size(); i++)
+        {
+            sb.append("[num=" + StepperNumberVect.get(i) +
+                      " pro=" + ProtocolIndexVect.get(i) +
+                      " maxAccel=" + MaxAccellerationVect.get(i) +
+                      " dirInv=" + DirectionInvertedVect.get(i) +
+                      " stepsPerMm=" + StepsPerMillimeterVect.get(i) + "]\n");
+        }
+        return sb.toString();
     }
 
     public void clearMove()

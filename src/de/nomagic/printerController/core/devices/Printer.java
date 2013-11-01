@@ -41,6 +41,12 @@ public class Printer
         pro.closeConnection();
     }
 
+    @Override
+    public String toString()
+    {
+        return "Ptotocol=" + pro.toString();
+    }
+
     public boolean doShutDown()
     {
         // TODO Auto-generated method stub

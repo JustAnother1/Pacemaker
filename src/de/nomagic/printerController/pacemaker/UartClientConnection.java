@@ -338,6 +338,12 @@ public class UartClientConnection extends ClientConnection
     }
 
     @Override
+    public String toString()
+    {
+        return "Serial : " + port.getName() + "," + port.getBaudRate();
+    }
+
+    @Override
     public void close()
     {
         super.close();

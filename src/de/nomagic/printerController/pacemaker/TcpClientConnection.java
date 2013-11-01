@@ -70,6 +70,11 @@ public class TcpClientConnection extends ClientConnection
         return null;
     }
 
+    @Override
+    public String toString()
+    {
+        return "TCP : " + pms.getInetAddress() + ":" + pms.getPort();
+    }
 
     public TcpClientConnection(final Socket pms) throws IOException
     {

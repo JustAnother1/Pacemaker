@@ -51,4 +51,10 @@ public class Fan
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return "Fan num=" + num;
+    }
+
 }

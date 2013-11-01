@@ -41,6 +41,8 @@ public class CoreStateMachine
         {
             return;
         }
+        log.info(handler.toString());
+        handler.start();
         log.info("starting Executor,...");
         exe = new Executor(handler);
         log.info("starting G-Code Decoder,...");

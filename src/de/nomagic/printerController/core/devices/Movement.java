@@ -60,6 +60,22 @@ public class Movement
     {
     }
 
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+        sb.append("Configured Steppers:\n");
+        for(Axis_enum ax: Axis_enum.values())
+        {
+            Stepper step = Steppers.get(ax);
+            if(null != step)
+            {
+                sb.append("Axis " + ax.toString() + " : " + step.toString());
+            }
+        }
+        return sb.toString();
+    }
+
     public String getLastErrorReason()
     {
         return lastErrorReason;
