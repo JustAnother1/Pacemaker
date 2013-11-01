@@ -54,6 +54,7 @@ public class ActionHandler extends Thread implements EventSource
     private HashMap<Integer, Printer> print = new HashMap<Integer, Printer>();
     private HashMap<Fan_enum, Fan> fans = new HashMap<Fan_enum, Fan>();
     private HashMap<Heater_enum, Heater> heaters = new HashMap<Heater_enum, Heater>();
+    private HashMap<Heater_enum, TemperatureSensor> TempSensors = new HashMap<Heater_enum, TemperatureSensor>();
 
     public ActionHandler(Cfg cfg)
     {
@@ -112,6 +113,16 @@ public class ActionHandler extends Thread implements EventSource
                 sb.append(he.toString() + " : " +  h.toString() + "\n");
             }
         }
+        sb.append("Configured Temperature Sensors:\n");
+        for (Heater_enum he : Heater_enum.values())
+        {
+            TemperatureSensor h = TempSensors.get(he);
+            if(null != h)
+            {
+                sb.append(he.toString() + " : " +  h.toString() + "\n");
+            }
+        }
+
         return "ActionHandler:\n" +
                "operational : " + isOperational + "\n" +
                "Last Error : " + lastErrorReason + " \n" +
@@ -166,6 +177,7 @@ public class ActionHandler extends Thread implements EventSource
                 print.put(i, new Printer(pro));
                 mapFans(di, pro, i);
                 mapHeaters(di, pro, i);
+                mapTemperatureSensos(di,pro,i);
                 move.addConnection(di, cfg, pro, i);
                 if(false == applyConfiguration(pro, i))
                 {
@@ -223,6 +235,20 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
+    private void mapTemperatureSensos(DeviceInformation di, Protocol pro, int connectionNumber)
+    {
+        for(int i = 0; i < di.getNumberTemperatureSensors(); i++)
+        {
+            Heater_enum func = cfg.getFunctionOfTemperatureSensor(connectionNumber, i);
+            if(null != func)
+            {
+                // this Temperature Sensor is used
+                TemperatureSensor s = new TemperatureSensor(pro, i);
+                TempSensors.put(func, s);
+            }
+        }
+    }
+
     private void mapHeaters(DeviceInformation di, Protocol pro, int connectionNumber)
     {
         for(int i = 0; i < di.getNumberHeaters(); i++)
@@ -237,22 +263,6 @@ public class ActionHandler extends Thread implements EventSource
                     h = new Heater();
                 }
                 h.setHeaterNumber(i, pro);
-                heaters.put(func, h);
-            }
-        }
-        for(int i = 0; i < di.getNumberTemperatureSensors(); i++)
-        {
-            Heater_enum func = cfg.getFunctionOfTemperatureSensor(connectionNumber, i);
-            if(null != func)
-            {
-                // this heater is used
-                Heater h = heaters.get(func);
-                if(null == h)
-                {
-                    h = new Heater();
-                }
-                TemperatureSensor tempSens = new TemperatureSensor(pro, i);
-                h.setTemperatureSenor(tempSens);
                 heaters.put(func, h);
             }
         }

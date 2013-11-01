@@ -70,7 +70,7 @@ public class Heater
     @Override
     public String toString()
     {
-        return "Heater num=" + num + ", sensor=" + sensor;
+        return "Heater num=" + num + ", sensor=" + sensor + ", pro=" + pro;
     }
 
 }

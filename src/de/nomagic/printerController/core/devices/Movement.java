@@ -309,18 +309,19 @@ public class Movement
                     if(Axis_enum.X == axis){ Xmoves = true; }
                     if(Axis_enum.Y == axis){ Ymoves = true; }
                     if(Axis_enum.Z == axis){ Zmoves = true; }
+                    // find the protocols affected by this move
+                    prots = motor.addActiveProtocolIndexes(prots);
                 }
             }
             // else no Motor on this axis (F,..)
-            // find the protocols affected by this move
-            prots = motor.addActiveProtocolIndexes(prots);
         }
 
         int maxAcceleration = getMaxAccelerationFor(Xmoves, Ymoves, Zmoves);
 
         //TODO travel_speed
+        log.error("TODO");
         // TODO end_speed
-
+        log.error("TODO");
 
         // with every protocol
         int numProts = prots.size();
@@ -343,6 +344,7 @@ public class Movement
             {
                 // send the command
                 // TODO
+                log.error("TODO");
             }
         }
         return true;
@@ -376,6 +378,7 @@ public class Movement
         // Empty Array -> home all Axis
         // else home all Axis in Array
         // TODO Auto-generated method stub
+        log.error("TODO");
         return false;
     }
 
@@ -383,6 +386,7 @@ public class Movement
     public boolean isHoming()
     {
         // TODO
+        log.error("TODO");
         return false;
     }
 
