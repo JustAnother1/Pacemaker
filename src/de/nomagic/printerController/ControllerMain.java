@@ -190,7 +190,7 @@ public class ControllerMain implements CloseApplication
                     new InputStreamReader(fis, Charset.forName("UTF-8")) );
             while ((line = br.readLine()) != null)
             {
-                System.out.print("\rNow sending Line " + linecount);
+                System.out.print("\rNow sending Line " + linecount + "  ");
                 linecount ++;
                 if(false == pp.executeGCode(line))
                 {
