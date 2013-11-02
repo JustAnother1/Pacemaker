@@ -517,7 +517,8 @@ The *Unrecoverable* state code indicates a fatal, unrecoverable error. A Reset O
 | 0x5 | Electrical fault (e.g., supply voltage out of range)
 | 0x6 | Firmware fault (e.g., out of memory, fatal error)
 | 0x7 | User requested (e.g., emergency stop button hit)
-| 0x8 | Other fault
+| 0x8 | Host Timeout
+| 0x9 | Other fault
 |=============================
 
 The *Reset* state code is a specific case indication for the Stopped condition due to a Reset Order or the initial power on condition. A Resume Order should be successful (i.e., the Recovery Option value should be equal to "One time event or condition cleared.").
@@ -535,7 +536,7 @@ It should be remembered that unsolicited frames are not acknowledged so delivery
 
 ==== Debug Message (0x50)
 
-This unsolicited client frame simply contains an utf8 string with debug-related information. The primarily intention of this frame is to better support development by providing a non-delayed output message mechanism from the client. 
+This unsolicited client frame simply contains an utf8 string with debug-related information. The primarily intention of this frame is to better support development by providing a non-delayed output message mechanism from the client.
 Any Parameter data following a 0x00 value in the message should be treated as binary data and displayed using a hexidecimal representation. The 0x00 value is not considered part of the data.
 
 Text output which is intended for a normal user should be sent using the reliable delivery mechanism provided by the Event extension.
@@ -610,7 +611,7 @@ The first byte of the Parameter indicates whether the host wants to Acknowledge(
 
 .Replies
 - OK: The Stopped state has been successfully cleared.
-- Stopped: The stopped state was not cleared either because the condition persists, is unrecoverable or the Resume only requested that the Stopped state is acknowledged (see Reply Code description for content). 
+- Stopped: The stopped state was not cleared either because the condition persists, is unrecoverable or the Resume only requested that the Stopped state is acknowledged (see Reply Code description for content).
 
 ==== Request Information (0x01)
 
@@ -640,6 +641,7 @@ The requested Information is specified in the parameter as shown in the followin
 |  10 | hardware type
 |  11 | hardware revision
 |  12 | maximum supported step rate
+|  13 | host timeout
 | 0x80-0xfe | Experimental/unapproved requestable information
 |================================================
 
@@ -676,6 +678,8 @@ The *hardware revision* defines the Hardware revision.
 
 The *maximum supported step rate* returns the maximum supported step rate of the client for any axis (in steps per second).
 
+The *host timeout* returns the maximum allowed pause(in seconds) between two orders from the host. If the client detectzs a longer pause with no data arriving from the host the client will enter the stopped mode. This is a safety guard against a malfunctioning/crashed host application.
+
 .Hardware Types
 [width="50%",options="header", cols="30%,70%"]
 |================================================
@@ -704,7 +708,7 @@ This order requests the number of available devices of a particular type (e.g., 
 |=============================
 
 .Replies
-- OK: The Reply consists of a 1 byte unsigned integer number indicating the number of available devices of that type. 
+- OK: The Reply consists of a 1 byte unsigned integer number indicating the number of available devices of that type.
 - Invalid Device Type: The requested device type is unknown or unsupported by the client.
 
 ==== Request Device Name (0x02)
@@ -1462,7 +1466,7 @@ An emergency stop will require the host to re-home axes to determine its positio
 
 ==== Configure Axis Movement Rates (0x13)
 
-This specifies a 4-byte maximum movement rate value (in steps per second) for each stepper. This value is used when the stepper is selected as the primary axis for a linear move command block. 
+This specifies a 4-byte maximum movement rate value (in steps per second) for each stepper. This value is used when the stepper is selected as the primary axis for a linear move command block.
 
 A stepper must be configured with a non-zero maximum movement rate before it can be selected as a primary axis in a linear move block.
 
@@ -1504,7 +1508,7 @@ A stepper must be configured to have non-zero underrun maximum movement and acce
 |=============================
 | Length In Bytes | Content
 | 1 | stepper number
-| 4 | maximum movement rate (in steps per second) during underrun avoidance 
+| 4 | maximum movement rate (in steps per second) during underrun avoidance
 | 4 | acceleration/deceleration rate for underrun avoidance (in steps per second per second)
 |=============================
 
