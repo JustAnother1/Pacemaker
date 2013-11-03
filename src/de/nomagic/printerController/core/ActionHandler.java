@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -184,6 +185,7 @@ public class ActionHandler extends Thread implements EventSource
                     return false;
                 }
                 // else go on with next client
+                readConfigurationFromClient(pro);
             }
             catch(IOException e)
             {
@@ -193,6 +195,29 @@ public class ActionHandler extends Thread implements EventSource
             }
         }
         return true;
+    }
+
+    private void readConfigurationFromClient(Protocol pro)
+    {
+        Vector<String> settings = new Vector<String>();
+        String curSetting = "";
+        // get all the settings
+        do{
+            curSetting =  pro.traverseFirmwareConfiguration(curSetting);
+            if(0 < curSetting.length())
+            {
+                settings.add(curSetting);
+            }
+        } while(0 < curSetting.length());
+        // get parameters for settings
+        log.info("Firmware Specific Settings:");
+        for(int i = 0; i < settings.size(); i++)
+        {
+            String allInfo = pro.getCompleteDescriptionForSetting(settings.get(i));
+            String Value = pro.readFirmwareConfigurationValue(settings.get(i));
+            log.info("" + i + " : " + allInfo + " = " + Value);
+        }
+        log.info("end of List");
     }
 
     private boolean applyConfiguration(Protocol pro, int connectionNumber)

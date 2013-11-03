@@ -262,11 +262,6 @@ public class ProtocolClient
                 sendOK();
                 break;
 
-            case Protocol.ORDER_HOME_AXES:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
-                break;
-
                 // Queued Command Extension
             case Protocol.ORDER_QUEUE_COMMAND_BLOCKS:
                 System.err.println("Order not implemented in this state !");

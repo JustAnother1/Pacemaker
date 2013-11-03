@@ -15,6 +15,7 @@
 package de.nomagic.printerController.pacemaker;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Vector;
 
@@ -46,14 +47,39 @@ public class Protocol
 // Host
     public final static int START_OF_HOST_FRAME = 0x23;
 
-    public final static byte ORDER_RESET = (byte)0x7f;
     public final static byte ORDER_RESUME = 0;
+    public final static byte ORDER_REQ_INFORMATION = 1;
+    public final static byte ORDER_REQ_DEVICE_NAME = 2;
+    public final static byte ORDER_REQ_TEMPERATURE = 3;
+    public final static byte ORDER_GET_HEATER_CONFIGURATION = 4;
+    public final static byte ORDER_CONFIGURE_HEATER = 5;
+    public final static byte ORDER_SET_HEATER_TARGET_TEMPERATURE = 6;
+    public final static byte ORDER_REQ_INPUT = 7;
+    public final static byte ORDER_SET_OUTPUT = 8;
+    public final static byte ORDER_SET_PWM = 9;
+    public final static byte ORDER_WRITE_FIRMWARE_CONFIGURATION = 0x0A;
+    public final static byte ORDER_READ_FIRMWARE_CONFIGURATION = 0x0B;
+    public final static byte ORDER_STOP_PRINT = 0x0C;
+    public final static byte ORDER_ACTIVATE_STEPPER_CONTROL = 0x0D;
+    public final static byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS = 0x0E;
+    public final static byte ORDER_CONFIGURE_END_STOPS = 0x0F;
+    public final static byte ORDER_ENABLE_DISABLE_END_STOPS = 0x10;
+    public final static byte ORDER_REQUEST_DEVICE_COUNT                             = 0x11;
+    public final static byte ORDER_QUEUE_COMMAND_BLOCKS = 0x12;
+    public final static byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES = 0x13;
+    public final static byte ORDER_RETRIEVE_EVENTS = 0x14;
+    public final static byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS = 0x15;
+    public final static byte ORDER_GET_EVENT_STRING_FORMAT_ID                       = 0x16;
+    public final static byte ORDER_CLEAR_COMMAND_BLOCK_QUEUE                        = 0x17;
+    public final static byte ORDER_REQUEST_DEVICE_STATUS                            = 0x18;
+    public final static byte ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS = 0x19;
+    public final static byte ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES      = 0x1a;
+    public final static byte ORDER_TRAVERSE_FIMRWARE_CONFIGURATION_VALUES           = 0x1b;
+    public final static byte ORDER_RESET                                            = (byte)0x7f;
+
     public final static byte QUERY_STOPPED_STATE = 0;
     public final static byte ACKNOWLEADGE_STOPPED_STATE = 1;
     public final static byte CLEAR_STOPPED_STATE = 2;
-
-    public final static byte ORDER_REQ_INFORMATION = 1;
-
     public final static int INFO_FIRMWARE_NAME_STRING = 0;
     public final static int INFO_SERIAL_NUMBER_STRING = 1;
     public final static int INFO_BOARD_NAME_STRING = 2;
@@ -79,47 +105,15 @@ public class Protocol
     public final static int INFO_NUMBER_INPUT = 16;
     public final static int INFO_NUMBER_OUTPUT = 17;
     public final static int INFO_NUMBER_BUZZER = 18;
-
-    public final static byte ORDER_REQ_DEVICE_NAME = 2;
-    public final static byte ORDER_REQ_TEMPERATURE = 3;
-    public final static byte ORDER_GET_HEATER_CONFIGURATION = 4;
-    public final static byte ORDER_CONFIGURE_HEATER = 5;
-    public final static byte ORDER_SET_HEATER_TARGET_TEMPERATURE = 6;
-    public final static byte ORDER_REQ_INPUT = 7;
     public final static byte INPUT_HIGH = 1;
     public final static byte INPUT_LOW = 0;
-    public final static byte ORDER_SET_OUTPUT = 8;
-    public final static byte ORDER_SET_PWM = 9;
-    public final static byte ORDER_WRITE_FIRMWARE_CONFIGURATION = 0x0A;
-    public final static byte ORDER_READ_FIRMWARE_CONFIGURATION = 0x0B;
-    public final static byte ORDER_STOP_PRINT = 0x0C;
     public final static byte ORDERED_STOP = 0;
     public final static byte EMERGENCY_STOP = 1;
-
-    // Extension Stepper Control
-    public final static byte ORDER_ACTIVATE_STEPPER_CONTROL = 0x0D;
-    public final static byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS = 0x0E;
-    public final static byte ORDER_CONFIGURE_END_STOPS = 0x0F;
-    public final static byte ORDER_ENABLE_DISABLE_END_STOPS = 0x10;
-    public final static byte ORDER_HOME_AXES = 0x11;
     public final static int DIRECTION_INCREASING = 1;
     public final static int DIRECTION_DECREASING = 0;
-
-    // Extension Queue Command
-    public final static byte ORDER_QUEUE_COMMAND_BLOCKS = 0x12;
     public final static byte MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER = 0x01;
     public final static byte MOVEMENT_BLOCK_TYPE_DELAY = 0x02;
     public final static byte MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD = 0x03;
-
-    // Extension: basic move
-    public final static byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES = 0x13;
-
-    // Extension: Event Reporting
-    public final static byte ORDER_RETRIEVE_EVENTS = 0x14;
-    public final static byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS = 0x15;
-    public final static byte ORDER_GET_EVENT_STRING_FORMAT_ID = 0x16;
-
-    public final static byte ORDER_MAX_ORDER = 0x16;
 
 // Client
     public final static int START_OF_CLIENT_FRAME = 0x42;
@@ -207,6 +201,22 @@ public class Protocol
         {
             // take client out of Stopped Mode
             isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
+        }
+    }
+
+    public static String getDeviceTypeName(int deviceType)
+    {
+        switch(deviceType)
+        {
+        case DEVICE_TYPE_UNUSED:             return "unused";
+        case DEVICE_TYPE_INPUT:              return "input";
+        case DEVICE_TYPE_OUTPUT:             return "output";
+        case DEVICE_TYPE_PWM_OUTPUT:         return "PWM output(fan,..)";
+        case DEVICE_TYPE_STEPPER:            return "stepper motor";
+        case DEVICE_TYPE_HEATER:             return "heater";
+        case DEVICE_TYPE_TEMPERATURE_SENSOR: return "temperature sensor";
+        case DEVICE_TYPE_BUZZER:             return "buzzer";
+        default:                             return "undefined";
         }
     }
 
@@ -807,6 +817,164 @@ public class Protocol
     public String getLastErrorReason()
     {
         return lastErrorReason;
+    }
+
+
+    public final static int FIRMWARE_SETTING_TYPE_VOLATILE_CONFIGURATION = 0;
+    public final static int FIRMWARE_SETTING_TYPE_NON_VOLATILE_CONFIGURATION = 1;
+    public final static int FIRMWARE_SETTING_TYPE_STATISTIC = 2;
+    public final static int FIRMWARE_SETTING_TYPE_SWITCH = 3;
+    public final static int FIRMWARE_SETTING_TYPE_DEBUG = 4;
+
+    public String getCompleteDescriptionForSetting(String curSetting)
+    {
+        if(null == curSetting)
+        {
+            return "";
+        }
+        byte[] strbuf;
+        if(0 < curSetting.length())
+        {
+            strbuf = curSetting.getBytes(Charset.forName("UTF-8"));
+        }
+        else
+        {
+            return "";
+        }
+        final Reply r = cc.sendRequest(ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES, strbuf);
+        if(null == r)
+        {
+            return "";
+        }
+        if((false == r.isOKReply()) || (false == r.isValid()))
+        {
+            return "";
+        }
+        byte[] res = r.getParameter();
+        if(null == res)
+        {
+            return "";
+        }
+        if(res.length < 4)
+        {
+            return "";
+        }
+        int ElementType = 0xff & res[0];
+        int ElementModes = 0xff & res[1];
+        int DeviceType = 0xff & res[2];
+        int DeviceNumber = 0xff & res[3];
+        StringBuffer description = new StringBuffer();
+        description.append(curSetting);
+        description.append("(");
+        switch(ElementType)
+        {
+        case FIRMWARE_SETTING_TYPE_VOLATILE_CONFIGURATION:description.append("volatile configuration"); break;
+        case FIRMWARE_SETTING_TYPE_NON_VOLATILE_CONFIGURATION:description.append("non volatile configuration"); break;
+        case FIRMWARE_SETTING_TYPE_STATISTIC:description.append("status"); break;
+        case FIRMWARE_SETTING_TYPE_SWITCH:description.append("feature switch"); break;
+        case FIRMWARE_SETTING_TYPE_DEBUG:description.append("diagnostic"); break;
+        default:
+            description.append("invalid Type");
+            break;
+        }
+        description.append(",");
+        if(1 == (ElementModes & 0x01))
+        {
+            description.append("r");
+        }
+        if(2 == (ElementModes & 0x02))
+        {
+            description.append("w");
+        }
+        if(4 == (ElementModes & 0x04))
+        {
+            description.append("d");
+        }
+        description.append(",");
+        description.append(getDeviceTypeName(DeviceType));
+        description.append(",");
+        description.append(DeviceNumber);
+        return description.toString();
+    }
+
+    public String traverseFirmwareConfiguration(String curSetting)
+    {
+        if(null == curSetting)
+        {
+            curSetting = "";
+        }
+        byte[] strbuf;
+        if(0 < curSetting.length())
+        {
+            strbuf = curSetting.getBytes(Charset.forName("UTF-8"));
+        }
+        else
+        {
+            strbuf = new byte[0];
+        }
+        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIMRWARE_CONFIGURATION_VALUES, strbuf);
+        if(null == r)
+        {
+            return "";
+        }
+        if((false == r.isOKReply()) || (false == r.isValid()))
+        {
+            return "";
+        }
+        byte[] res = r.getParameter();
+        if(null == res)
+        {
+            return "";
+        }
+        try
+        {
+            return new String(res, "UTF-8");
+        }
+        catch(UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+            return "";
+        }
+    }
+
+    public String readFirmwareConfigurationValue(String curSetting)
+    {
+        if(null == curSetting)
+        {
+            return "";
+        }
+        byte[] strbuf;
+        if(0 < curSetting.length())
+        {
+            strbuf = curSetting.getBytes(Charset.forName("UTF-8"));
+        }
+        else
+        {
+            return "";
+        }
+        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIMRWARE_CONFIGURATION_VALUES, strbuf);
+        if(null == r)
+        {
+            return "";
+        }
+        if((false == r.isOKReply()) || (false == r.isValid()))
+        {
+            return "";
+        }
+        byte[] res = r.getParameter();
+        if(null == res)
+        {
+            return "";
+        }
+        try
+        {
+            return new String(res, "UTF-8");
+        }
+        catch(UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+            return "";
+        }
     }
 
 }
