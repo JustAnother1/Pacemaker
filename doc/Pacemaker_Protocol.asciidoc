@@ -1016,7 +1016,7 @@ Reading the configuration named "Power" would result in this parameter value:
 |=============================
 
 .Replies
-- OK: Successful read. Parameter contains value.
+- OK: Successful read. Parameter contains value as a utf8 string.
 - Bad Parameter Value: Bad configuration name
 - Failed: Read operation failed
 
