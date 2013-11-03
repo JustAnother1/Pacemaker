@@ -166,6 +166,12 @@ public class Protocol
     public final static byte DEVICE_TYPE_TEMPERATURE_SENSOR = 6;
     public final static byte DEVICE_TYPE_BUZZER = 7;
 
+    public final static int FIRMWARE_SETTING_TYPE_VOLATILE_CONFIGURATION = 0;
+    public final static int FIRMWARE_SETTING_TYPE_NON_VOLATILE_CONFIGURATION = 1;
+    public final static int FIRMWARE_SETTING_TYPE_STATISTIC = 2;
+    public final static int FIRMWARE_SETTING_TYPE_SWITCH = 3;
+    public final static int FIRMWARE_SETTING_TYPE_DEBUG = 4;
+
     ////////////////////////////////////////////////////////////////////////////
     // end of Magic Number from Protocol Definition
     ////////////////////////////////////////////////////////////////////////////
@@ -818,13 +824,6 @@ public class Protocol
     {
         return lastErrorReason;
     }
-
-
-    public final static int FIRMWARE_SETTING_TYPE_VOLATILE_CONFIGURATION = 0;
-    public final static int FIRMWARE_SETTING_TYPE_NON_VOLATILE_CONFIGURATION = 1;
-    public final static int FIRMWARE_SETTING_TYPE_STATISTIC = 2;
-    public final static int FIRMWARE_SETTING_TYPE_SWITCH = 3;
-    public final static int FIRMWARE_SETTING_TYPE_DEBUG = 4;
 
     public String getCompleteDescriptionForSetting(String curSetting)
     {
