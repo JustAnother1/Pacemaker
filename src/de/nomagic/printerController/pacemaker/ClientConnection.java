@@ -187,6 +187,11 @@ public abstract class ClientConnection extends Thread
                 }
             }
         } while((true == needsToRetransmitt) && (numberOfTransmissions < MAX_TRANSMISSIONS));
+        if(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR == r.getReplyCode())
+        {
+            // Do some logging
+            log.error("Generic Application Error : " + r.getParameterAsString(1));
+        }
         return r;
     }
 
@@ -378,14 +383,6 @@ public abstract class ClientConnection extends Thread
                     continue;
                 }
 
-                if(Protocol.RESPONSE_MAX < reply)
-                {
-                    // Protocol Error
-                    log.error("Invalid reply code !");
-                    isSynced = false;
-                    continue;
-                }
-
                 if((control & 0xf) != sequenceNumber)
                 {
                     // debug frames might not always have the correct sequence number.
@@ -416,6 +413,10 @@ public abstract class ClientConnection extends Thread
                 if(true == curReply.isDebugFrame())
                 {
                     log.info(curReply.toString());
+                    if(Protocol.RESPONSE_DEBUG_FRAME_NEW_EVENT == curReply.getReplyCode())
+                    {
+                        //TODO react to the new event
+                    }
                 }
                 else
                 {

@@ -157,6 +157,9 @@ public class Protocol
     public final static int SENSOR_PROBLEM = 0x7fff;
     public final static int RESPONSE_MAX = 0x13;
 
+    public final static byte RESPONSE_DEBUG_FRAME_DEBUG_MESSAGE = 0x50;
+    public final static byte RESPONSE_DEBUG_FRAME_NEW_EVENT = 0x51;
+
     public final static byte DEVICE_TYPE_UNUSED = 0;
     public final static byte DEVICE_TYPE_INPUT = 1;
     public final static byte DEVICE_TYPE_OUTPUT = 2;

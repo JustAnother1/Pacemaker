@@ -52,7 +52,22 @@ public class Reply
     @Override
     public String toString()
     {
-        return "Reply " + Tool.fromByteBufferToHexString(data);
+        if(true == isDebugFrame())
+        {
+            switch(getReplyCode())
+            {
+            case Protocol.RESPONSE_DEBUG_FRAME_DEBUG_MESSAGE:
+                return "Reply : " + getParameterAsString(0);
+
+            case Protocol.RESPONSE_DEBUG_FRAME_NEW_EVENT:
+                // TODO
+            default:return "Reply " + Tool.fromByteBufferToHexString(data);
+            }
+        }
+        else
+        {
+            return "Reply " + Tool.fromByteBufferToHexString(data);
+        }
     }
 
     public byte getReplyCode()
