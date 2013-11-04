@@ -238,7 +238,7 @@ public class ActionHandler extends Thread implements EventSource
                 String setting = its.next();
                 if(false == pro.writeFirmwareConfigurationValue(setting, settings.get(setting)))
                 {
-                    log.error("Failed to apply Fimrware specific configuration!");
+                    log.error("Failed to apply Firmware specific configuration!");
                     return false;
                 }
             }

@@ -74,7 +74,7 @@ public class Protocol
     public final static byte ORDER_REQUEST_DEVICE_STATUS                            = 0x18;
     public final static byte ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS = 0x19;
     public final static byte ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES      = 0x1a;
-    public final static byte ORDER_TRAVERSE_FIMRWARE_CONFIGURATION_VALUES           = 0x1b;
+    public final static byte ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES           = 0x1b;
     public final static byte ORDER_RESET                                            = (byte)0x7f;
 
     public final static byte QUERY_STOPPED_STATE = 0;
@@ -818,7 +818,7 @@ public class Protocol
         }
         if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter))
         {
-            log.error("Failed to write Fimrware Setting {} = {} !", name, value);
+            log.error("Failed to write Firmware Setting {} = {} !", name, value);
             return false;
         }
         else
@@ -918,7 +918,7 @@ public class Protocol
         {
             strbuf = new byte[0];
         }
-        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIMRWARE_CONFIGURATION_VALUES, strbuf);
+        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES, strbuf);
         if(null == r)
         {
             return "";
@@ -958,7 +958,7 @@ public class Protocol
         {
             return "";
         }
-        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIMRWARE_CONFIGURATION_VALUES, strbuf);
+        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES, strbuf);
         if(null == r)
         {
             return "";
