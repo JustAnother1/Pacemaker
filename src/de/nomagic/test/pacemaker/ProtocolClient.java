@@ -285,6 +285,11 @@ public class ProtocolClient
                 sendOK();
                 break;
 
+            case Protocol.ORDER_REQUEST_DEVICE_COUNT:
+                System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
             // New Orders go here
             default:
                 System.err.println("Received Invalid Order Code : " +  order);
@@ -623,6 +628,8 @@ public class ProtocolClient
             case Protocol.INFO_FIRMWARE_REVISION_MINOR:sendByte(hw.getFirmwareRevisionMinor()); break;
             case Protocol.INFO_HARDWARE_TYPE:sendByte(hw.getHardwareType()); break;
             case Protocol.INFO_HARDWARE_REVISION:sendByte(hw.getHardwareRevision()); break;
+            case Protocol.INFO_MAX_STEP_RATE:sendByte(hw.getMaxStepRate()); break;
+            case Protocol.INFO_HOST_TIMEOUT:sendByte(hw.getHostTimeout()); break;
             default:
                 sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                           Protocol.RESPONSE_BAD_PARAMETER_VALUE);

@@ -55,4 +55,6 @@ public interface Hardware
     void setOutputTo(int devIdx, int state);
     void setPwmTo(int devIdx, int pwm);
     boolean isAllowedToControlSteppers();
+    int getMaxStepRate();
+    int getHostTimeout();
 }

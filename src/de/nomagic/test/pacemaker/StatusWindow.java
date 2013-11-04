@@ -436,4 +436,18 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
         return true;
     }
 
+    @Override
+    public int getMaxStepRate()
+    {
+        // TODO
+        return 42000;
+    }
+
+    @Override
+    public int getHostTimeout()
+    {
+        // TODO
+        return 10;
+    }
+
 }
