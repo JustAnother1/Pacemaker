@@ -190,7 +190,23 @@ public abstract class ClientConnection extends Thread
         if(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR == r.getReplyCode())
         {
             // Do some logging
-            log.error("Generic Application Error : " + r.getParameterAsString(1));
+            byte[] para = r.getParameter();
+            String type = "";
+            switch(para[0])
+            {
+            case Protocol.RESPONSE_UNKNOWN_ORDER:          type = "unknown order"; break;
+            case Protocol.RESPONSE_BAD_PARAMETER_FORMAT:   type = "bad parameter format"; break;
+            case Protocol.RESPONSE_BAD_PARAMETER_VALUE:    type = "bad parameter value"; break;
+            case Protocol.RESPONSE_INVALID_DEVICE_TYPE:    type = "wrong device type"; break;
+            case Protocol.RESPONSE_INVALID_DEVICE_NUMBER:  type = "wrong device number"; break;
+            case Protocol.RESPONSE_INCORRECT_MODE:         type = "wrong mode"; break;
+            case Protocol.RESPONSE_BUSY:                   type = "busy"; break;
+            case Protocol.RESPONSE_FAILED:                 type = "failed"; break;
+            case Protocol.RESPONSE_FIRMWARE_ERROR:         type = "firmware error"; break;
+            case Protocol.RESPONSE_CANNOT_ACTIVATE_DEVICE: type = "can not activate device"; break;
+            default:                                       type = "" + (0xff & para[0]); break;
+            }
+            log.error("Generic Application Error : " + type  + " " + r.getParameterAsString(1));
         }
         return r;
     }
