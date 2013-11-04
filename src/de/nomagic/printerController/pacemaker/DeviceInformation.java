@@ -27,6 +27,8 @@ public class DeviceInformation
     private int FirmwareRevisionMinor = -1;
     private int HardwareType = -1;
     private int HardwareRevision = -1;
+    private int maxSteppsPerSecond = -1;
+    private int hostTimeoutSeconds = -1;
     private int NumberSteppers = -1;
     private int NumberHeaters = -1;
     private int NumberPwmSwitchedOutputs = -1;
@@ -97,6 +99,8 @@ public class DeviceInformation
         "Firmware Revision = " + FirmwareRevisionMajor + "." + FirmwareRevisionMinor + "\n" +
         "Hardware Type = " + HardwareType + "\n" +
         "Hardware Revision = " + HardwareRevision + "\n" +
+        "max. steps per second = " + maxSteppsPerSecond + "\n" +
+        "host timeout = " + hostTimeoutSeconds + " seconds\n" +
         "Number of Steppers = " + NumberSteppers + "\n" +
         "Number of Heaters = " + NumberHeaters + "\n" +
         "Number of PWM switched Outputs = " + NumberPwmSwitchedOutputs + "\n" +
@@ -110,6 +114,40 @@ public class DeviceInformation
     private int readValueOf(int which, String Name) throws IOException
     {
         int res = requestInteger(which);
+        if(0 > res)
+        {
+            log.error("Could not read the {} !", Name);
+        }
+        return res;
+    }
+
+    private int readDeviceCount(int device, String Name) throws IOException
+    {
+
+        final Reply r = pro.sendDeviceCountRequest(device);
+        if(null == r)
+        {
+            hasBeenRead = false;
+            return -1;
+        }
+        if(false == r.isOKReply())
+        {
+            hasBeenRead = false;
+            return -4;
+        }
+        final byte[] p = r.getParameter();
+        if(null == p)
+        {
+            hasBeenRead = false;
+            return -2;
+        }
+        int res = -3;
+        switch(p.length)
+        {
+        case 1: res = 0xff & p[0]; break;
+        case 2: res = ((0xff & p[0])*256) + (0xff & p[1]); break;
+        }
+
         if(0 > res)
         {
             log.error("Could not read the {} !", Name);
@@ -174,23 +212,27 @@ public class DeviceInformation
         if(false == hasBeenRead) { return false;}
         FirmwareRevisionMinor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MINOR, "Firmware Revision Minor");
         if(false == hasBeenRead) { return false;}
-        HardwareType = readValueOf(Protocol.INFO_FIRMWARE_TYPE, "Hardware Type");
+        HardwareType = readValueOf(Protocol.INFO_HARDWARE_TYPE, "Hardware Type");
         if(false == hasBeenRead) { return false;}
-        HardwareRevision =readValueOf(Protocol.INFO_HARDWARE_REVISION, "Hardware Revision");
+        HardwareRevision = readValueOf(Protocol.INFO_HARDWARE_REVISION, "Hardware Revision");
         if(false == hasBeenRead) { return false;}
-        NumberSteppers = readValueOf(Protocol.INFO_NUMBER_STEPPERS, "number of stepper motors");
+        maxSteppsPerSecond = readValueOf(Protocol.INFO_MAX_STEP_RATE_, "maximum supported step rate");
         if(false == hasBeenRead) { return false;}
-        NumberHeaters = readValueOf(Protocol.INFO_NUMBER_HEATERS, "number of Heaters");
+        hostTimeoutSeconds = readValueOf(Protocol.INFO_HOST_TIMEOUT, "host timeout");
         if(false == hasBeenRead) { return false;}
-        NumberPwmSwitchedOutputs = readValueOf(Protocol.INFO_NUMBER_PWM, "number of PWM switched Outputs");
+        NumberSteppers = readDeviceCount(Protocol.DEVICE_TYPE_STEPPER, "number of stepper motors");
         if(false == hasBeenRead) { return false;}
-        NumberTemperatureSensors = readValueOf(Protocol.INFO_NUMBER_TEMP_SENSOR, "number of Temperature Sensors");
+        NumberHeaters = readDeviceCount(Protocol.DEVICE_TYPE_HEATER, "number of Heaters");
         if(false == hasBeenRead) { return false;}
-        NumberSwitches = readValueOf(Protocol.INFO_NUMBER_INPUT, "number of Switches");
+        NumberPwmSwitchedOutputs = readDeviceCount(Protocol.DEVICE_TYPE_PWM_OUTPUT, "number of PWM switched Outputs");
         if(false == hasBeenRead) { return false;}
-        NumberOutputSignals = readValueOf(Protocol.INFO_NUMBER_OUTPUT, "number of Output Signals");
+        NumberTemperatureSensors = readDeviceCount(Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR, "number of Temperature Sensors");
         if(false == hasBeenRead) { return false;}
-        NumberBuzzer = readValueOf(Protocol.INFO_NUMBER_BUZZER, "number of buzzers");
+        NumberSwitches = readDeviceCount(Protocol.DEVICE_TYPE_INPUT, "number of Switches");
+        if(false == hasBeenRead) { return false;}
+        NumberOutputSignals = readDeviceCount(Protocol.DEVICE_TYPE_OUTPUT, "number of Output Signals");
+        if(false == hasBeenRead) { return false;}
+        NumberBuzzer = readDeviceCount(Protocol.DEVICE_TYPE_BUZZER, "number of buzzers");
         if(false == hasBeenRead) { return false;}
         return hasBeenRead;
     }
@@ -278,8 +320,10 @@ public class DeviceInformation
         int res = -3;
         switch(p.length)
         {
-        case 1: res = p[0]; break;
-        case 2: res = (p[0]*256) + p[1]; break;
+        case 1: res = 0xff & p[0]; break;
+        case 2: res = ((0xff & p[0])*256) + (0xff & p[1]); break;
+        case 3: res = ((0xff & p[0])*256*256) + ((0xff & p[1])*256) + (0xff & p[2]); break;
+        case 4: res = ((0xff & p[0])*256*256*256) + ((0xff & p[1])*256*256) + ((0xff & p[2])*256) + (0xff & p[3]); break;
         }
         return res;
     }
@@ -573,6 +617,16 @@ public class DeviceInformation
     public int getNumberBuzzer()
     {
         return NumberBuzzer;
+    }
+
+    public int getMaxSteppsPerSecond()
+    {
+        return maxSteppsPerSecond;
+    }
+
+    public int getHostTimeoutSeconds()
+    {
+        return hostTimeoutSeconds;
     }
 
 }

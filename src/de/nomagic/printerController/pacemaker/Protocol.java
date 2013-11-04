@@ -47,28 +47,28 @@ public class Protocol
 // Host
     public final static int START_OF_HOST_FRAME = 0x23;
 
-    public final static byte ORDER_RESUME = 0;
-    public final static byte ORDER_REQ_INFORMATION = 1;
-    public final static byte ORDER_REQ_DEVICE_NAME = 2;
-    public final static byte ORDER_REQ_TEMPERATURE = 3;
-    public final static byte ORDER_GET_HEATER_CONFIGURATION = 4;
-    public final static byte ORDER_CONFIGURE_HEATER = 5;
-    public final static byte ORDER_SET_HEATER_TARGET_TEMPERATURE = 6;
-    public final static byte ORDER_REQ_INPUT = 7;
-    public final static byte ORDER_SET_OUTPUT = 8;
-    public final static byte ORDER_SET_PWM = 9;
-    public final static byte ORDER_WRITE_FIRMWARE_CONFIGURATION = 0x0A;
-    public final static byte ORDER_READ_FIRMWARE_CONFIGURATION = 0x0B;
-    public final static byte ORDER_STOP_PRINT = 0x0C;
-    public final static byte ORDER_ACTIVATE_STEPPER_CONTROL = 0x0D;
-    public final static byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS = 0x0E;
-    public final static byte ORDER_CONFIGURE_END_STOPS = 0x0F;
-    public final static byte ORDER_ENABLE_DISABLE_END_STOPS = 0x10;
+    public final static byte ORDER_RESUME                                           = 0;
+    public final static byte ORDER_REQ_INFORMATION                                  = 1;
+    public final static byte ORDER_REQ_DEVICE_NAME                                  = 2;
+    public final static byte ORDER_REQ_TEMPERATURE                                  = 3;
+    public final static byte ORDER_GET_HEATER_CONFIGURATION                         = 4;
+    public final static byte ORDER_CONFIGURE_HEATER                                 = 5;
+    public final static byte ORDER_SET_HEATER_TARGET_TEMPERATURE                    = 6;
+    public final static byte ORDER_REQ_INPUT                                        = 7;
+    public final static byte ORDER_SET_OUTPUT                                       = 8;
+    public final static byte ORDER_SET_PWM                                          = 9;
+    public final static byte ORDER_WRITE_FIRMWARE_CONFIGURATION                     = 0x0A;
+    public final static byte ORDER_READ_FIRMWARE_CONFIGURATION                      = 0x0B;
+    public final static byte ORDER_STOP_PRINT                                       = 0x0C;
+    public final static byte ORDER_ACTIVATE_STEPPER_CONTROL                         = 0x0D;
+    public final static byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS                    = 0x0E;
+    public final static byte ORDER_CONFIGURE_END_STOPS                              = 0x0F;
+    public final static byte ORDER_ENABLE_DISABLE_END_STOPS                         = 0x10;
     public final static byte ORDER_REQUEST_DEVICE_COUNT                             = 0x11;
-    public final static byte ORDER_QUEUE_COMMAND_BLOCKS = 0x12;
-    public final static byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES = 0x13;
-    public final static byte ORDER_RETRIEVE_EVENTS = 0x14;
-    public final static byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS = 0x15;
+    public final static byte ORDER_QUEUE_COMMAND_BLOCKS                             = 0x12;
+    public final static byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES                    = 0x13;
+    public final static byte ORDER_RETRIEVE_EVENTS                                  = 0x14;
+    public final static byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS                      = 0x15;
     public final static byte ORDER_GET_EVENT_STRING_FORMAT_ID                       = 0x16;
     public final static byte ORDER_CLEAR_COMMAND_BLOCK_QUEUE                        = 0x17;
     public final static byte ORDER_REQUEST_DEVICE_STATUS                            = 0x18;
@@ -97,13 +97,9 @@ public class Protocol
     public final static int INFO_FIRMWARE_REVISION_MINOR = 9;
     public final static int INFO_HARDWARE_TYPE = 10;
     public final static int INFO_HARDWARE_REVISION = 11;
-    public final static int INFO_NUMBER_STEPPERS = 12;
-    public final static int INFO_NUMBER_HEATERS = 13;
-    public final static int INFO_NUMBER_PWM = 14;
-    public final static int INFO_NUMBER_TEMP_SENSOR = 15;
-    public final static int INFO_NUMBER_INPUT = 16;
-    public final static int INFO_NUMBER_OUTPUT = 17;
-    public final static int INFO_NUMBER_BUZZER = 18;
+    public final static int INFO_MAX_STEP_RATE_= 12;
+    public final static int INFO_HOST_TIMEOUT = 13;
+
     public final static byte INPUT_HIGH = 1;
     public final static byte INPUT_LOW = 0;
     public final static byte ORDERED_STOP = 0;
@@ -254,6 +250,13 @@ public class Protocol
         final byte[] request = new byte[1];
         request[0] = (byte)(0xff & which);
         return cc.sendRequest(ORDER_REQ_INFORMATION, request);
+    }
+
+    public Reply sendDeviceCountRequest(final int device) throws IOException
+    {
+        final byte[] request = new byte[1];
+        request[0] = (byte)(0xff & device);
+        return cc.sendRequest(ORDER_REQUEST_DEVICE_COUNT, request);
     }
 
     public Reply sendDeviceNameRequest(final byte type, final int index) throws IOException

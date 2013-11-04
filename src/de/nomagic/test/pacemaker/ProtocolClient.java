@@ -623,13 +623,6 @@ public class ProtocolClient
             case Protocol.INFO_FIRMWARE_REVISION_MINOR:sendByte(hw.getFirmwareRevisionMinor()); break;
             case Protocol.INFO_HARDWARE_TYPE:sendByte(hw.getHardwareType()); break;
             case Protocol.INFO_HARDWARE_REVISION:sendByte(hw.getHardwareRevision()); break;
-            case Protocol.INFO_NUMBER_STEPPERS:sendByte(hw.getNumberSteppers()); break;
-            case Protocol.INFO_NUMBER_HEATERS:sendByte(hw.getNumberHeaters()); break;
-            case Protocol.INFO_NUMBER_PWM:sendByte(hw.getNumberPwm()); break;
-            case Protocol.INFO_NUMBER_TEMP_SENSOR:sendByte(hw.getNumberTempSensor()); break;
-            case Protocol.INFO_NUMBER_INPUT:sendByte(hw.getNumberInput()); break;
-            case Protocol.INFO_NUMBER_OUTPUT:sendByte(hw.getNumberOutput()); break;
-            case Protocol.INFO_NUMBER_BUZZER:sendByte(hw.getNumberBuzzer()); break;
             default:
                 sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                           Protocol.RESPONSE_BAD_PARAMETER_VALUE);
