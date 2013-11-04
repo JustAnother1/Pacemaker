@@ -216,7 +216,7 @@ public class DeviceInformation
         if(false == hasBeenRead) { return false;}
         HardwareRevision = readValueOf(Protocol.INFO_HARDWARE_REVISION, "Hardware Revision");
         if(false == hasBeenRead) { return false;}
-        maxSteppsPerSecond = readValueOf(Protocol.INFO_MAX_STEP_RATE_, "maximum supported step rate");
+        maxSteppsPerSecond = readValueOf(Protocol.INFO_MAX_STEP_RATE, "maximum supported step rate");
         if(false == hasBeenRead) { return false;}
         hostTimeoutSeconds = readValueOf(Protocol.INFO_HOST_TIMEOUT, "host timeout");
         if(false == hasBeenRead) { return false;}

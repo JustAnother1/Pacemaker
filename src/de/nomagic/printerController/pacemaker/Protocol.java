@@ -97,7 +97,7 @@ public class Protocol
     public final static int INFO_FIRMWARE_REVISION_MINOR = 9;
     public final static int INFO_HARDWARE_TYPE = 10;
     public final static int INFO_HARDWARE_REVISION = 11;
-    public final static int INFO_MAX_STEP_RATE_= 12;
+    public final static int INFO_MAX_STEP_RATE= 12;
     public final static int INFO_HOST_TIMEOUT = 13;
 
     public final static byte INPUT_HIGH = 1;
