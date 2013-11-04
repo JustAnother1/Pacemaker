@@ -715,12 +715,26 @@ public class Cfg
 
     private String getKeyFrom(final String line)
     {
-        return (line.substring(0, line.indexOf(SEPERATOR))).trim();
+        if(-1 == line.indexOf(SEPERATOR))
+        {
+            return line;
+        }
+        else
+        {
+            return (line.substring(0, line.indexOf(SEPERATOR))).trim();
+        }
     }
 
     private String getValueFrom(final String line)
     {
-        return (line.substring(line.indexOf(SEPERATOR) + SEPERATOR.length())).trim();
+        if(-1 == line.indexOf(SEPERATOR))
+        {
+            return "";
+        }
+        else
+        {
+            return (line.substring(line.indexOf(SEPERATOR) + SEPERATOR.length())).trim();
+        }
     }
 
     private int getIntKeyFrom(final String line)
