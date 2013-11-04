@@ -203,6 +203,8 @@ public class Protocol
         }
         else
         {
+            // Arduino Clients with Automatic Reset need a pause of one second.(Bootloader)
+            try{ Thread.sleep(1000); } catch(InterruptedException e) { }
             // take client out of Stopped Mode
             isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
         }

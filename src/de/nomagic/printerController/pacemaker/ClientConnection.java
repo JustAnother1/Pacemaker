@@ -37,6 +37,7 @@ public abstract class ClientConnection extends Thread
     public final static int MAX_MS_BETWEEN_TWO_BYTES = 20;
     public final static int MAX_MS_UNTIL_REPLY_ARRIVES = 100;
     public final static int MAX_TRANSMISSIONS = 2; // number of tries to send the frame
+    public final static int MAX_TIMEOUT_TRANSMISSIONS = 20; // number of tries to send the frame if the reason was a timeout
 
     protected InputStream in;
     protected OutputStream out;
@@ -44,6 +45,10 @@ public abstract class ClientConnection extends Thread
     protected boolean isSynced = false;
     private boolean isFirstOrder = true;
     private BlockingQueue<Reply> receiveQueue = new LinkedBlockingQueue<Reply>();
+
+    byte[] readBuffer = null;
+    int readPos = 0;
+    int lastPos = 0;
 
     private static byte crc_array[] =
     {
@@ -100,6 +105,7 @@ public abstract class ClientConnection extends Thread
     {
         Reply r = null;
         int numberOfTransmissions = 0;
+        int numberOfTimeouts = 0;
         boolean needsToRetransmitt = false;
         do
         {
@@ -143,8 +149,28 @@ public abstract class ClientConnection extends Thread
             }
             if(false == r.isValid())
             {
-                log.error("received invalid Frame ({})!", r);
-                needsToRetransmitt = true;
+                if(true == isFirstOrder)
+                {
+                    log.error("Received no response - Timeout!");
+                    // Timeout
+                    if(numberOfTimeouts < MAX_TIMEOUT_TRANSMISSIONS)
+                    {
+                        // try again
+                        needsToRetransmitt = true;
+                        numberOfTransmissions = 0;
+                        numberOfTimeouts ++;
+                    }
+                    else
+                    {
+                        // give up
+                        needsToRetransmitt = false;
+                    }
+                }
+                else
+                {
+                    log.error("received invalid Frame ({})!", r);
+                    needsToRetransmitt = true;
+                }
             }
             else
             {
@@ -244,36 +270,67 @@ public abstract class ClientConnection extends Thread
         }
         else
         {
-            if(1 > in.available())
+            if(null != readBuffer)
             {
-                int timeoutCounter = 0;
-                do{
-                    try
-                    {
-                        Thread.sleep(1);
-                    }
-                    catch(InterruptedException e)
-                    {
-                    }
-                    if(true == isSynced)
-                    {
-                        timeoutCounter++;
-                        if(MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter)
+                // we have some Bytes already in the in Buffer.
+                int res = 0xff & readBuffer[readPos];
+                log.debug("Received the Byte: " + String.format("%02X", res));
+                readPos++;
+                if(readPos > lastPos)
+                {
+                    readBuffer = null;
+                    readPos = 0;
+                    lastPos = 0;
+                }
+                return res;
+            }
+            else
+            {
+                if(1 > in.available())
+                {
+                    int timeoutCounter = 0;
+                    do{
+                        try
                         {
-                            throw new TimeoutException();
+                            Thread.sleep(1);
                         }
-                    }
-                    // else pause between two frames can be as long as it wants to be.
-                }while(1 > in.available());
+                        catch(InterruptedException e)
+                        {
+                        }
+                        if(true == isSynced)
+                        {
+                            timeoutCounter++;
+                            if(MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter)
+                            {
+                                throw new TimeoutException();
+                            }
+                        }
+                        // else pause between two frames can be as long as it wants to be.
+                    }while(1 > in.available());
+                }
+                // else a byte is already available
+                int numAvail = in.available();
+                readBuffer = new byte[numAvail];
+                lastPos = (in.read(readBuffer)) -1; // Index starts with 0 -> -1
+                if(-1 == lastPos)
+                {
+                    throw new IOException("Channel closed");
+                }
+                log.debug("Received the Byte: " + String.format("%02X", readBuffer[0]));
+                int res = readBuffer[0];
+                if(0 == lastPos)
+                {
+                    // just a single Byte arrived
+                    readPos = 0;
+                    readBuffer = null;
+                }
+                else
+                {
+                    // more than one byte arrived
+                    readPos = 1;
+                }
+                return res;
             }
-            // else a byte is already available
-            final int res =  in.read();
-            if(-1 == res)
-            {
-                throw new IOException("Channel closed");
-            }
-            log.debug("Received the Byte: " + String.format("%02X", res));
-            return res;
         }
     }
 
