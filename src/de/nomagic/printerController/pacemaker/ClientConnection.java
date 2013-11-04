@@ -36,7 +36,7 @@ public abstract class ClientConnection extends Thread
 
     public final static int MAX_MS_BETWEEN_TWO_BYTES = 20;
     public final static int MAX_MS_UNTIL_REPLY_ARRIVES = 100;
-    public final static int MAX_TRANSMISSIONS = 4; // number of tries to send the frame
+    public final static int MAX_TRANSMISSIONS = 2; // number of tries to send the frame
 
     protected InputStream in;
     protected OutputStream out;
