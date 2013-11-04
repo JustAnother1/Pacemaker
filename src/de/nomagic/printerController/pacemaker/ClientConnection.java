@@ -292,6 +292,7 @@ public abstract class ClientConnection extends Thread
             if((null == r) && (MAX_MS_UNTIL_REPLY_ARRIVES < timeoutCounter))
             {
                 log.error("Timeout !");
+                isFirstOrder = true;
                 return new Reply(null);
             }
         }while(null == r);
@@ -371,6 +372,7 @@ public abstract class ClientConnection extends Thread
                 catch(TimeoutException e)
                 {
                     isSynced = false;
+                    isFirstOrder = true;
                     continue;
                 }
 
