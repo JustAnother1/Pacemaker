@@ -78,8 +78,7 @@ public class Protocol
     public final static byte ORDER_RESET                                            = (byte)0x7f;
 
     public final static byte QUERY_STOPPED_STATE = 0;
-    public final static byte ACKNOWLEADGE_STOPPED_STATE = 1;
-    public final static byte CLEAR_STOPPED_STATE = 2;
+    public final static byte CLEAR_STOPPED_STATE = 1;
     public final static int INFO_FIRMWARE_NAME_STRING = 0;
     public final static int INFO_SERIAL_NUMBER_STRING = 1;
     public final static int INFO_BOARD_NAME_STRING = 2;

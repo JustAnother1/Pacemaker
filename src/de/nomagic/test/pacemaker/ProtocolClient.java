@@ -149,11 +149,6 @@ public class ProtocolClient
         {
             switch(parameter[0])
             {
-            case Protocol.ACKNOWLEADGE_STOPPED_STATE:
-                stoppedStateAcknowleadged = true;
-                sendOK();
-                break;
-
             case Protocol.CLEAR_STOPPED_STATE:
                 inStoppedState = false;
                 sendOK();
