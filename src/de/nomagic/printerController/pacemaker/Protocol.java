@@ -958,7 +958,7 @@ public class Protocol
         {
             return "";
         }
-        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES, strbuf);
+        final Reply r = cc.sendRequest(ORDER_READ_FIRMWARE_CONFIGURATION, strbuf);
         if(null == r)
         {
             return "";
