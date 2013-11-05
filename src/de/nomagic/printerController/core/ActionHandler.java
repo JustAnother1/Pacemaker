@@ -164,6 +164,12 @@ public class ActionHandler extends Thread implements EventSource
                 return false;
             }
             log.info("Protocol is operational");
+            // First send the configuration.
+            // The configuration might have an effect on the other values.
+            if(false == applyConfiguration(pro, i))
+            {
+                return false;
+            }
             DeviceInformation di = new DeviceInformation();
             try
             {
@@ -181,11 +187,6 @@ public class ActionHandler extends Thread implements EventSource
                 mapHeaters(di, pro, i);
                 mapTemperatureSensos(di,pro,i);
                 move.addConnection(di, cfg, pro, i);
-                if(false == applyConfiguration(pro, i))
-                {
-                    return false;
-                }
-                // else go on with next client
                 readConfigurationFromClient(pro);
             }
             catch(IOException e)
