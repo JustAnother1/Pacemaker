@@ -1,59 +1,103 @@
 <project default="Pacemaker">
+    <property name="mainJar" value="Pacemaker.jar" />
+    <property name="SimulatorJar" value="PacemakerTest.jar" />
+    <property name="WizzardJar" value="PacemakerWizard.jar" />
+    <property name="TerminalJar" value="PacemakerTerminal.jar" />
+    <property name="destDir" value="bin" />
+    <property name="srcDir" value="src" />
+
+    <path id="project.class.path">
+        <pathelement location="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
+        <pathelement path="lib/logback-1.0.13/logback-core-1.0.13.jar"/>
+        <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
+        <pathelement path="lib/jna-3.5.1.jar"/>
+        <pathelement path="lib/purejavacomm.jar"/>
+    </path>
+
+    <path id="simulator.class.path">
+        <pathelement location="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
+        <pathelement path="lib/logback-1.0.13/logback-core-1.0.13.jar"/>
+        <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
+    </path>
+
+    <manifestclasspath property="pm.cp" jarfile="${mainJar}">
+       <classpath refid="project.class.path" />
+    </manifestclasspath>
+
+    <manifestclasspath property="sim.cp" jarfile="${SimulatorJar}">
+       <classpath refid="simulator.class.path" />
+    </manifestclasspath>
+
+    <manifestclasspath property="wz.cp" jarfile="${WizzardJar}">
+       <classpath refid="project.class.path" />
+    </manifestclasspath>
+
+    <manifestclasspath property="tm.cp" jarfile="${TerminalJar}">
+       <classpath refid="project.class.path" />
+    </manifestclasspath>
+
     <target name="Pacemaker">
-        <delete file="Pacemaker.jar"></delete>
-        <delete file="PacemakerTest.jar"></delete>
-        <delete file="PacemakerWizard.jar"></delete>
-    <mkdir dir="bin/"/>
+        <delete dir="${destDir}"/>
+        <delete file="${mainJar}"></delete>
+        <delete file="${SimulatorJar}"></delete>
+        <delete file="${WizzardJar}"></delete>
+        <delete file="${TerminalJar}"></delete>
+        <mkdir dir="${destDir}"/>
         <tstamp>
             <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
         </tstamp>
 
-        <javac srcdir="src" destdir="bin" includeantruntime="false" classpath="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar;lib/logback-1.0.13/logback-core-1.0.13.jar;lib/logback-1.0.13/logback-classic-1.0.13.jar;lib/jna-3.5.1.jar;lib/purejavacomm.jar"/>
-        <jar destfile="Pacemaker.jar" update="false">
-            <fileset dir="bin">
+        <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false">
+            <classpath refid="project.class.path"/>
+        </javac>
+
+        <jar destfile="${mainJar}" update="false">
+            <fileset dir="${destDir}">
                 <include name="**/*.class" />
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.ControllerMain" />
-                <attribute name="Class-Path" value="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar lib/logback-1.0.13/logback-core-1.0.13.jar lib/logback-1.0.13/logback-classic-1.0.13.jar lib/jna-3.5.1.jar lib/purejavacomm.jar"/>
+                <attribute name="Class-Path" value=". ${pm.cp}"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
         </jar>
 
-        <jar destfile="PacemakerTest.jar" update="false">
-            <fileset dir="bin">
+        <jar destfile="${SimulatorJar}" update="false">
+            <fileset dir="${destDir}">
                 <include name="**/*.class" />
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.test.pacemaker.ClientMain" />
-                <attribute name="Class-Path" value="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar lib/logback-1.0.13/logback-core-1.0.13.jar lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
+                <attribute name="Class-Path" value=". ${sim.cp}"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
         </jar>
 
-        <jar destfile="PacemakerWizard.jar" update="false">
-            <fileset dir="bin">
+        <jar destfile="${WizzardJar}" update="false">
+            <fileset dir="${destDir}">
                 <include name="**/*.class" />
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.printerConfigurationCreationWizard.WizardMain" />
-                <attribute name="Class-Path" value="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar lib/logback-1.0.13/logback-core-1.0.13.jar lib/logback-1.0.13/logback-classic-1.0.13.jar lib/jna-3.5.1.jar lib/purejavacomm.jar . "/>
+                <attribute name="Class-Path" value=". ${wz.cp}"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
         </jar>
-        <jar destfile="PacemakerTerminal.jar" update="false">
-            <fileset dir="bin">
+
+        <jar destfile="${TerminalJar}" update="false">
+            <fileset dir="${destDir}">
                 <include name="**/*.class" />
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.terminal.TerminalMain" />
-                <attribute name="Class-Path" value="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar lib/logback-1.0.13/logback-core-1.0.13.jar lib/logback-1.0.13/logback-classic-1.0.13.jar lib/jna-3.5.1.jar lib/purejavacomm.jar . "/>
+                <attribute name="Class-Path" value=". ${tm.cp}"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
         </jar>
+
     </target>
 </project>
