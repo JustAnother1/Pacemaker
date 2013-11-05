@@ -29,6 +29,7 @@ import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.Fan_enum;
 import de.nomagic.printerController.Heater_enum;
+import de.nomagic.printerController.Setting;
 import de.nomagic.printerController.core.devices.Fan;
 import de.nomagic.printerController.core.devices.Heater;
 import de.nomagic.printerController.core.devices.Movement;
@@ -222,8 +223,7 @@ public class ActionHandler extends Thread implements EventSource
 
     private boolean applyConfiguration(Protocol pro, int connectionNumber)
     {
-        // TODO read all firmware configurations from client
-        HashMap<String,String> settings = cfg.getAllFirmwareSettingsFor(connectionNumber);
+        Vector<Setting> settings = cfg.getAllFirmwareSettingsFor(connectionNumber);
         if(null == settings)
         {
             // nothing to configure for this client -> successful
@@ -231,12 +231,13 @@ public class ActionHandler extends Thread implements EventSource
         }
         else
         {
-            Set<String> settingsSet = settings.keySet();
-            Iterator<String> its = settingsSet.iterator();
-            while(its.hasNext())
+            for(int i = 0; i < settings.size(); i++)
             {
-                String setting = its.next();
-                if(false == pro.writeFirmwareConfigurationValue(setting, settings.get(setting)))
+                Setting curSetting = settings.get(i);
+                String setting = curSetting.getName();
+                String value = curSetting.getValue();
+                log.debug("Writing to Client : -{}- = -{}- !", setting, value);
+                if(false == pro.writeFirmwareConfigurationValue(setting, value))
                 {
                     log.error("Failed to apply Firmware specific configuration!");
                     return false;

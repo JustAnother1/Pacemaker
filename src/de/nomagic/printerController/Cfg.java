@@ -24,6 +24,7 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ public class Cfg
 
     public final static String COMMENT_START = "#";
     public final static String SEPERATOR = " = ";
+    public final static char   SEPERATOR_CHAR = '=';
     public final static String CONNECTION_START = "(";
     public final static String CONNECTION_END = ")";
     public final static String STEPPER_ENALED = "enabled";
@@ -72,7 +74,7 @@ public class Cfg
     private HashMap<Integer,HashMap<Integer,Integer>> StepperMaxAcceleration = new HashMap<Integer,HashMap<Integer,Integer>>();
     private HashMap<Integer,HashMap<Integer,Double>> StepperStepsPerMillimeter = new HashMap<Integer,HashMap<Integer,Double>>();
 
-    private HashMap<Integer,HashMap<String,String>> firmwareCfg = new HashMap<Integer,HashMap<String,String>>();
+    private HashMap<Integer,Vector<Setting>> firmwareCfg = new HashMap<Integer,Vector<Setting>>();
 
     public Cfg()
     {
@@ -316,16 +318,17 @@ public class Cfg
     // Firmware Configuration
     public void addFirmwareConfiguration(Integer ClientNumber, String Setting, String Value)
     {
-        HashMap<String,String> fwSettings = firmwareCfg.get(ClientNumber);
+        Vector<Setting> fwSettings = firmwareCfg.get(ClientNumber);
         if(null == fwSettings)
         {
-            fwSettings = new HashMap<String,String>();
+            fwSettings = new Vector<Setting>();
         }
-        fwSettings.put(Setting, Value);
+        Setting theSetting = new Setting(Setting, Value);
+        fwSettings.add(theSetting);
         firmwareCfg.put(ClientNumber, fwSettings);
     }
 
-    public HashMap<String,String> getAllFirmwareSettingsFor(Integer ClientNumber)
+    public Vector<Setting> getAllFirmwareSettingsFor(Integer ClientNumber)
     {
         return firmwareCfg.get(ClientNumber);
     }
@@ -448,15 +451,16 @@ public class Cfg
 
 // Firmware specific configuration values :
                 ow.write(FIRMWARE_CONFIGURATION_SECTION + "\n");
-                HashMap<String, String> fwcfg = firmwareCfg.get(ConnectionNum);
-                Set<String> keys = fwcfg.keySet();
-                Iterator<String> SettingsIterator = keys.iterator();
-                while(true == SettingsIterator.hasNext())
+                Vector<Setting> fwcfg = firmwareCfg.get(ConnectionNum);
+                if(null != fwcfg)
                 {
-                    String name = SettingsIterator.next();
-                    String value = fwcfg.get(name);
-                    ow.write(name + SEPERATOR + value + "\n");
+                    for(int i = 0; i < fwcfg.size(); i++)
+                    {
+                        Setting curSetting = fwcfg.get(i);
+                        ow.write(curSetting.getName() + SEPERATOR + curSetting.getValue() + "\n");
+                    }
                 }
+                // else no configuration for this client
             }
             ow.flush();
             ow.close();
@@ -668,15 +672,7 @@ public class Cfg
                             }
                                 break;
                             case FIRMWARE_CONFIGURATION:
-                            {
-                                HashMap<String, String> curMap = firmwareCfg.get(connectionNumber);
-                                if(null == curMap)
-                                {
-                                    curMap = new HashMap<String, String>();
-                                }
-                                curMap.put(getKeyFrom(curLine), getValueFrom(curLine));
-                                firmwareCfg.put(connectionNumber, curMap);
-                            }
+                                addFirmwareConfiguration(connectionNumber, getKeyFrom(curLine), getValueFrom(curLine));
                                 break;
 
                             default:
@@ -715,31 +711,31 @@ public class Cfg
 
     private String getKeyFrom(final String line)
     {
-        if(-1 == line.indexOf(SEPERATOR))
+        if(-1 == line.indexOf(SEPERATOR_CHAR))
         {
             return line;
         }
         else
         {
-            return (line.substring(0, line.indexOf(SEPERATOR))).trim();
+            return (line.substring(0, line.indexOf(SEPERATOR_CHAR))).trim();
         }
     }
 
     private String getValueFrom(final String line)
     {
-        if(-1 == line.indexOf(SEPERATOR))
+        if(-1 == line.indexOf(SEPERATOR_CHAR))
         {
             return "";
         }
         else
         {
-            return (line.substring(line.indexOf(SEPERATOR) + SEPERATOR.length())).trim();
+            return (line.substring(line.indexOf(SEPERATOR_CHAR) + 1)).trim();
         }
     }
 
     private int getIntKeyFrom(final String line)
     {
-        String hlp = line.substring(0, line.indexOf(SEPERATOR));
+        String hlp = line.substring(0, line.indexOf(SEPERATOR_CHAR));
         hlp = hlp.trim();
         try
         {
@@ -754,7 +750,7 @@ public class Cfg
 
     private int getIntValueFrom(final String line)
     {
-        String hlp = line.substring(line.indexOf(SEPERATOR) + SEPERATOR.length());
+        String hlp = line.substring(line.indexOf(SEPERATOR_CHAR) + 1);
         hlp = hlp.trim();
         try
         {
@@ -769,7 +765,7 @@ public class Cfg
 
     private double getDoubleValueFrom(final String line)
     {
-        String hlp = line.substring(line.indexOf(SEPERATOR) + SEPERATOR.length());
+        String hlp = line.substring(line.indexOf(SEPERATOR_CHAR) + 1);
         hlp = hlp.trim();
         try
         {
@@ -784,7 +780,7 @@ public class Cfg
 
     private boolean getBooleanValueFrom(String line)
     {
-        String hlp = line.substring(line.indexOf(SEPERATOR) + SEPERATOR.length());
+        String hlp = line.substring(line.indexOf(SEPERATOR_CHAR) + 1);
         hlp = hlp.trim();
         return Boolean.valueOf(hlp);
     }

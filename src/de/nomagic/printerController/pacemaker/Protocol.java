@@ -814,7 +814,7 @@ public class Protocol
         }
         for(int i = 0; i < valueBuf.length; i++)
         {
-            parameter[i+nameBuf.length] = valueBuf[i];
+            parameter[i+nameBuf.length + 1] = valueBuf[i];
         }
         if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter))
         {
