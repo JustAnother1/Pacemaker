@@ -21,5 +21,5 @@ package de.nomagic.printerController;
  */
 public enum Fan_enum
 {
-    printedPart
+    Printed_Part
 }

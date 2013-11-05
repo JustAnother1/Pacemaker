@@ -61,7 +61,7 @@ public class DeviceInformation
         "Firmware = " + FirmwareName + "\n" +
         "Serial Number = " + SerialNumber + "\n" +
         "Board Name = " + BoardName + "\n" +
-        "given Name = " + givenName + "\n";
+        "Given Name = " + givenName + "\n";
         if(null == majorVersionsSupported)
         {
             res = res + "Supported Protocol Versions : not available !\n";
@@ -100,7 +100,7 @@ public class DeviceInformation
         "Hardware Type = " + HardwareType + "\n" +
         "Hardware Revision = " + HardwareRevision + "\n" +
         "max. steps per second = " + maxSteppsPerSecond + "\n" +
-        "host timeout = " + hostTimeoutSeconds + " seconds\n" +
+        "Host Timeout = " + hostTimeoutSeconds + " seconds\n" +
         "Number of Steppers = " + NumberSteppers + "\n" +
         "Number of Heaters = " + NumberHeaters + "\n" +
         "Number of PWM switched Outputs = " + NumberPwmSwitchedOutputs + "\n" +

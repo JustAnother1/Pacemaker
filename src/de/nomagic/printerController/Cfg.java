@@ -43,10 +43,9 @@ public class Cfg
     public final static String CONNECTION_START = "(";
     public final static String CONNECTION_END = ")";
     public final static String STEPPER_ENALED = "enabled";
-    public final static String STEPPER_INDEX = "stepper";
     public final static String STEPPER_INVERTED = "inverted";
     public final static String STEPPER_AXIS = "axis";
-    public final static String STEPPER_MAXIMUM_ACCELLERATION = "maximum accelleration";
+    public final static String STEPPER_MAXIMUM_ACCELLERATION = "maximum acceleration";
     public final static String STEPPER_STEPS_PER_MILLIMETER = "steps per millimeter";
 
     private enum Sect {GENERAL, TEMPERATURES, HEATERS, FANS, SWITCHES, STEPPER, FIRMWARE_CONFIGURATION, INVALID}
@@ -55,7 +54,8 @@ public class Cfg
     public final static String HEATERS_SECTION = "[heaters]";
     public final static String FANS_SECTION = "[fans]";
     public final static String SWITCHES_SECTION = "[switches]";
-    public final static String STEPPER_SECTION = "[stepper]";
+    public final static String STEPPER_SECTION = "[steppers]";
+    public final static String STEPPER_SECTION_OPEN = "[stepper";
     public final static String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
 
     // General Section
@@ -216,7 +216,16 @@ public class Cfg
 
     public boolean shouldUseSteppers(int clientNumber)
     {
-        return useSteppers.get(clientNumber);
+        Boolean res = useSteppers.get(clientNumber);
+        if(null == res)
+        {
+            // There was no configuration for this client in the config file
+            return false;
+        }
+        else
+        {
+            return res;
+        }
     }
 
     public Boolean isMovementDirectionInverted(Integer ClientNumber, Integer stepper)
@@ -440,7 +449,7 @@ public class Cfg
                     }
                     else
                     {
-                        ow.write(STEPPER_INDEX + SEPERATOR +  i + "\n");
+                        ow.write(STEPPER_SECTION_OPEN + "." + i  + "]\n");
                         ow.write(STEPPER_INVERTED + SEPERATOR + invertedMap.get(i)  + "\n");
                         ow.write(STEPPER_AXIS + SEPERATOR + axisMap.get(i)  + "\n");
                         ow.write(STEPPER_MAXIMUM_ACCELLERATION + SEPERATOR + maxAccelMap.get(i)  + "\n");
@@ -530,6 +539,12 @@ public class Cfg
                         else if(true == STEPPER_SECTION.equals(curLine))
                         {
                             curSection = Sect.STEPPER;
+                        }
+                        else if(true == curLine.startsWith(STEPPER_SECTION_OPEN))
+                        {
+                            curSection = Sect.STEPPER;
+                            String hlp = curLine.substring(curLine.indexOf('.') + 1, curLine.indexOf(']'));
+                            curStepper = Integer.parseInt(hlp);
                         }
                         else if(true == FIRMWARE_CONFIGURATION_SECTION.equals(curLine))
                         {
@@ -644,10 +659,6 @@ public class Cfg
                                 {
                                     Boolean activated = getBooleanValueFrom(curLine);
                                     useSteppers.put(connectionNumber, activated);
-                                }
-                                else if(true == curLine.startsWith(STEPPER_INDEX))
-                                {
-                                    curStepper = getIntValueFrom(curLine);
                                 }
                                 else if(true == curLine.startsWith(STEPPER_INVERTED))
                                 {
