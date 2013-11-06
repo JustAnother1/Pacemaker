@@ -286,7 +286,8 @@ public abstract class ClientConnection extends Thread
             }
             else
             {
-                if(1 > in.available())
+                int numAvail = in.available();
+                if(1 > numAvail)
                 {
                     int timeoutCounter = 0;
                     do{
@@ -306,10 +307,10 @@ public abstract class ClientConnection extends Thread
                             }
                         }
                         // else pause between two frames can be as long as it wants to be.
-                    }while(1 > in.available());
+                        numAvail = in.available();
+                    }while(1 > numAvail);
                 }
                 // else a byte is already available
-                int numAvail = in.available();
                 readBuffer = new byte[numAvail];
                 lastPos = (in.read(readBuffer)) -1; // Index starts with 0 -> -1
                 if(-1 == lastPos)
