@@ -105,6 +105,7 @@ public class Movement
                         case E:
                             if(true == first)
                             {
+                                first = false;
                                 // we need this Protocol
                                 protocols.put(maxProtocol, pro);
                                 thisProtocolIdx = maxProtocol;

@@ -54,7 +54,7 @@ public class ActionHandler extends Thread implements EventSource
     // Devices:
     private Movement move = new Movement();
     private HashMap<Integer, Printer> print = new HashMap<Integer, Printer>();
-    private HashMap<Fan_enum, Fan> fans = new HashMap<Fan_enum, Fan>();
+    private HashMap<Integer, Fan> fans = new HashMap<Integer, Fan>();
     private HashMap<Heater_enum, Heater> heaters = new HashMap<Heater_enum, Heater>();
     private HashMap<Heater_enum, TemperatureSensor> TempSensors = new HashMap<Heater_enum, TemperatureSensor>();
 
@@ -100,7 +100,7 @@ public class ActionHandler extends Thread implements EventSource
         sb.append("Configured Fans:\n");
         for (Fan_enum fe : Fan_enum.values())
         {
-            Fan f = fans.get(fe);
+            Fan f = fans.get(fe.getValue());
             if(null != f)
             {
                 sb.append(fe.toString() + " : " +  f.toString() + "\n");
@@ -170,31 +170,22 @@ public class ActionHandler extends Thread implements EventSource
             {
                 return false;
             }
-            DeviceInformation di = new DeviceInformation();
-            try
+            DeviceInformation di = pro.getDeviceInformation();
+            // get available Devices
+            // check for all devices if they are configured
+            // if yet then create the instances for them
+            if(null == di)
             {
-                // get available Devices
-                // check for all devices if they are configured
-                // if yet then create the instances for them
-                if(false == di.readDeviceInformationFrom(pro))
-                {
-                    log.error("Failed to read the Device Information from this client !");
-                    return false;
-                }
-                log.info("Connected to : " + di);
-                print.put(i, new Printer(pro));
-                mapFans(di, pro, i);
-                mapHeaters(di, pro, i);
-                mapTemperatureSensos(di,pro,i);
-                move.addConnection(di, cfg, pro, i);
-                readConfigurationFromClient(pro);
-            }
-            catch(IOException e)
-            {
-                e.printStackTrace();
-                log.error("Client connection threw IO Exception ! " + clientDefinition);
+                log.error("Failed to read the Device Information from this client !");
                 return false;
             }
+            log.info("Connected to : " + di);
+            print.put(i, new Printer(pro));
+            mapFans(di, pro, i);
+            mapHeaters(di, pro, i);
+            mapTemperatureSensos(di,pro,i);
+            move.addConnection(di, cfg, pro, i);
+            readConfigurationFromClient(pro);
         }
         return true;
     }
@@ -257,7 +248,7 @@ public class ActionHandler extends Thread implements EventSource
             {
                 // this Fan is used
                 Fan f = new Fan(pro, i);
-                fans.put(func, f);
+                fans.put(func.getValue(), f);
             }
         }
     }
@@ -437,10 +428,11 @@ public class ActionHandler extends Thread implements EventSource
                         break;
 
                     case setFanSpeed:
-                        Fan theFan = fans.get((Integer)e.getParameter());
+                        int FanIdx = (Integer)e.getParameter();
+                        Fan theFan = fans.get(FanIdx);
                         if(null == theFan)
                         {
-                            log.warn("Tried to set Fan Speed for invalid Fan!");
+                            log.warn("Tried to set Fan Speed for invalid({}) Fan!", FanIdx);
                             reportSuccess(e); // We do not need to stop the printing - we just ignore that fan.
                         }
                         else

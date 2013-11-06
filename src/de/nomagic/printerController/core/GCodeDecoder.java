@@ -145,13 +145,16 @@ public class GCodeDecoder
             }
 
         case 106: // set Fan Speed
+            // The fan Speed in S is 0..255 with 0=off 255=full speed.
+            // The Fan speed in Pacemaker is 0=off 0xffff = full speed
+            int speed = (code.getWordValue('S').intValue() * 256) + code.getWordValue('S').intValue();
             if(true == code.hasWord('P'))
             {
-                return exe.setFanSpeedfor(code.getWordValue('P').intValue(), code.getWordValue('S').intValue());
+                return exe.setFanSpeedfor(code.getWordValue('P').intValue(), speed);
             }
             else
             {
-                return exe.setFanSpeedfor(0, code.getWordValue('S').intValue());
+                return exe.setFanSpeedfor(0, speed);
             }
 
         case 109: // Set Extruder Temperature and wait

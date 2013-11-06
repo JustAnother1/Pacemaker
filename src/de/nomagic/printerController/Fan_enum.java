@@ -21,5 +21,17 @@ package de.nomagic.printerController;
  */
 public enum Fan_enum
 {
-    Printed_Part
+    Printed_Part(0);
+
+    private final int index;
+
+    Fan_enum(int idx)
+    {
+        this.index = idx;
+    }
+
+    public int getValue()
+    {
+        return index;
+    }
 }

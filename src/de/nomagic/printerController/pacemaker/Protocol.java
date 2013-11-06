@@ -185,7 +185,7 @@ public class Protocol
 
     private ClientConnection cc;
     private boolean isOperational = false;
-    private DeviceInformation di = new DeviceInformation();
+    private DeviceInformation di = null;
 
     private final static int QUEUE_SEND_BUFFER_SIZE = 200;
 
@@ -477,7 +477,7 @@ public class Protocol
         }
         else
         {
-            log.warn("Client does not have the Fan {} !", fan);
+            log.warn("Client does not have the Fan {} ! It has only {} + 1 fans!", fan,  di.getNumberPwmSwitchedOutputs());
             return true;
         }
     }
