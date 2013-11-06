@@ -15,12 +15,14 @@
 package de.nomagic.printerController;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Vector;
@@ -30,6 +32,10 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.util.StatusPrinter;
 import de.nomagic.printerController.Interface.InteractiveInterface;
 import de.nomagic.printerController.Interface.StandardStreamInterface;
 import de.nomagic.printerController.Interface.TcpInterface;
@@ -51,13 +57,11 @@ public class ControllerMain implements CloseApplication
     private boolean shallStartGui = true;
     private boolean shallStartTcp = false;
     private boolean schallStartUdp = false;
+    private int numOfV = 0;
     private boolean schallStartStandardStreams = false;
     private CoreStateMachine core;
     private Vector<InteractiveInterface> interfaces = new Vector<InteractiveInterface>();
 
-    /**
-     *
-     */
     public ControllerMain()
     {
     }
@@ -78,8 +82,47 @@ public class ControllerMain implements CloseApplication
         System.out.println("-u                         : enable the UDP Interface");
         System.out.println("-s                         : enable the Standard Input Output Stream Interface");
         System.out.println("--no-gui                   : dont start the graphic Interface");
+        System.out.println("-v                         : verbose output for even more messages use -v -v");
     }
 
+    private void setLogLevel(String LogLevel)
+    {
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        try
+        {
+            JoranConfigurator configurator = new JoranConfigurator();
+            configurator.setContext(context);
+            context.reset();
+            String cfg =
+            "<configuration>" +
+              "<appender name='STDOUT' class='ch.qos.logback.core.ConsoleAppender'>" +
+                "<encoder>" +
+                  "<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>" +
+                "</encoder>" +
+              "</appender>" +
+              "<root level='" + LogLevel + "'>" +
+                "<appender-ref ref='STDOUT' />" +
+              "</root>" +
+            "</configuration>";
+            ByteArrayInputStream bin;
+            try
+            {
+                bin = new ByteArrayInputStream(cfg.getBytes("UTF-8"));
+                configurator.doConfigure(bin);
+            }
+            catch(UnsupportedEncodingException e)
+            {
+                // A system without UTF-8 ? - No chance to do anything !
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+        catch (JoranException je)
+        {
+          // StatusPrinter will handle this
+        }
+        StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+    }
 
     public boolean parseCommandLineParameters(final String[] args)
     {
@@ -136,6 +179,10 @@ public class ControllerMain implements CloseApplication
                 {
                     shallStartGui = false;
                 }
+                else if(true == "-v".equals(args[i]))
+                {
+                    numOfV ++;
+                }
                 else
                 {
                     System.err.println("Invalid Parameter : " + args[i]);
@@ -147,6 +194,7 @@ public class ControllerMain implements CloseApplication
                 return false;
             }
         }
+        // read default configuration
         if(false == hasReadConfiguration)
         {
             System.out.println("No Configuration File defined. Trying default (" + DEFAULT_CONFIGURATION_FILE_NAME + ") !");
@@ -162,6 +210,14 @@ public class ControllerMain implements CloseApplication
                 System.err.println(e.getLocalizedMessage());
                 // this is OK if we go for the GUI !
             }
+        }
+        // configure Logging
+        switch(numOfV)
+        {
+        case 0: setLogLevel("info"); break;
+        case 1: setLogLevel("debug");break;
+        case 2:
+        default:setLogLevel("trace");break;
         }
         return true;
     }

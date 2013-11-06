@@ -136,7 +136,7 @@ public abstract class ClientConnection extends Thread
             buf[4 + length] = getCRCfor(buf, 3 + length, 1);
             try
             {
-                log.info("Sending Frame: " + Tool.fromByteBufferToHexString(buf));
+                log.trace("Sending Frame: " + Tool.fromByteBufferToHexString(buf));
                 out.write(buf);
                 numberOfTransmissions++;
                 r =  getReply();
@@ -265,7 +265,7 @@ public abstract class ClientConnection extends Thread
             {
                 throw new IOException("Channel closed");
             }
-            log.debug("Received the Byte: " + String.format("%02X", res));
+            log.trace("Received the Byte: " + String.format("%02X", res));
             return res;
         }
         else
@@ -274,7 +274,7 @@ public abstract class ClientConnection extends Thread
             {
                 // we have some Bytes already in the in Buffer.
                 int res = 0xff & readBuffer[readPos];
-                log.debug("Received the Byte: " + String.format("%02X", res));
+                log.trace("Received the Byte: " + String.format("%02X", res));
                 readPos++;
                 if(readPos > lastPos)
                 {
@@ -316,7 +316,7 @@ public abstract class ClientConnection extends Thread
                 {
                     throw new IOException("Channel closed");
                 }
-                log.debug("Received the Byte: " + String.format("%02X", readBuffer[0]));
+                log.trace("Received the Byte: " + String.format("%02X", readBuffer[0]));
                 int res = readBuffer[0];
                 if(0 == lastPos)
                 {
@@ -403,7 +403,7 @@ public abstract class ClientConnection extends Thread
                         isSynced = false;
                     }
                 } while (false == isSynced);
-                log.debug("Synced to client!");
+                log.trace("Synced to client!");
 
                 final int replyLength;
                 final int control;
