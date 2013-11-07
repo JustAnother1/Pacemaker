@@ -305,6 +305,7 @@ public class Protocol
         if(null == r)
         {
             log.error("Received no Reply !");
+            lastErrorReason = "Received no Reply !";
             return false;
         }
         return r.isOKReply();
@@ -468,6 +469,7 @@ public class Protocol
             if(false == sendOrderExpectOK(ORDER_SET_PWM, param))
             {
                 log.error("Falied to set Speed on the Fan !");
+                lastErrorReason = "Falied to set Speed on the Fan !";
                 return false;
             }
             else
@@ -497,6 +499,7 @@ public class Protocol
             if(false == sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter))
             {
                 log.error("Falied to enable the Steppers !");
+                lastErrorReason = "Falied to enable the Steppers !";
                 return false;
             }
         }
@@ -508,6 +511,7 @@ public class Protocol
         if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, null))
         {
             log.error("Falied to disable the Steppers !");
+            lastErrorReason = "Falied to disable the Steppers !";
             return false;
         }
         else
@@ -593,7 +597,7 @@ public class Protocol
         }
         else
         {
-            // no Queue - no chance to add to it.
+            lastErrorReason = "no Queue - no chance to add to it.";
             return false;
         }
     }
@@ -769,11 +773,13 @@ public class Protocol
         if(null == param)
         {
             log.error("Tried To enque without data !");
+            lastErrorReason = "Tried To enque without data !";
             return false;
         }
         if(1 < param.length)
         {
             log.error("Tried To enque with too few bytes !");
+            lastErrorReason = "Tried To enque with too few bytes !";
             return false;
         }
         if(false == enqueueCommand(param))
@@ -794,6 +800,7 @@ public class Protocol
                 }
                 else
                 {
+                    // TODO report Error
                     return false;
                 }
             }while(false == enqueueCommand(null));
@@ -819,6 +826,7 @@ public class Protocol
         if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter))
         {
             log.error("Failed to write Firmware Setting {} = {} !", name, value);
+            lastErrorReason = "Failed to write Firmware Setting " + name + " = " + value + " !";
             return false;
         }
         else

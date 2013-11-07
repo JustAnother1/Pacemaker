@@ -65,11 +65,11 @@ public class CoreStateMachine
         return exe;
     }
 
-    public boolean executeGCode(final String line)
+    public String executeGCode(final String line)
     {
         if(false == isOperational)
         {
-            return false;
+            return "!! Pacemaker Core is not operational !";
         }
         else
         {

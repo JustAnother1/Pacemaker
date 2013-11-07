@@ -14,6 +14,9 @@
  */
 package de.nomagic.printerController.core;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.Heater_enum;
 
@@ -23,6 +26,7 @@ import de.nomagic.printerController.Heater_enum;
  */
 public class Executor
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final ActionHandler handler;
     private String lastErrorReason = null;
     private int currentExtruder = 0; // Max 3 Extruders (0..2)
@@ -303,7 +307,7 @@ public class Executor
             catch(InterruptedException e)
             {
             }
-            ActionResponse response = handler.getValue(Action_enum.getHeaterTemperature, heater);
+            ActionResponse response = handler.getValue(Action_enum.getTemperature, heater);
             if(null == response)
             {
                 return false;
@@ -343,6 +347,60 @@ public class Executor
         {
             return true;
         }
+    }
+
+    public String getCurrentExtruderTemperature()
+    {
+        double curTemperature = 0.0;
+        Heater_enum h;
+        switch(currentExtruder)
+        {
+        case 0: h = Heater_enum.Extruder_0; break;
+        case 1: h = Heater_enum.Extruder_1; break;
+        case 2: h = Heater_enum.Extruder_2; break;
+        default: h = Heater_enum.Extruder_0; break;
+        }
+        ActionResponse response = handler.getValue(Action_enum.getTemperature, h);
+        if(null == response)
+        {
+            log.error("Did not get a response to get Heater Temperature Action !");
+        }
+        else
+        {
+            if(false == response.wasSuccessful())
+            {
+                lastErrorReason = handler.getLastErrorReason();
+                log.error(lastErrorReason);
+            }
+            else
+            {
+                curTemperature = response.getTemperature();
+            }
+        }
+        return  String.valueOf(curTemperature);
+    }
+
+    public String getHeatedBedTemperature()
+    {
+        double curTemperature = 0.0;
+        ActionResponse response = handler.getValue(Action_enum.getTemperature, Heater_enum.Print_Bed);
+        if(null == response)
+        {
+            log.error("Did not get a response to get Heater Temperature Action !");
+        }
+        else
+        {
+            if(false == response.wasSuccessful())
+            {
+                lastErrorReason = handler.getLastErrorReason();
+                log.error(lastErrorReason);
+            }
+            else
+            {
+                curTemperature = response.getTemperature();
+            }
+        }
+        return  String.valueOf(curTemperature);
     }
 
 }

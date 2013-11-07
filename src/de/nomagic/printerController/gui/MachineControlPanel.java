@@ -38,7 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.core.CoreStateMachine;
-import de.nomagic.printerController.core.Executor;
 
 /**
  * @author Lars P&ouml;tter
@@ -164,7 +163,8 @@ public class MachineControlPanel implements ActionListener
                     String curLine = br.readLine();
                     while(null != curLine)
                     {
-                        if(false == pp.executeGCode(curLine))
+                        String res = pp.executeGCode(curLine);
+                        if(true == res.startsWith("!!"))
                         {
                             return;
                         }

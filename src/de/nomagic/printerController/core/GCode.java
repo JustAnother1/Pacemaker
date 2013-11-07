@@ -177,7 +177,15 @@ public class GCode
 
     public Double getWordValue(final Character word)
     {
-        return words.get(word);
+        Double res = words.get(word);
+        if(null == res)
+        {
+            return 0.0;
+        }
+        else
+        {
+            return res;
+        }
     }
 
     public boolean isEmpty()

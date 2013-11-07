@@ -14,7 +14,6 @@
  */
 package de.nomagic.printerController.core;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -472,27 +471,18 @@ public class ActionHandler extends Thread implements EventSource
                         }
                         break;
 
-                    case getHeaterTemperature:
+                    case getTemperature:
                         {
-                            Heater theHeater = heaters.get((Heater_enum)e.getParameter());
-                            if(null == theHeater)
+                            TemperatureSensor sensor = TempSensors.get((Heater_enum)e.getParameter());
+                            if(null == sensor)
                             {
-                                lastErrorReason = "Tried to get Heater temperature for invalid Heater!";
+                                lastErrorReason = "Tried to get Heater temperature from invalid Temperature Sensor!";
                                 reportFailed(e);
                             }
                             else
                             {
-                                TemperatureSensor temp = theHeater.getTemperatureSenor();
-                                if(null == temp)
-                                {
-                                    lastErrorReason = "Tried to get Heater temperature from invalid Temperature Sensor!";
-                                    reportFailed(e);
-                                }
-                                else
-                                {
-                                    Double curTemp = temp.getTemperature();
-                                    reportDoubleResult(e, curTemp);
-                                }
+                                Double curTemp = sensor.getTemperature();
+                                reportDoubleResult(e, curTemp);
                             }
                         }
                         break;
@@ -635,8 +625,8 @@ public class ActionHandler extends Thread implements EventSource
         Event e;
         switch(theAction)
         {
-        case getHeaterTemperature:
-            e = new Event(Action_enum.getHeaterTemperature, param, this);
+        case getTemperature:
+            e = new Event(Action_enum.getTemperature, param, this);
             eventQueue.add(e);
             return getResponse();
 

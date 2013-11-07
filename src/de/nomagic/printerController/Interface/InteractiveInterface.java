@@ -39,7 +39,7 @@ public abstract class InteractiveInterface extends Thread
     protected OutputStream out;
 
     private CoreStateMachine core;
-    private CloseApplication closer;
+    protected CloseApplication closer;
 
     public void addPacemakerCore(CoreStateMachine core)
     {
@@ -53,16 +53,7 @@ public abstract class InteractiveInterface extends Thread
 
     protected String parseString(String line)
     {
-        String Response = "";
-        if(true == core.executeGCode(line))
-        {
-            Response = Response + "ok";
-        }
-        else
-        {
-             Response = Response + "!!" + core.getLastErrorReason();
-        }
-        return Response;
+        return core.executeGCode(line);
     }
 
     protected void readFromStreams()
@@ -100,6 +91,7 @@ public abstract class InteractiveInterface extends Thread
                         String line = curLineBuffer.toString();
                         curLineBuffer = new StringBuffer();
                         out.write(parseString(line).getBytes("UTF-8"));
+                        out.write("\r\n".getBytes());
                     }
                     // else empty line or \r\n -> ignore
                 }

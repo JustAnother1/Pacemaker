@@ -29,6 +29,9 @@ public class GCodeDecoder
 {
     public final static double Inch_in_Milimeter = 25.4;
 
+    public final static int RESULT_OK    = 0;
+    public final static int RESULT_ERROR = 1;
+    public final static int RESULT_VALUE = 2;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final Executor exe;
@@ -38,10 +41,8 @@ public class GCodeDecoder
     private boolean isRelative = false;
     private boolean isMetric = true;
     private String LastErrorReason = null;
+    private String ResultValue = "";
 
-    /**
-     *
-     */
     public GCodeDecoder(final Executor plan)
     {
         this.exe = plan;
@@ -51,32 +52,51 @@ public class GCodeDecoder
         }
     }
 
-    public boolean sendLine(final String line)
+    public String sendLine(final String line)
     {
         LastErrorReason = null;
-        if(null == line) return true;
-        if(1 > line.length()) return true;
+        if(null == line) return "";
+        if(1 > line.length()) return "";
         final GCode code = new GCode(line);
-        if(true == code.isEmpty()) return true;
+        if(true == code.isEmpty()) return "";
         if(false == code.isValid())
         {
             LastErrorReason = "G-Code is invalid !";
             log.error(LastErrorReason);
-            return false;
+            return "!! " + LastErrorReason;
         }
+
+        int result = RESULT_ERROR;
         if(true == code.hasWord('G'))
         {
-            return decode_General_Function_Code(code);
+            result = decode_General_Function_Code(code);
         }
         else if(true == code.hasWord('M'))
         {
-            return decode_Miscellaneous_Function_Code(code);
+            result = decode_Miscellaneous_Function_Code(code);
         }
         else
         {
             LastErrorReason = "Line has no G and no M Code !";
             log.error(LastErrorReason);
-            return false;
+            return "!! " + LastErrorReason;
+        }
+        if(RESULT_OK == result)
+        {
+            return "ok";
+        }
+        else if(RESULT_ERROR == result)
+        {
+            return "!! " + LastErrorReason;
+        }
+        else if(RESULT_VALUE == result)
+        {
+            return ResultValue;
+        }
+        else
+        {
+            // should not happen
+            return "";
         }
     }
 
@@ -92,20 +112,24 @@ public class GCodeDecoder
         }
     }
 
-    private boolean decode_Miscellaneous_Function_Code(final GCode code)
+    public void close()
+    {
+    }
+
+    private int decode_Miscellaneous_Function_Code(final GCode code)
     {
         final Double Number = code.getWordValue('M');
         final int num = Number.intValue();
         switch(num)
         {
         case 0: // Stop Print
-            return exe.doShutDown();
+            if(false == exe.doShutDown()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 17: // Enable/Power all stepper motors
-            return exe.enableAllStepperMotors();
+            if(false == exe.enableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 18: // Disable all stepper motors
-            return exe.disableAllStepperMotors();
+            if(false == exe.disableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 92: // Set axis_steps_per_unit
             for(Axis_enum axel : Axis_enum.values())
@@ -116,33 +140,26 @@ public class GCodeDecoder
                     {
                         if(false == exe.setStepsPerMilimeter(axel, code.getWordValue(axel.getChar())))
                         {
-                            return false;
+                            return RESULT_ERROR;
                         }
                     }
                     else
                     {
                         if(false == exe.setStepsPerMilimeter(axel, code.getWordValue(axel.getChar())/Inch_in_Milimeter ))
                         {
-                            return false;
+                            return RESULT_ERROR;
                         }
                     }
                 }
             }
-            return true;
+            return RESULT_OK;
 
         case 104: // Set Extruder Temperature - no wait
-            return exe.setCurrentExtruderTemperatureNoWait(code.getWordValue('S'));
+            if(false == exe.setCurrentExtruderTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
-        case 107: // Fan off - deprecated
-            log.warn("G-Code M107 is deprecated! Use M106 S0 instead.");
-            if(true == code.hasWord('P'))
-            {
-                return exe.setFanSpeedfor(code.getWordValue('P').intValue(), 0);
-            }
-            else
-            {
-                return exe.setFanSpeedfor(0, 0);
-            }
+        case 105: // Get Extruder Temperature
+            ResultValue = "T:" + exe.getCurrentExtruderTemperature() + " B:" + exe.getHeatedBedTemperature();
+            return RESULT_VALUE;
 
         case 106: // set Fan Speed
             // The fan Speed in S is 0..255 with 0=off 255=full speed.
@@ -150,39 +167,50 @@ public class GCodeDecoder
             int speed = (code.getWordValue('S').intValue() * 256) + code.getWordValue('S').intValue();
             if(true == code.hasWord('P'))
             {
-                return exe.setFanSpeedfor(code.getWordValue('P').intValue(), speed);
+                if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), speed)){ return RESULT_ERROR;} else {return RESULT_OK;}
             }
             else
             {
-                return exe.setFanSpeedfor(0, speed);
+                if(false == exe.setFanSpeedfor(0, speed)){ return RESULT_ERROR;} else {return RESULT_OK;}
+            }
+
+        case 107: // Fan off - deprecated
+            log.warn("G-Code M107 is deprecated! Use M106 S0 instead.");
+            if(true == code.hasWord('P'))
+            {
+                if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), 0)){ return RESULT_ERROR;} else {return RESULT_OK;}
+            }
+            else
+            {
+                if(false == exe.setFanSpeedfor(0, 0)){ return RESULT_ERROR;} else {return RESULT_OK;}
             }
 
         case 109: // Set Extruder Temperature and wait
-            return exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'));
+            if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 112: // Emergency Stop
-            return exe.doImmediateShutDown();
+            if(false == exe.doImmediateShutDown()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 116: // wait for Heaters
-            return exe.waitForEverythingInLimits();
+            if(false == exe.waitForEverythingInLimits()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 140: // set Bed Temperature - no wait
-            return exe.setPrintBedTemperatureNoWait(code.getWordValue('S'));
-
-        case 190: // set Bed Temperature - and do wait
-            return exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'));
+            if(false == exe.setPrintBedTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 141: // set chamber temperature - no wait
-            return exe.setChamberTemperatureNoWait(code.getWordValue('S'));
+            if(false == exe.setChamberTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
+
+        case 190: // set Bed Temperature - and do wait
+            if(false == exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         default:
             LastErrorReason = "M" + num + " not yet implemented !";
             log.error(LastErrorReason);
-            return false;
+            return RESULT_ERROR;
         }
     }
 
-    private boolean decode_General_Function_Code(final GCode code)
+    private int decode_General_Function_Code(final GCode code)
     {
         final Double Number = code.getWordValue('G');
         final int num = Number.intValue();
@@ -190,10 +218,10 @@ public class GCodeDecoder
         {
         case 0: // Rapid Linear Motion
         case 1: // Linear Motion at Feed Rate
-            return exe.addMoveTo(getRelativeMovefor(code));
+            if(false == exe.addMoveTo(getRelativeMovefor(code))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 4: // Dwell
-            return exe.addPauseFor(code.getWordValue('P'));
+            if(false == exe.addPauseFor(code.getWordValue('P'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 10: // Set Coordinate System Data
             for(Axis_enum axel : Axis_enum.values())
@@ -203,15 +231,15 @@ public class GCodeDecoder
                     curPosition[axel.ordinal()] = curPosition[axel.ordinal()] - code.getWordValue(axel.getChar());
                 }
             }
-            return true;
+            return RESULT_OK;
 
         case 20: // Length Units : Inches
             isMetric = false;
-            return true;
+            return RESULT_OK;
 
         case 21: // Length Units : millimeters
             isMetric = true;
-            return true;
+            return RESULT_OK;
 
         case 28: // Home
         case 30:
@@ -225,21 +253,21 @@ public class GCodeDecoder
             }
             if(false == exe.startHoming(homingAxis.toArray(new Axis_enum[0])))
             {
-                return false;
+                return RESULT_ERROR;
             }
             if(false == exe.waitForEndOfHoming())
             {
-                return false;
+                return RESULT_ERROR;
             }
-            return true;
+            return RESULT_OK;
 
         case 90: // Set Distance Mode : absolute
             isRelative = false;
-            return true;
+            return RESULT_OK;
 
         case 91: // Set Distance Mode : incremental
             isRelative = true;
-            return true;
+            return RESULT_OK;
 
         case 92: // Coordinate System Offsets
             for(Axis_enum axel : Axis_enum.values())
@@ -249,12 +277,12 @@ public class GCodeDecoder
                     curPosition[axel.ordinal()] = code.getWordValue(axel.getChar());
                 }
             }
-            return true;
+            return RESULT_OK;
 
         default:
             LastErrorReason = "G" + num + " not yet implemented !";
             log.error(LastErrorReason);
-            return false;
+            return RESULT_ERROR;
         }
     }
 
@@ -331,10 +359,6 @@ public class GCodeDecoder
             curPosition[4] = curPosition[4] + getRelativeMoveForAxis(code, 'f');
         }
         return move;
-    }
-
-    public void close()
-    {
     }
 
 }

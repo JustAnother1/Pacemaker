@@ -24,5 +24,5 @@ public enum Action_enum
     doShutDown, doImmediateShutDown,
     pauseMovement, relativeMove, homeAxis, getIsHoming, enableMotor, disableMotor,
     setStepsPerMilimeter,
-    setFanSpeed, setHeaterTemperature, getHeaterTemperature
+    setFanSpeed, setHeaterTemperature, getTemperature
 }
