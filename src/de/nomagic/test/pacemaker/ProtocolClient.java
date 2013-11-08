@@ -286,8 +286,21 @@ public class ProtocolClient
                 break;
 
             case Protocol.ORDER_REQUEST_DEVICE_COUNT:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                switch(parameter[0])
+                {
+                case Protocol.DEVICE_TYPE_INPUT: sendByte(hw.getNumberInput());break;
+                case Protocol.DEVICE_TYPE_OUTPUT: sendByte(hw.getNumberOutput());break;
+                case Protocol.DEVICE_TYPE_PWM_OUTPUT: sendByte(hw.getNumberPwm());break;
+                case Protocol.DEVICE_TYPE_STEPPER: sendByte(hw.getNumberSteppers());break;
+                case Protocol.DEVICE_TYPE_HEATER: sendByte(hw.getNumberHeaters());break;
+                case Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR: sendByte(hw.getNumberTempSensor());break;
+                case Protocol.DEVICE_TYPE_BUZZER: sendByte(hw.getNumberBuzzer());break;
+
+                default:
+                    sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                              Protocol.RESPONSE_BAD_PARAMETER_VALUE);
+                    break;
+                }
                 break;
 
             // New Orders go here
