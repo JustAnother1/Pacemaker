@@ -43,6 +43,9 @@ public class GCodeDecoder
     private String LastErrorReason = null;
     private String ResultValue = "";
 
+    private boolean firstLine = true;
+    private int lastLineNumber = 0;
+
     public GCodeDecoder(final Executor plan)
     {
         this.exe = plan;
@@ -67,6 +70,41 @@ public class GCodeDecoder
         }
 
         int result = RESULT_ERROR;
+        if(true == code.hasWord('N'))
+        {
+            // This line has a Line Number and Checksum
+
+            // read checksum
+            int readCheckSum = (code.getWordValue('*')).intValue();
+            // calculate checksum
+            int calculatedCheckSum = getCalculatedChecksum(line);
+            // compare
+            if(readCheckSum != calculatedCheckSum)
+            {
+                return "rs " + lastLineNumber + 1;
+            }
+            // read line Number
+            int lineNumber = (code.getWordValue('N')).intValue();
+
+            // check line Number
+            if(false == firstLine)
+            {
+                if(lineNumber != lastLineNumber + 1)
+                {
+                    return "rs " + lastLineNumber + 1;
+                }
+                else
+                {
+                    lastLineNumber = lineNumber;
+                }
+            }
+            else
+            {
+                // this is the first line
+                firstLine = false;
+                lastLineNumber = lineNumber;
+            }
+        }
         if(true == code.hasWord('G'))
         {
             result = decode_General_Function_Code(code);
@@ -114,6 +152,24 @@ public class GCodeDecoder
 
     public void close()
     {
+    }
+
+    private int getCalculatedChecksum(String line)
+    {
+        // Definition on http://reprap.org/wiki/G-code#N_and_.2A:
+        //int cs = 0;
+        // for(i = 0; cmd[i] != '*' && cmd[i] != NULL; i++)
+        //   cs = cs ^ cmd[i];
+        //cs &= 0xff;  // Defensive programming...
+
+        int cs = 0;
+        for(int i = 0; line.charAt(i) != '*' && i < line.length(); i++)
+        {
+           cs = cs ^ line.charAt(i);
+        }
+        cs &= 0xff;  // Defensive programming...
+
+        return cs;
     }
 
     private int decode_Miscellaneous_Function_Code(final GCode code)
@@ -187,6 +243,17 @@ public class GCodeDecoder
 
         case 109: // Set Extruder Temperature and wait
             if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
+
+        case 110: // Set current Line Number
+            if(true == code.hasWord('N'))
+            {
+                lastLineNumber = (code.getWordValue('N')).intValue();
+                return RESULT_OK;
+            }
+            else
+            {
+                return RESULT_ERROR;
+            }
 
         case 112: // Emergency Stop
             if(false == exe.doImmediateShutDown()){ return RESULT_ERROR;} else {return RESULT_OK;}

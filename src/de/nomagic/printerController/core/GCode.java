@@ -80,6 +80,7 @@ public class GCode
             case 'X': // X -axis
             case 'Y': // Y -axis
             case 'Z': // Z -axis
+            case '*': // Check sum
                 if(' ' == curWordType)
                 {
                     // first Word -> nothing to do
@@ -167,8 +168,6 @@ public class GCode
             curNumber = new StringBuffer();
         }
     }
-
-
 
     public boolean hasWord(final Character wordType)
     {
