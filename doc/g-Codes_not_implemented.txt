@@ -11,13 +11,16 @@ Implemented Codes:
 - G90
 - G91
 - G92
+- M0
 - M17
 - M18
 - M92
 - M104
+- M105
 - M106
 - M107
 - M109
+- M110
 - M112
 - M116
 - M140
@@ -65,7 +68,6 @@ Missing features from RS274/NGC :
 - G94
 - G98
 - G99
-- M0
 - M1
 - M2
 - M3
@@ -124,9 +126,7 @@ Missing features if compared to RepRapWiki(http://reprap.org/wiki/G-code):
 - M101
 - M102
 - M103
-- M105
 - M108
-- M110
 - M111
 - M113
 - M114
