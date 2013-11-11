@@ -14,6 +14,8 @@
  */
 package de.nomagic.printerController.Interface;
 
+import java.io.IOException;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -26,6 +28,15 @@ public class StandardStreamInterface extends InteractiveInterface
     {
         in = System.in;
         out = System.out;
+        try
+        {
+            out.write("start\r\n".getBytes());
+        }
+        catch(IOException e)
+        {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
 }

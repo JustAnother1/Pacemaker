@@ -49,6 +49,7 @@ public class TcpInterface extends InteractiveInterface
                 Socket connectionSocket = welcomeSocket.accept();
                 in = connectionSocket.getInputStream();
                 out = connectionSocket.getOutputStream();
+                out.write("start\r\n".getBytes());
                 readFromStreams();
             }
             catch(IOException e)
