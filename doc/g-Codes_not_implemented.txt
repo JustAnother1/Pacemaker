@@ -86,12 +86,10 @@ Missing features from RS274/NGC :
 Missing features if compared to RepRapWiki(http://reprap.org/wiki/G-code):
 ==========================================================================
 
-- Line Numbers ( Checking N and * )
 - G29
 - G30
 - G31
 - G32
-- M0
 - M1
 - M3
 - M4
