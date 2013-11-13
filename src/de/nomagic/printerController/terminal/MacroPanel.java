@@ -51,6 +51,7 @@ public class MacroPanel implements ActionListener
     public MacroPanel(ClientChannel client, JFrame terminalWindow, TerminalConfiguration cfg)
     {
         this.client = client;
+        this.terminalWindow = terminalWindow;
         pane = new JPanel();
         pane.setBorder(BorderFactory.createTitledBorder(
                        BorderFactory.createLineBorder(Color.black),

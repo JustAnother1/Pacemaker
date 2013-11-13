@@ -24,7 +24,7 @@ import de.nomagic.printerController.Cfg;
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public class CoreStateMachine
+public final class CoreStateMachine
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
