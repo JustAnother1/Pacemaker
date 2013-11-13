@@ -35,16 +35,18 @@ import purejavacomm.UnsupportedCommOperationException;
  */
 public final class UartClientConnection extends ClientConnection
 {
-    private final static Logger log = LoggerFactory.getLogger("UartClientConnection");
+    public static final String OPTION_SEPERATOR = ":";
 
-    public final static int TIMEOUT_PORT_OPEN_MS = 1000;
-
+    public static final int TIMEOUT_PORT_OPEN_MS = 1000;
     // databits: 5,6,7,8
-    public final static String[] bits = {"5", "6", "7", "8"};
+    public static final String[] bits = {"5", "6", "7", "8"};
     // parity: None, even, odd mark, space
-    public final static String[] parityOptions = {"None", "Even", "Odd", "Mark", "Space"};
+    public static final String[] parityOptions = {"None", "Even", "Odd", "Mark", "Space"};
     // stop bits: 1, 1.5, 2
-    public final static String[] stop = {"1", "1 1/2", "2"};
+    public static final String[] stop = {"1", "1 1/2", "2"};
+
+
+    private static final Logger log = LoggerFactory.getLogger("UartClientConnection");
 
     private SerialPort port;
     private boolean connected = false;
@@ -60,21 +62,21 @@ public final class UartClientConnection extends ClientConnection
                                           boolean use_xon_xoff_out)
     {
         String res = DeviceName
-                + ":" + baudrate
-                + ":" + bits[dataBitsIdx]
-                + ":" + parityOptions[parityIdx]
-                + ":" + stop[stopBitsIdx]
-                + ":" + use_rts_cts_in
-                + ":" + use_rts_cts_out
-                + ":" + use_xon_xoff_in
-                + ":" + use_xon_xoff_out ;
+                + OPTION_SEPERATOR + baudrate
+                + OPTION_SEPERATOR + bits[dataBitsIdx]
+                + OPTION_SEPERATOR + parityOptions[parityIdx]
+                + OPTION_SEPERATOR + stop[stopBitsIdx]
+                + OPTION_SEPERATOR + use_rts_cts_in
+                + OPTION_SEPERATOR + use_rts_cts_out
+                + OPTION_SEPERATOR + use_xon_xoff_in
+                + OPTION_SEPERATOR + use_xon_xoff_out ;
         return res;
     }
 
     public static String getPortNameFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         String res = sc.next();
         sc.close();
         return res;
@@ -83,7 +85,7 @@ public final class UartClientConnection extends ClientConnection
     public static int getBaudrateFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         int res = Integer.parseInt(sc.next());
         sc.close();
@@ -93,7 +95,7 @@ public final class UartClientConnection extends ClientConnection
     public static int getDataBitIdxFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         String help = sc.next();
@@ -112,7 +114,7 @@ public final class UartClientConnection extends ClientConnection
     public static int getParityIdxFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
@@ -131,7 +133,7 @@ public final class UartClientConnection extends ClientConnection
     public static int getStopBitIdxFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
@@ -151,7 +153,7 @@ public final class UartClientConnection extends ClientConnection
     public static boolean getRtsCtsInFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
@@ -166,7 +168,7 @@ public final class UartClientConnection extends ClientConnection
     public static boolean getRtsCtsOutFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
@@ -182,7 +184,7 @@ public final class UartClientConnection extends ClientConnection
     public static boolean getXonXoffInFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
@@ -199,7 +201,7 @@ public final class UartClientConnection extends ClientConnection
     public static boolean getXonXoffOutFromDescriptor(String data)
     {
         Scanner sc = new Scanner(data);
-        sc.useDelimiter(":");
+        sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
