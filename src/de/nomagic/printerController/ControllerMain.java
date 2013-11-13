@@ -57,7 +57,6 @@ public class ControllerMain implements CloseApplication
     private boolean shallStartGui = true;
     private boolean shallStartTcp = false;
     private boolean schallStartUdp = false;
-    private int numOfV = 0;
     private boolean schallStartStandardStreams = false;
     private CoreStateMachine core;
     private Vector<InteractiveInterface> interfaces = new Vector<InteractiveInterface>();
@@ -126,6 +125,7 @@ public class ControllerMain implements CloseApplication
 
     public boolean parseCommandLineParameters(final String[] args)
     {
+        int numOfV = 0;
         for(int i = 0; i < args.length; i++)
         {
             if(true == args[i].startsWith("-"))
