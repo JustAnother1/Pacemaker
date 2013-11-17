@@ -21,11 +21,11 @@ import org.slf4j.LoggerFactory;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class ClientConnectionFactory
+public final class ClientConnectionFactory
 {
-    private final static Logger log = LoggerFactory.getLogger("ClientConnectionFactory");
-    public final static String TCP_PREFIX = "TCP:";
-    public final static String UART_PREFIX = "UART:";
+    public static final String TCP_PREFIX = "TCP:";
+    public static final String UART_PREFIX = "UART:";
+    private static final Logger log = LoggerFactory.getLogger("ClientConnectionFactory");
 
     private ClientConnectionFactory()
     {

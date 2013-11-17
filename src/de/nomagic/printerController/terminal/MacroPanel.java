@@ -38,11 +38,12 @@ import org.slf4j.LoggerFactory;
  */
 public class MacroPanel implements ActionListener
 {
+    private static final String ACTION_COMMAND_PREFIX = "Macro";
+    private static final String ACTION_COMMAND_REMOVE = "remove";
+
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private JPanel pane;
-    private final static String ACTION_COMMAND_PREFIX = "Macro";
-    private final static String ACTION_COMMAND_REMOVE = "remove";
     private Vector<Macro> Macros;
     private ClientChannel client;
     private JFrame terminalWindow;

@@ -34,19 +34,20 @@ import de.nomagic.printerController.core.CoreStateMachine;
  */
 public class DirectControlPanel implements ActionListener
 {
+    private static final String ACTION_COMMAND_X_PLUS = "xplus";
+    private static final String ACTION_COMMAND_X_MINUS = "xminus";
+    private static final String ACTION_COMMAND_Y_PLUS = "yplus";
+    private static final String ACTION_COMMAND_Y_MINUS = "yminus";
+    private static final String ACTION_COMMAND_Z_PLUS = "zplus";
+    private static final String ACTION_COMMAND_Z_MINUS = "zminus";
+    private static final String ACTION_COMMAND_E_PLUS = "eplus";
+    private static final String ACTION_COMMAND_E_MINUS = "eminus";
+    private static final String ACTION_COMMAND_MOTORS_OFF = "motoroff";
+    private static final String ACTION_COMMAND_STOP_PRINT = "stop";
+    private static final String ACTION_COMMAND_EMERGENCY_STOP = "emergency";
+    private static final String ACTION_COMMAND_HOME = "home";
+
     private final JPanel myPanel = new JPanel();
-    private final static String ACTION_COMMAND_X_PLUS = "xplus";
-    private final static String ACTION_COMMAND_X_MINUS = "xminus";
-    private final static String ACTION_COMMAND_Y_PLUS = "yplus";
-    private final static String ACTION_COMMAND_Y_MINUS = "yminus";
-    private final static String ACTION_COMMAND_Z_PLUS = "zplus";
-    private final static String ACTION_COMMAND_Z_MINUS = "zminus";
-    private final static String ACTION_COMMAND_E_PLUS = "eplus";
-    private final static String ACTION_COMMAND_E_MINUS = "eminus";
-    private final static String ACTION_COMMAND_MOTORS_OFF = "motoroff";
-    private final static String ACTION_COMMAND_STOP_PRINT = "stop";
-    private final static String ACTION_COMMAND_EMERGENCY_STOP = "emergency";
-    private final static String ACTION_COMMAND_HOME = "home";
 
     private final JButton XPlusButton = new JButton("Xplus");
     private final JButton XMinusButton = new JButton("Xminus");

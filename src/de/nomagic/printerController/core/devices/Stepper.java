@@ -24,7 +24,7 @@ import java.util.Vector;
  */
 public class Stepper
 {
-    public final static int MAX_STEPS_PER_PART = 65535;
+    public static final int MAX_STEPS_PER_PART = 65535;
 
     private boolean hasDistance = false;
     private double distanceInMillimeters = 0.0;

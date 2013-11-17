@@ -44,7 +44,7 @@ import de.nomagic.printerController.pacemaker.UartClientConnection;
  */
 public class ConnectionDescriptionDialog extends JDialog implements ActionListener
 {
-    private final static Logger log = LoggerFactory.getLogger("ClientConnection");
+    private static final Logger log = LoggerFactory.getLogger("ClientConnection");
     private static final long serialVersionUID = 1L;
     private String answer = "";
     private JPanel myPanel = null;

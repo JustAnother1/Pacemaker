@@ -36,10 +36,10 @@ public class TerminalConfiguration
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private final static int VERSION_NUMBER = 1;
+    private static final int VERSION_NUMBER = 1;
 
 
-    private final static String CONFIG_FILE_NAME = "PacemakerTerminal.cfg";
+    private static final String CONFIG_FILE_NAME = "PacemakerTerminal.cfg";
     private String ConnectionString = "";
     private Vector<Macro> Macros = new Vector<Macro>();
     private boolean changed = true;

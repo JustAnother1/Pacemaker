@@ -45,11 +45,12 @@ import de.nomagic.printerController.Heater_enum;
  */
 public class HeaterSelectionSlide extends OneNextWizardSlide
 {
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private final static int USED_COLUMN = 2;
-    private final static int USED_FOR_COLUMN = 3;
-    private final static int USED_SENSOR_COLUMN = 4;
+    private static final int USED_COLUMN = 2;
+    private static final int USED_FOR_COLUMN = 3;
+    private static final int USED_SENSOR_COLUMN = 4;
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private JPanel slide = new JPanel();
     private SlideTableModel tableData = new SlideTableModel();

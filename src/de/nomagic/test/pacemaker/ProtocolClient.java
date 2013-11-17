@@ -670,12 +670,12 @@ public class ProtocolClient
 
     private boolean shouldSendCachedResponse(final int receivedControl)
     {
-        if(0x10 == (receivedControl & 0x10))
+        if(Protocol.RESET_COMMUNICATION_SYNC_MASK == (receivedControl & Protocol.RESET_COMMUNICATION_SYNC_MASK))
         {
             // Re sync Flag set -> no cache
             return false;
         }
-        if(cachedResponseSequenceNumber == (receivedControl & 0x0f))
+        if(cachedResponseSequenceNumber == (receivedControl & Protocol.SEQUENCE_NUMBER_MASK))
         {
             // same sequence number -> cached Result
             return true;
@@ -779,11 +779,13 @@ public class ProtocolClient
         final int bytesToSend = lastUsedIndex + 2;
         if(true == hasEvent)
         {
-            response[Protocol.REPLY_POS_OF_CONTROL] = (byte)(0x10 | (0x0f & control));
+            response[Protocol.REPLY_POS_OF_CONTROL]
+                    = (byte)(Protocol.RESET_COMMUNICATION_SYNC_MASK
+                          | (Protocol.SEQUENCE_NUMBER_MASK & control));
         }
         else
         {
-            response[Protocol.REPLY_POS_OF_CONTROL] = (byte)(0x0f & control);
+            response[Protocol.REPLY_POS_OF_CONTROL] = (byte)(Protocol.SEQUENCE_NUMBER_MASK & control);
         }
         response[cspos] = ClientConnection.getCRCfor(response, cspos);
         System.out.println("sending : " + Tool.fromByteBufferToHexString(response, bytesToSend));
@@ -791,7 +793,7 @@ public class ProtocolClient
         out.flush();
         cachedResponse = response;
         cachedResponseLength = bytesToSend;
-        cachedResponseSequenceNumber = control & 0x0f;
+        cachedResponseSequenceNumber = control & Protocol.SEQUENCE_NUMBER_MASK;
     }
 
 }

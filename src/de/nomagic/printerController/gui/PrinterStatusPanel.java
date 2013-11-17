@@ -32,7 +32,7 @@ import de.nomagic.printerController.core.Executor;
  */
 public class PrinterStatusPanel
 {
-    private final static String OFFLINE_MESSAGE = "Status Information not available !";
+    private static final String OFFLINE_MESSAGE = "Status Information not available !";
 
     private final JPanel myPanel = new JPanel();
     private final JTextArea statusText = new JTextArea(20, 50);

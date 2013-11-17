@@ -32,10 +32,10 @@ import javax.swing.Timer;
  */
 public class StatusWindow extends JFrame implements Hardware, ActionListener
 {
-    public final static int NUMBER_OF_TEMPERATURE_SENSORS = 4;
-    public final static int NUMBER_OF_HEATERS = 3;
+    public static final int NUMBER_OF_TEMPERATURE_SENSORS = 4;
+    public static final int NUMBER_OF_HEATERS = 3;
 
-    private final static String TIMER_ACTION_COMMAND = "timer";
+    private static final String TIMER_ACTION_COMMAND = "timer";
     private static final long serialVersionUID = 1L;
     private final JPanel StatusPanel = new JPanel();
     private final JPanel ControlPanel = new JPanel();

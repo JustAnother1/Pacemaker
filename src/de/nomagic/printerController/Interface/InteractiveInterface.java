@@ -33,13 +33,13 @@ import de.nomagic.printerController.core.CoreStateMachine;
  */
 public abstract class InteractiveInterface extends Thread
 {
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
-
     protected InputStream in;
     protected OutputStream out;
+    protected CloseApplication closer;
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private CoreStateMachine core;
-    protected CloseApplication closer;
 
     public void addPacemakerCore(CoreStateMachine core)
     {

@@ -49,7 +49,7 @@ import de.nomagic.printerController.gui.MainWindow;
  */
 public class ControllerMain implements CloseApplication
 {
-    public final static String DEFAULT_CONFIGURATION_FILE_NAME = "pacemaker.cfg";
+    public static final String DEFAULT_CONFIGURATION_FILE_NAME = "pacemaker.cfg";
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final Cfg cfg = new Cfg();
     private String fileToPrint = null;
@@ -92,7 +92,7 @@ public class ControllerMain implements CloseApplication
             JoranConfigurator configurator = new JoranConfigurator();
             configurator.setContext(context);
             context.reset();
-            String cfg =
+            String logCfg =
             "<configuration>" +
               "<appender name='STDOUT' class='ch.qos.logback.core.ConsoleAppender'>" +
                 "<encoder>" +
@@ -106,7 +106,7 @@ public class ControllerMain implements CloseApplication
             ByteArrayInputStream bin;
             try
             {
-                bin = new ByteArrayInputStream(cfg.getBytes("UTF-8"));
+                bin = new ByteArrayInputStream(logCfg.getBytes("UTF-8"));
                 configurator.doConfigure(bin);
             }
             catch(UnsupportedEncodingException e)

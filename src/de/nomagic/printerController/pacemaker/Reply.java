@@ -24,10 +24,10 @@ import de.nomagic.printerController.Tool;
  */
 public class Reply
 {
-    private final static int POS_OF_LENGTH = 1;
-    private final static int POS_OF_CONTROL = 2;
-    private final static int POS_OF_REPLY_CODE = 3;
-    private final static int POS_OF_PARAMETER_START = 4;
+    private static final int POS_OF_LENGTH = 1;
+    private static final int POS_OF_CONTROL = 2;
+    private static final int POS_OF_REPLY_CODE = 3;
+    private static final int POS_OF_PARAMETER_START = 4;
 
     private final byte[] data;
     private final int length;
@@ -35,7 +35,7 @@ public class Reply
 
     public Reply(byte[] data)
     {
-        if((null == data) || (5 > data.length))
+        if((null == data) || (POS_OF_PARAMETER_START + 1 > data.length))
         {
             valid = false;
             this.data = new byte[0];

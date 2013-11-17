@@ -194,7 +194,8 @@ public class ActionHandler extends Thread implements EventSource
         Vector<String> settings = new Vector<String>();
         String curSetting = "";
         // get all the settings
-        do{
+        do
+        {
             curSetting =  pro.traverseFirmwareConfiguration(curSetting);
             if(0 < curSetting.length())
             {

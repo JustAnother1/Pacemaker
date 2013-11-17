@@ -40,11 +40,11 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
 {
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    public static final double MIN_TEMPERATURE = 15.0;
+    public static final double MAX_TEMPERATURE = 600.0;
+    private static final int SENSOR_ACTIVE_COLUMN = 3;
 
-    public final static double MIN_TEMPERATURE = 15.0;
-    public final static double MAX_TEMPERATURE = 600.0;
-    private final static int SENSOR_ACTIVE_COLUMN = 3;
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private JPanel slide = new JPanel();
     private SlideTableModel tableData = new SlideTableModel();

@@ -35,9 +35,9 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class Movement
 {
-    public final static double TOLLERANCE_SPEED_IN_MILLIMETER = 0.001;
-    public final static double SECONDS_TO_UNITS_FACTOR = 10000; // 1 unit = 10uS
-    public final static double MAX_UNITS_PER_COMMAND = 65535;
+    public static final double TOLLERANCE_SPEED_IN_MILLIMETER = 0.001;
+    public static final double SECONDS_TO_UNITS_FACTOR = 10000; // 1 unit = 10uS
+    public static final double MAX_UNITS_PER_COMMAND = 65535;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private String lastErrorReason = null;

@@ -35,29 +35,30 @@ import org.slf4j.LoggerFactory;
  */
 public class Cfg
 {
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    public final static String COMMENT_START = "#";
-    public final static String SEPERATOR = " = ";
-    public final static char   SEPERATOR_CHAR = '=';
-    public final static String CONNECTION_START = "(";
-    public final static String CONNECTION_END = ")";
-    public final static String STEPPER_ENALED = "enabled";
-    public final static String STEPPER_INVERTED = "inverted";
-    public final static String STEPPER_AXIS = "axis";
-    public final static String STEPPER_MAXIMUM_ACCELLERATION = "maximum acceleration";
-    public final static String STEPPER_STEPS_PER_MILLIMETER = "steps per millimeter";
+    public static final String COMMENT_START = "#";
+    public static final String SEPERATOR = " = ";
+    public static final char   SEPERATOR_CHAR = '=';
+    public static final String CONNECTION_START = "(";
+    public static final String CONNECTION_END = ")";
+    public static final String STEPPER_ENALED = "enabled";
+    public static final String STEPPER_INVERTED = "inverted";
+    public static final String STEPPER_AXIS = "axis";
+    public static final String STEPPER_MAXIMUM_ACCELLERATION = "maximum acceleration";
+    public static final String STEPPER_STEPS_PER_MILLIMETER = "steps per millimeter";
 
     private enum Sect {GENERAL, TEMPERATURES, HEATERS, FANS, SWITCHES, STEPPER, FIRMWARE_CONFIGURATION, INVALID}
-    public final static String GENERAL_SECTION = "[general]";
-    public final static String TEMPERATURES_SECTION = "[temperatures]";
-    public final static String HEATERS_SECTION = "[heaters]";
-    public final static String FANS_SECTION = "[fans]";
-    public final static String SWITCHES_SECTION = "[switches]";
-    public final static String STEPPER_SECTION = "[steppers]";
-    public final static String STEPPER_SECTION_OPEN = "[stepper";
-    public final static String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
+    public static final String GENERAL_SECTION = "[general]";
+    public static final String TEMPERATURES_SECTION = "[temperatures]";
+    public static final String HEATERS_SECTION = "[heaters]";
+    public static final String FANS_SECTION = "[fans]";
+    public static final String SWITCHES_SECTION = "[switches]";
+    public static final String STEPPER_SECTION = "[steppers]";
+    public static final String STEPPER_SECTION_OPEN = "[stepper";
+    public static final String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
 
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     // General Section
 
 

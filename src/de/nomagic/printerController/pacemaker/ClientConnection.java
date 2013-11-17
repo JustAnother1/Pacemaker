@@ -31,26 +31,17 @@ import de.nomagic.printerController.Tool;
  */
 public abstract class ClientConnection extends Thread
 {
-    private final static Logger log = LoggerFactory.getLogger("ClientConnection");
-    private final static boolean useNonBlocking = true;
+    public static final int MAX_MS_BETWEEN_TWO_BYTES = 20;
+    public static final int MAX_MS_UNTIL_REPLY_ARRIVES = 100;
+    public static final int MAX_TRANSMISSIONS = 2; // number of tries to send the frame
+    public static final int MAX_TIMEOUT_TRANSMISSIONS = 20; // number of tries to send the frame if the reason was a timeout
+    public static final int ORDER_PACKET_ENVELOPE_NUM_BYTES = 5; // Sync, length, Control, Order, CRC = 5
+    public static final int RESPONSE_PACKET_ENVELOPE_NUM_BYTES = 4; // Sync, length and CRC are not included in length
 
-    public final static int MAX_MS_BETWEEN_TWO_BYTES = 20;
-    public final static int MAX_MS_UNTIL_REPLY_ARRIVES = 100;
-    public final static int MAX_TRANSMISSIONS = 2; // number of tries to send the frame
-    public final static int MAX_TIMEOUT_TRANSMISSIONS = 20; // number of tries to send the frame if the reason was a timeout
+    private static final Logger log = LoggerFactory.getLogger("ClientConnection");
+    private static final boolean useNonBlocking = true;
 
-    protected InputStream in;
-    protected OutputStream out;
-    protected byte sequenceNumber = 0;
-    protected boolean isSynced = false;
-    private boolean isFirstOrder = true;
-    private BlockingQueue<Reply> receiveQueue = new LinkedBlockingQueue<Reply>();
-
-    byte[] readBuffer = null;
-    int readPos = 0;
-    int lastPos = 0;
-
-    private static byte crc_array[] =
+    private static byte[] crc_array =
     {
         //       0           1           2           3           4           5           6           7           8           9           A           B           C           D           E           F
     /* 0*/ (byte)0x00, (byte)0xa6, (byte)0xea, (byte)0x4c, (byte)0x72, (byte)0xd4, (byte)0x98, (byte)0x3e, (byte)0xe4, (byte)0x42, (byte)0x0e, (byte)0xa8, (byte)0x96, (byte)0x30, (byte)0x7c, (byte)0xda,
@@ -70,6 +61,18 @@ public abstract class ClientConnection extends Thread
     /* E*/ (byte)0xfe, (byte)0x58, (byte)0x14, (byte)0xb2, (byte)0x8c, (byte)0x2a, (byte)0x66, (byte)0xc0, (byte)0x1a, (byte)0xbc, (byte)0xf0, (byte)0x56, (byte)0x68, (byte)0xce, (byte)0x82, (byte)0x24,
     /* F*/ (byte)0x90, (byte)0x36, (byte)0x7a, (byte)0xdc, (byte)0xe2, (byte)0x44, (byte)0x08, (byte)0xae, (byte)0x74, (byte)0xd2, (byte)0x9e, (byte)0x38, (byte)0x06, (byte)0xa0, (byte)0xec, (byte)0x4a
     };
+
+
+    protected InputStream in;
+    protected OutputStream out;
+    protected byte sequenceNumber = 0;
+    protected boolean isSynced = false;
+    private boolean isFirstOrder = true;
+    private BlockingQueue<Reply> receiveQueue = new LinkedBlockingQueue<Reply>();
+
+    private byte[] readBuffer = null;
+    private int readPos = 0;
+    private int lastPos = 0;
 
     public Reply sendRequest(final byte order, final byte[] parameter)
     {
@@ -109,9 +112,9 @@ public abstract class ClientConnection extends Thread
         boolean needsToRetransmitt = false;
         do
         {
-            final byte[] buf = new byte[length + 5];
-            buf[0] = Protocol.START_OF_HOST_FRAME;
-            buf[1] = (byte)(length + 2); // length also includes Control and Order
+            final byte[] buf = new byte[length + ORDER_PACKET_ENVELOPE_NUM_BYTES];
+            buf[Protocol.ORDER_POS_OF_SYNC] = Protocol.START_OF_HOST_FRAME;
+            buf[Protocol.ORDER_POS_OF_LENGTH] = (byte)(length + 2); // length also includes Control and Order
             if(false == needsToRetransmitt)
             {
                 incrementSequenceNumber();
@@ -119,21 +122,22 @@ public abstract class ClientConnection extends Thread
             // else retransmission due to communications error
             if(false == isFirstOrder)
             {
-                buf[2] = sequenceNumber;
+                buf[Protocol.ORDER_POS_OF_CONTROL] = sequenceNumber;
             }
             else
             {
                 // signal the client that host has reset so hat the client flushes all cached responses
-                buf[2] = (byte)(0x10 | sequenceNumber);
+                buf[Protocol.ORDER_POS_OF_CONTROL] = (byte)(Protocol.RESET_COMMUNICATION_SYNC_MASK | sequenceNumber);
                 isFirstOrder = false;
             }
-            buf[3] = Order;
+            buf[Protocol.ORDER_POS_OF_ORDER_CODE] = Order;
             for(int i = 0; i < length; i++)
             {
-                buf[4 + i] = parameter[i + offset];
+                buf[Protocol.ORDER_POS_OF_START_OF_PARAMETER + i] = parameter[i + offset];
             }
-            // log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(buf, 4 + length));
-            buf[4 + length] = getCRCfor(buf, 3 + length, 1);
+            // Sync is not included in CRC
+            buf[Protocol.ORDER_POS_OF_START_OF_PARAMETER + length]
+                    = getCRCfor(buf, Protocol.ORDER_POS_OF_START_OF_PARAMETER -1 + length, 1);
             try
             {
                 log.trace("Sending Frame: " + Tool.fromByteBufferToHexString(buf));
@@ -290,7 +294,8 @@ public abstract class ClientConnection extends Thread
                 if(1 > numAvail)
                 {
                     int timeoutCounter = 0;
-                    do{
+                    do
+                    {
                         try
                         {
                             Thread.sleep(1);
@@ -338,7 +343,7 @@ public abstract class ClientConnection extends Thread
     protected void incrementSequenceNumber()
     {
         sequenceNumber ++;
-        if(sequenceNumber > 7)
+        if(sequenceNumber > Protocol.MAX_SEQUENCE_NUMBER)
         {
             sequenceNumber = 0;
         }
@@ -353,7 +358,8 @@ public abstract class ClientConnection extends Thread
             return r;
         }
         int timeoutCounter = 0;
-        do{
+        do
+        {
             try
             {
                 Thread.sleep(1);
@@ -373,6 +379,7 @@ public abstract class ClientConnection extends Thread
         return r;
     }
 
+    @Override
     public void run()
     {
         try
@@ -381,7 +388,8 @@ public abstract class ClientConnection extends Thread
             {
                 // Sync
                 int sync;
-                do{
+                do
+                {
                     try
                     {
                         sync = getAByte();
@@ -419,24 +427,24 @@ public abstract class ClientConnection extends Thread
                         isSynced = false;
                         continue;
                     }
-                    buf = new byte[4 + replyLength]; // Sync, length and CRC are not included in length
-                    buf[0] = Protocol.START_OF_CLIENT_FRAME;
-                    buf[1] = (byte)(replyLength & 0xff);
+                    buf = new byte[RESPONSE_PACKET_ENVELOPE_NUM_BYTES + replyLength];
+                    buf[Protocol.ORDER_POS_OF_SYNC] = Protocol.START_OF_CLIENT_FRAME;
+                    buf[Protocol.REPLY_POS_OF_LENGTH] = (byte)(replyLength & 0xff);
 
                     // Control
                     control =  (byte)getAByte();
                     // check control later
-                    buf[2] = (byte)(control & 0xff);
+                    buf[Protocol.REPLY_POS_OF_CONTROL] = (byte)(control & 0xff);
 
                     // Reply Code
                     reply =  (byte)getAByte();
                     // check reply later
-                    buf[3] = reply;
+                    buf[Protocol.REPLY_POS_OF_REPLY_CODE] = reply;
 
                     // Parameter
                     for(int i = 0; i < replyLength-2;i++) // Control and reply code is also in the length
                     {
-                        buf[4 + i] = (byte)getAByte();
+                        buf[Protocol.REPLY_POS_OF_START_OF_PARAMETER + i] = (byte)getAByte();
                         // log.traceSystem.out.print(" " + i);
                     }
 
@@ -460,7 +468,7 @@ public abstract class ClientConnection extends Thread
                     continue;
                 }
 
-                if((control & 0xf) != sequenceNumber)
+                if((control & Protocol.SEQUENCE_NUMBER_MASK) != sequenceNumber)
                 {
                     // debug frames might not always have the correct sequence number.
                     if(Protocol.DEBUG_FLAG == (Protocol.DEBUG_FLAG & control))
@@ -472,7 +480,7 @@ public abstract class ClientConnection extends Thread
                     // then it might answer with a wrong reply code, but the
                     // reply will be "bad crc"
                     else if(   (Protocol.RESPONSE_FRAME_RECEIPT_ERROR == reply)
-                       && (Protocol.RESPONSE_BAD_ERROR_CHECK_CODE == buf[4]) )
+                       && (Protocol.RESPONSE_BAD_ERROR_CHECK_CODE == buf[Protocol.REPLY_POS_OF_START_OF_PARAMETER]) )
                     {
                         // ok
                     }
@@ -480,7 +488,7 @@ public abstract class ClientConnection extends Thread
                     {
                         // Protocol Error
                         log.error("Wrong Sequence Number !(Received: {}; Expected: {})",
-                                                         (control & 0xf), sequenceNumber);
+                                                         (control & Protocol.SEQUENCE_NUMBER_MASK), sequenceNumber);
                         isSynced = false;
                         continue;
                     }

@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TcpClientConnection extends ClientConnection
 {
-    private final static Logger log = LoggerFactory.getLogger("TcpClientConnection");
+    private static final Logger log = LoggerFactory.getLogger("TcpClientConnection");
     private final Socket pms;
 
     public static ClientConnection establishConnectionTo(String data)
@@ -70,12 +70,6 @@ public class TcpClientConnection extends ClientConnection
         return null;
     }
 
-    @Override
-    public String toString()
-    {
-        return "TCP : " + pms.getInetAddress() + ":" + pms.getPort();
-    }
-
     public TcpClientConnection(final Socket pms) throws IOException
     {
         pms.setSoTimeout(0);
@@ -85,6 +79,12 @@ public class TcpClientConnection extends ClientConnection
         this.in = pms.getInputStream();
         this.out = pms.getOutputStream();
         this.start();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "TCP : " + pms.getInetAddress() + ":" + pms.getPort();
     }
 
     @Override

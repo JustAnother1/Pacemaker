@@ -14,7 +14,6 @@
  */
 package de.nomagic.printerController.core.devices;
 
-import de.nomagic.printerController.core.devices.TemperatureSensor;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
@@ -57,7 +56,7 @@ public class Heater
         }
     }
 
-    public void setTemperatureSenor(TemperatureSensor sensor)
+    public void setTemperatureSensor(TemperatureSensor sensor)
     {
         this.sensor = sensor;
     }

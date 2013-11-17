@@ -38,6 +38,9 @@ import org.slf4j.LoggerFactory;
  */
 public class SendPanel implements ActionListener
 {
+    private static final String COMMAND_SAVE_AS_MACRO = "macro";
+    private static final String COMMAND_SEND = "send";
+
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private JPanel pane;
     private ClientChannel client;
@@ -46,9 +49,6 @@ public class SendPanel implements ActionListener
     private JTextField[] parameterData;
     private MacroPanel MacroPanel;
     private JFrame terminalWindow;
-
-    private final static String COMMAND_SAVE_AS_MACRO = "macro";
-    private final static String COMMAND_SEND = "send";
 
     public SendPanel(ClientChannel client, MacroPanel macroPanel, JFrame terminalWindow)
     {

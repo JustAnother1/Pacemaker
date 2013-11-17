@@ -45,10 +45,10 @@ import de.nomagic.printerController.core.CoreStateMachine;
  */
 public class MachineControlPanel implements ActionListener
 {
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    public static final String ACTION_LOAD_CONFIGURATION = "loadConfig";
+    public static final String ACTION_PRINT = "print";
 
-    public final static String ACTION_LOAD_CONFIGURATION = "loadConfig";
-    public final static String ACTION_PRINT = "print";
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private final JPanel myPanel = new JPanel();
     private final ClientPanel clientPane;

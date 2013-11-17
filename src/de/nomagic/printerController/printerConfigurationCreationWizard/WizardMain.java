@@ -39,16 +39,16 @@ import de.nomagic.printerController.Cfg;
  */
 public class WizardMain implements CancelAction
 {
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
-
-    public final static String DS_CONFIGURATION_NAME = "cfg";
-    public final static String DS_PROTOCOL_NAME = "proto";
-    public final static String DS_DEVICE_INFORMATION_NAME = "di";
+    public static final String DS_CONFIGURATION_NAME = "cfg";
+    public static final String DS_PROTOCOL_NAME = "proto";
+    public static final String DS_DEVICE_INFORMATION_NAME = "di";
     public static final String DS_G_CODE_DECODER_NAME = "decoder";
     public static final String DS_PLANNER_NAME = "plan";
     public static final String DS_CLIENT_CONNECTION_NAME = "cc";
     public static final String DS_ACTIVE_TEMPERATURE_SENSORS_NAME = "activeTempSensors";
     public static final String DS_ACTIVE_HEATERS_NAME = "activeHeaters";
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private final JFileChooser fc = new JFileChooser();
     private final BaseWindow ConfigCreator;

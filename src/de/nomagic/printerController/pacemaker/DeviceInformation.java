@@ -146,6 +146,7 @@ public class DeviceInformation
         {
         case 1: res = 0xff & p[0]; break;
         case 2: res = ((0xff & p[0])*256) + (0xff & p[1]); break;
+        default: res = -5;
         }
 
         if(0 > res)
@@ -187,7 +188,8 @@ public class DeviceInformation
         }
         for(int i = 0; i < extensions.size(); i++)
         {
-            switch(extensions.get(i))
+            int ExtensionType = extensions.get(i);
+            switch(ExtensionType)
             {
             case Protocol.INFO_PROTOCOL_EXTENSION_STEPPER_CONTROL:
                 hasExtensionStepperControl = true;
@@ -200,8 +202,13 @@ public class DeviceInformation
             case Protocol.INFO_PROTOCOL_EXTENSION_BASIC_MOVE:
                 hasExtensionBasicMove = true;
                 break;
+
             case Protocol.INFO_PROTOCOL_EXTENSION_EVENT_REPORTING:
                 hasExtensionEventReporting = true;
+                break;
+
+            default:
+                log.error("Client supports unknown Extension of Type {} !", ExtensionType);
                 break;
             }
         }
@@ -324,6 +331,7 @@ public class DeviceInformation
         case 2: res = ((0xff & p[0])*256) + (0xff & p[1]); break;
         case 3: res = ((0xff & p[0])*256*256) + ((0xff & p[1])*256) + (0xff & p[2]); break;
         case 4: res = ((0xff & p[0])*256*256*256) + ((0xff & p[1])*256*256) + ((0xff & p[2])*256) + (0xff & p[3]); break;
+        default:res = -5; break;
         }
         return res;
     }

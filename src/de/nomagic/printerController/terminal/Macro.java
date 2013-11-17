@@ -30,6 +30,10 @@ public class Macro implements Serializable
     private int[] parameter;
     private String Name;
 
+    public Macro()
+    {
+    }
+
     /**
      * @return the name
      */
@@ -44,10 +48,6 @@ public class Macro implements Serializable
     public void setName(String name)
     {
         Name = name;
-    }
-
-    public Macro()
-    {
     }
 
     /**

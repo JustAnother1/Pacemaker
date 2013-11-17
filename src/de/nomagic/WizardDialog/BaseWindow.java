@@ -48,6 +48,13 @@ import de.nomagic.Translator.Translator;
  */
 public class BaseWindow implements ActionListener, Runnable
 {
+    /** The String-based action command for the 'Next' button. */
+    public static final String NEXT_BUTTON_ACTION_COMMAND = "NextButtonActionCommand";
+    /** The String-based action command for the 'Back' button. */
+    public static final String BACK_BUTTON_ACTION_COMMAND = "BackButtonActionCommand";
+    /** The String-based action command for the 'Cancel' button. */
+    public static final String CANCEL_BUTTON_ACTION_COMMAND = "CancelButtonActionCommand";
+
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private JFrame Dialog;
     private JButton backButton;
@@ -63,12 +70,6 @@ public class BaseWindow implements ActionListener, Runnable
     private DataStore ds = new DataStore();
     private CancelAction ca = null;
     private final Container contPane;
-    /** The String-based action command for the 'Next' button. */
-    public static final String NEXT_BUTTON_ACTION_COMMAND = "NextButtonActionCommand";
-    /** The String-based action command for the 'Back' button. */
-    public static final String BACK_BUTTON_ACTION_COMMAND = "BackButtonActionCommand";
-    /** The String-based action command for the 'Cancel' button. */
-    public static final String CANCEL_BUTTON_ACTION_COMMAND = "CancelButtonActionCommand";
 
     public BaseWindow(Translator t, CancelAction ca)
     {

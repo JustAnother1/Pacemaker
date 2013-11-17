@@ -30,150 +30,154 @@ import de.nomagic.printerController.Tool;
  */
 public class Protocol
 {
-    public final static int ORDER_POS_OF_SYNC               = 0;
-    public final static int ORDER_POS_OF_LENGTH             = 1;
-    public final static int ORDER_POS_OF_CONTROL            = 2;
-    public final static int ORDER_POS_OF_ORDER_CODE         = 3;
-    public final static int ORDER_POS_OF_START_OF_PARAMETER = 4;
+    public static final int ORDER_POS_OF_SYNC               = 0;
+    public static final int ORDER_POS_OF_LENGTH             = 1;
+    public static final int ORDER_POS_OF_CONTROL            = 2;
+    public static final int ORDER_POS_OF_ORDER_CODE         = 3;
+    public static final int ORDER_POS_OF_START_OF_PARAMETER = 4;
 
-    public final static int REPLY_POS_OF_SYNC               = 0;
-    public final static int REPLY_POS_OF_LENGTH             = 1;
-    public final static int REPLY_POS_OF_CONTROL            = 2;
-    public final static int REPLY_POS_OF_REPLY_CODE         = 3;
-    public final static int REPLY_POS_OF_START_OF_PARAMETER = 4;
+    public static final int REPLY_POS_OF_SYNC               = 0;
+    public static final int REPLY_POS_OF_LENGTH             = 1;
+    public static final int REPLY_POS_OF_CONTROL            = 2;
+    public static final int REPLY_POS_OF_REPLY_CODE         = 3;
+    public static final int REPLY_POS_OF_START_OF_PARAMETER = 4;
 
+    public static final int MAX_SEQUENCE_NUMBER = 15;
+    public static final int SEQUENCE_NUMBER_MASK = 0x0f;
+    public static final int RESET_COMMUNICATION_SYNC_MASK = 0x10;
 
     // Magic Number from Protocol Definition:
 // Host
-    public final static int START_OF_HOST_FRAME = 0x23;
+    public static final int START_OF_HOST_FRAME = 0x23;
 
-    public final static byte ORDER_RESUME                                           = 0;
-    public final static byte ORDER_REQ_INFORMATION                                  = 1;
-    public final static byte ORDER_REQ_DEVICE_NAME                                  = 2;
-    public final static byte ORDER_REQ_TEMPERATURE                                  = 3;
-    public final static byte ORDER_GET_HEATER_CONFIGURATION                         = 4;
-    public final static byte ORDER_CONFIGURE_HEATER                                 = 5;
-    public final static byte ORDER_SET_HEATER_TARGET_TEMPERATURE                    = 6;
-    public final static byte ORDER_REQ_INPUT                                        = 7;
-    public final static byte ORDER_SET_OUTPUT                                       = 8;
-    public final static byte ORDER_SET_PWM                                          = 9;
-    public final static byte ORDER_WRITE_FIRMWARE_CONFIGURATION                     = 0x0A;
-    public final static byte ORDER_READ_FIRMWARE_CONFIGURATION                      = 0x0B;
-    public final static byte ORDER_STOP_PRINT                                       = 0x0C;
-    public final static byte ORDER_ACTIVATE_STEPPER_CONTROL                         = 0x0D;
-    public final static byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS                    = 0x0E;
-    public final static byte ORDER_CONFIGURE_END_STOPS                              = 0x0F;
-    public final static byte ORDER_ENABLE_DISABLE_END_STOPS                         = 0x10;
-    public final static byte ORDER_REQUEST_DEVICE_COUNT                             = 0x11;
-    public final static byte ORDER_QUEUE_COMMAND_BLOCKS                             = 0x12;
-    public final static byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES                    = 0x13;
-    public final static byte ORDER_RETRIEVE_EVENTS                                  = 0x14;
-    public final static byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS                      = 0x15;
-    public final static byte ORDER_GET_EVENT_STRING_FORMAT_ID                       = 0x16;
-    public final static byte ORDER_CLEAR_COMMAND_BLOCK_QUEUE                        = 0x17;
-    public final static byte ORDER_REQUEST_DEVICE_STATUS                            = 0x18;
-    public final static byte ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS = 0x19;
-    public final static byte ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES      = 0x1a;
-    public final static byte ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES           = 0x1b;
-    public final static byte ORDER_RESET                                            = (byte)0x7f;
+    public static final byte ORDER_RESUME                                           = 0;
+    public static final byte ORDER_REQ_INFORMATION                                  = 1;
+    public static final byte ORDER_REQ_DEVICE_NAME                                  = 2;
+    public static final byte ORDER_REQ_TEMPERATURE                                  = 3;
+    public static final byte ORDER_GET_HEATER_CONFIGURATION                         = 4;
+    public static final byte ORDER_CONFIGURE_HEATER                                 = 5;
+    public static final byte ORDER_SET_HEATER_TARGET_TEMPERATURE                    = 6;
+    public static final byte ORDER_REQ_INPUT                                        = 7;
+    public static final byte ORDER_SET_OUTPUT                                       = 8;
+    public static final byte ORDER_SET_PWM                                          = 9;
+    public static final byte ORDER_WRITE_FIRMWARE_CONFIGURATION                     = 0x0A;
+    public static final byte ORDER_READ_FIRMWARE_CONFIGURATION                      = 0x0B;
+    public static final byte ORDER_STOP_PRINT                                       = 0x0C;
+    public static final byte ORDER_ACTIVATE_STEPPER_CONTROL                         = 0x0D;
+    public static final byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS                    = 0x0E;
+    public static final byte ORDER_CONFIGURE_END_STOPS                              = 0x0F;
+    public static final byte ORDER_ENABLE_DISABLE_END_STOPS                         = 0x10;
+    public static final byte ORDER_REQUEST_DEVICE_COUNT                             = 0x11;
+    public static final byte ORDER_QUEUE_COMMAND_BLOCKS                             = 0x12;
+    public static final byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES                    = 0x13;
+    public static final byte ORDER_RETRIEVE_EVENTS                                  = 0x14;
+    public static final byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS                      = 0x15;
+    public static final byte ORDER_GET_EVENT_STRING_FORMAT_ID                       = 0x16;
+    public static final byte ORDER_CLEAR_COMMAND_BLOCK_QUEUE                        = 0x17;
+    public static final byte ORDER_REQUEST_DEVICE_STATUS                            = 0x18;
+    public static final byte ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS = 0x19;
+    public static final byte ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES      = 0x1a;
+    public static final byte ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES           = 0x1b;
+    public static final byte ORDER_RESET                                            = (byte)0x7f;
 
-    public final static byte QUERY_STOPPED_STATE = 0;
-    public final static byte CLEAR_STOPPED_STATE = 1;
-    public final static int INFO_FIRMWARE_NAME_STRING = 0;
-    public final static int INFO_SERIAL_NUMBER_STRING = 1;
-    public final static int INFO_BOARD_NAME_STRING = 2;
-    public final static int INFO_GIVEN_NAME_STRING = 3;
-    public final static int INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR = 4;
-    public final static int INFO_SUPPORTED_PROTOCOL_VERSION_MINOR = 5;
-    public final static int INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS = 6;
+    public static final byte QUERY_STOPPED_STATE = 0;
+    public static final byte CLEAR_STOPPED_STATE = 1;
+    public static final int INFO_FIRMWARE_NAME_STRING = 0;
+    public static final int INFO_SERIAL_NUMBER_STRING = 1;
+    public static final int INFO_BOARD_NAME_STRING = 2;
+    public static final int INFO_GIVEN_NAME_STRING = 3;
+    public static final int INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR = 4;
+    public static final int INFO_SUPPORTED_PROTOCOL_VERSION_MINOR = 5;
+    public static final int INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS = 6;
 
-    public final static int INFO_PROTOCOL_EXTENSION_STEPPER_CONTROL = 0;
-    public final static int INFO_PROTOCOL_EXTENSION_QUEUED_COMMAND = 1;
-    public final static int INFO_PROTOCOL_EXTENSION_BASIC_MOVE = 2;
-    public final static int INFO_PROTOCOL_EXTENSION_EVENT_REPORTING = 3;
+    public static final int INFO_PROTOCOL_EXTENSION_STEPPER_CONTROL = 0;
+    public static final int INFO_PROTOCOL_EXTENSION_QUEUED_COMMAND = 1;
+    public static final int INFO_PROTOCOL_EXTENSION_BASIC_MOVE = 2;
+    public static final int INFO_PROTOCOL_EXTENSION_EVENT_REPORTING = 3;
 
-    public final static int INFO_FIRMWARE_TYPE = 7;
-    public final static int INFO_FIRMWARE_REVISION_MAJOR = 8;
-    public final static int INFO_FIRMWARE_REVISION_MINOR = 9;
-    public final static int INFO_HARDWARE_TYPE = 10;
-    public final static int INFO_HARDWARE_REVISION = 11;
-    public final static int INFO_MAX_STEP_RATE= 12;
-    public final static int INFO_HOST_TIMEOUT = 13;
+    public static final int INFO_FIRMWARE_TYPE = 7;
+    public static final int INFO_FIRMWARE_REVISION_MAJOR = 8;
+    public static final int INFO_FIRMWARE_REVISION_MINOR = 9;
+    public static final int INFO_HARDWARE_TYPE = 10;
+    public static final int INFO_HARDWARE_REVISION = 11;
+    public static final int INFO_MAX_STEP_RATE= 12;
+    public static final int INFO_HOST_TIMEOUT = 13;
 
-    public final static byte INPUT_HIGH = 1;
-    public final static byte INPUT_LOW = 0;
-    public final static byte ORDERED_STOP = 0;
-    public final static byte EMERGENCY_STOP = 1;
-    public final static int DIRECTION_INCREASING = 1;
-    public final static int DIRECTION_DECREASING = 0;
-    public final static byte MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER = 0x01;
-    public final static byte MOVEMENT_BLOCK_TYPE_DELAY = 0x02;
-    public final static byte MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD = 0x03;
+    public static final byte INPUT_HIGH = 1;
+    public static final byte INPUT_LOW = 0;
+    public static final byte ORDERED_STOP = 0;
+    public static final byte EMERGENCY_STOP = 1;
+    public static final int DIRECTION_INCREASING = 1;
+    public static final int DIRECTION_DECREASING = 0;
+    public static final byte MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER = 0x01;
+    public static final byte MOVEMENT_BLOCK_TYPE_DELAY = 0x02;
+    public static final byte MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD = 0x03;
 
 // Client
-    public final static int START_OF_CLIENT_FRAME = 0x42;
+    public static final int START_OF_CLIENT_FRAME = 0x42;
     public static final int DEBUG_FLAG = 0x80;
 
-    public final static byte RESPONSE_FRAME_RECEIPT_ERROR = 0;
-    public final static int RESPONSE_BAD_FRAME = 0;
-    public final static int RESPONSE_BAD_ERROR_CHECK_CODE = 1;
-    public final static int RESPONSE_UNABLE_TO_ACCEPT_FRAME = 2;
+    public static final byte RESPONSE_FRAME_RECEIPT_ERROR = 0;
+    public static final int RESPONSE_BAD_FRAME = 0;
+    public static final int RESPONSE_BAD_ERROR_CHECK_CODE = 1;
+    public static final int RESPONSE_UNABLE_TO_ACCEPT_FRAME = 2;
 
-    public final static byte RESPONSE_OK = 0x10;
-    public final static byte RESPONSE_GENERIC_APPLICATION_ERROR = 0x11;
+    public static final byte RESPONSE_OK = 0x10;
+    public static final byte RESPONSE_GENERIC_APPLICATION_ERROR = 0x11;
 
-    public final static int RESPONSE_UNKNOWN_ORDER = 1;
-    public final static int RESPONSE_BAD_PARAMETER_FORMAT = 2;
-    public final static int RESPONSE_BAD_PARAMETER_VALUE = 3;
-    public final static int RESPONSE_INVALID_DEVICE_TYPE = 4;
-    public final static int RESPONSE_INVALID_DEVICE_NUMBER = 5;
-    public final static int RESPONSE_INCORRECT_MODE = 6;
-    public final static int RESPONSE_BUSY = 7;
-    public final static int RESPONSE_FAILED = 8;
-    public final static int RESPONSE_FIRMWARE_ERROR = 9;
-    public final static int RESPONSE_CANNOT_ACTIVATE_DEVICE = 10;
+    public static final int RESPONSE_UNKNOWN_ORDER = 1;
+    public static final int RESPONSE_BAD_PARAMETER_FORMAT = 2;
+    public static final int RESPONSE_BAD_PARAMETER_VALUE = 3;
+    public static final int RESPONSE_INVALID_DEVICE_TYPE = 4;
+    public static final int RESPONSE_INVALID_DEVICE_NUMBER = 5;
+    public static final int RESPONSE_INCORRECT_MODE = 6;
+    public static final int RESPONSE_BUSY = 7;
+    public static final int RESPONSE_FAILED = 8;
+    public static final int RESPONSE_FIRMWARE_ERROR = 9;
+    public static final int RESPONSE_CANNOT_ACTIVATE_DEVICE = 10;
 
-    public final static byte RESPONSE_STOPPED = 0x12;
-    public final static byte STOPPED_UNACKNOWLEADGED = 0;
-    public final static byte STOPPED_ACKNOWLEADGED = 1;
-    public final static byte RECOVERY_CLEARED = 1;
-    public final static byte RECOVERY_PERSISTS = 2;
-    public final static byte RECOVERY_UNRECOVERABLE = 3;
-    public final static byte CAUSE_RESET = 0;
-    public final static byte CAUSE_END_STOP_HIT = 1;
-    public final static byte CAUSE_MOVEMENT_ERROR = 2;
-    public final static byte CAUSE_TEMPERATURE_ERROR = 3;
-    public final static byte CAUSE_DEVICE_FAULT = 4;
-    public final static byte CAUSE_ELECTRICAL_FAULT = 5;
-    public final static byte CAUSE_FIRMWARE_FAULT = 6;
-    public final static byte CAUSE_OTHER_FAULT = 7;
+    public static final byte RESPONSE_STOPPED = 0x12;
+    public static final byte STOPPED_UNACKNOWLEADGED = 0;
+    public static final byte STOPPED_ACKNOWLEADGED = 1;
+    public static final byte RECOVERY_CLEARED = 1;
+    public static final byte RECOVERY_PERSISTS = 2;
+    public static final byte RECOVERY_UNRECOVERABLE = 3;
+    public static final byte CAUSE_RESET = 0;
+    public static final byte CAUSE_END_STOP_HIT = 1;
+    public static final byte CAUSE_MOVEMENT_ERROR = 2;
+    public static final byte CAUSE_TEMPERATURE_ERROR = 3;
+    public static final byte CAUSE_DEVICE_FAULT = 4;
+    public static final byte CAUSE_ELECTRICAL_FAULT = 5;
+    public static final byte CAUSE_FIRMWARE_FAULT = 6;
+    public static final byte CAUSE_OTHER_FAULT = 7;
 
-    public final static byte RESPONSE_ORDER_SPECIFIC_ERROR = 0x13;
-    public final static int SENSOR_PROBLEM = 0x7fff;
-    public final static int RESPONSE_MAX = 0x13;
+    public static final byte RESPONSE_ORDER_SPECIFIC_ERROR = 0x13;
+    public static final int SENSOR_PROBLEM = 0x7fff;
+    public static final int RESPONSE_MAX = 0x13;
 
-    public final static byte RESPONSE_DEBUG_FRAME_DEBUG_MESSAGE = 0x50;
-    public final static byte RESPONSE_DEBUG_FRAME_NEW_EVENT = 0x51;
+    public static final byte RESPONSE_DEBUG_FRAME_DEBUG_MESSAGE = 0x50;
+    public static final byte RESPONSE_DEBUG_FRAME_NEW_EVENT = 0x51;
 
-    public final static byte DEVICE_TYPE_UNUSED = 0;
-    public final static byte DEVICE_TYPE_INPUT = 1;
-    public final static byte DEVICE_TYPE_OUTPUT = 2;
-    public final static byte DEVICE_TYPE_PWM_OUTPUT = 3;
-    public final static byte DEVICE_TYPE_STEPPER = 4;
-    public final static byte DEVICE_TYPE_HEATER = 5;
-    public final static byte DEVICE_TYPE_TEMPERATURE_SENSOR = 6;
-    public final static byte DEVICE_TYPE_BUZZER = 7;
+    public static final byte DEVICE_TYPE_UNUSED = 0;
+    public static final byte DEVICE_TYPE_INPUT = 1;
+    public static final byte DEVICE_TYPE_OUTPUT = 2;
+    public static final byte DEVICE_TYPE_PWM_OUTPUT = 3;
+    public static final byte DEVICE_TYPE_STEPPER = 4;
+    public static final byte DEVICE_TYPE_HEATER = 5;
+    public static final byte DEVICE_TYPE_TEMPERATURE_SENSOR = 6;
+    public static final byte DEVICE_TYPE_BUZZER = 7;
 
-    public final static int FIRMWARE_SETTING_TYPE_VOLATILE_CONFIGURATION = 0;
-    public final static int FIRMWARE_SETTING_TYPE_NON_VOLATILE_CONFIGURATION = 1;
-    public final static int FIRMWARE_SETTING_TYPE_STATISTIC = 2;
-    public final static int FIRMWARE_SETTING_TYPE_SWITCH = 3;
-    public final static int FIRMWARE_SETTING_TYPE_DEBUG = 4;
+    public static final int FIRMWARE_SETTING_TYPE_VOLATILE_CONFIGURATION = 0;
+    public static final int FIRMWARE_SETTING_TYPE_NON_VOLATILE_CONFIGURATION = 1;
+    public static final int FIRMWARE_SETTING_TYPE_STATISTIC = 2;
+    public static final int FIRMWARE_SETTING_TYPE_SWITCH = 3;
+    public static final int FIRMWARE_SETTING_TYPE_DEBUG = 4;
 
     ////////////////////////////////////////////////////////////////////////////
     // end of Magic Number from Protocol Definition
     ////////////////////////////////////////////////////////////////////////////
 
+    private static final int QUEUE_SEND_BUFFER_SIZE = 200;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private String lastErrorReason = null;
@@ -187,12 +191,11 @@ public class Protocol
     private boolean isOperational = false;
     private DeviceInformation di = null;
 
-    private final static int QUEUE_SEND_BUFFER_SIZE = 200;
 
     private final Vector<byte[]> sendQueue = new Vector<byte[]>();
-    public int ClientQueueFreeSlots = 0;
-    public int ClientExecutedJobs = 0;
-    public int CommandsSendToClient = 0;
+    private int ClientQueueFreeSlots = 0;
+    private int ClientExecutedJobs = 0;
+    private int CommandsSendToClient = 0;
 
     public Protocol(String ConnectionDefinition)
     {

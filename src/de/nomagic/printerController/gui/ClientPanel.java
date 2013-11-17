@@ -34,8 +34,8 @@ import de.nomagic.printerController.core.CoreStateMachine;
  */
 public class ClientPanel
 {
-    public final static String ACTION_OPEN_CLIENT_CONNECTION = "connect";
-    public final static String ACTION_CLOSE_CLIENT_CONNECTION = "disconnect";
+    public static final String ACTION_OPEN_CLIENT_CONNECTION = "connect";
+    public static final String ACTION_CLOSE_CLIENT_CONNECTION = "disconnect";
 
     private final JPanel myPanel = new JPanel();
     private final JPanel myDescriptionPanel = new JPanel();

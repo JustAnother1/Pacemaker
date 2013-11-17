@@ -29,7 +29,7 @@ import ch.qos.logback.core.AppenderBase;
  */
 public class GuiAppender extends AppenderBase<ILoggingEvent>
 {
-    static private JTextArea out = null;
+    private static JTextArea out = null;
 
     public static void setTextArea(JTextArea jTextArea)
     {

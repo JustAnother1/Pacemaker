@@ -26,7 +26,7 @@ import javax.swing.table.AbstractTableModel;
  */
 public class SlideTableModel extends AbstractTableModel
 {
-    public final static int MAX_COLUMNS = 100;
+    public static final int MAX_COLUMNS = 100;
 
     private static final long serialVersionUID = 1L;
     private Vector<String> columnNames = new Vector<String>();
