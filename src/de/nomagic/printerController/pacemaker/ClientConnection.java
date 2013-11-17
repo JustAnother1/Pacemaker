@@ -456,6 +456,7 @@ public abstract class ClientConnection extends Thread
                     log.error("Wrong CRC ! expected : " + String.format("%02X", expectedCRC)
                                        + " received : " + String.format("%02X", buf[2 + replyLength]));
                     isSynced = false;
+                    receiveQueue.put( new Reply(null));
                     continue;
                 }
 
