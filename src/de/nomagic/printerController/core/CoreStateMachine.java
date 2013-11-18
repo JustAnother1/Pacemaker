@@ -19,7 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Cfg;
 
-/**
+/** Public API of Pacemaker Core.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *

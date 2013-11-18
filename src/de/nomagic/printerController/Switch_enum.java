@@ -14,7 +14,8 @@
  */
 package de.nomagic.printerController;
 
-/**
+/** supported Functions of Switches.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *

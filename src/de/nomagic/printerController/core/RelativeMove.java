@@ -16,7 +16,8 @@ package de.nomagic.printerController.core;
 
 import de.nomagic.printerController.Axis_enum;
 
-/**
+/** represents a movement relative to the last position.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */

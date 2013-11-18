@@ -30,7 +30,7 @@ public class Executor
     private final ActionHandler handler;
     private String lastErrorReason = null;
     private int currentExtruder = 0; // Max 3 Extruders (0..2)
-    double[] targetTemperatures = new double[5]; // Print Bed + Chamber + 3 Extruders
+    private double[] targetTemperatures = new double[Heater_enum.size];
 
 
     // allowed difference to target temperature in degree Celsius.

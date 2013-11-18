@@ -14,7 +14,8 @@
  */
 package de.nomagic.printerController.core;
 
-/**
+/** result of an executed Action.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *

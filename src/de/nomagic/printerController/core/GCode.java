@@ -19,7 +19,11 @@ import java.util.HashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
+/** representation of a G-Code.
+ *
+ * For definition of G-Codes see the  NIST RS274NGC G-code standard
+ * and the RepRap modifications: http://reprap.org/wiki/G-code
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */

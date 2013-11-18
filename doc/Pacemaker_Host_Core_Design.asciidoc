@@ -10,42 +10,98 @@ This document describes the design of the core module. The core module is a part
 == Overview
 The core takes strings that contain single G-Codes and communicates them to the clients. To do that the core needs a valid configuration. The configuration defines the connections to the clients and maps the functionalities of the printer to the features of the connected clients.
 
-== Way of a typical G-Code through the cores modules
-The public API for other modules to use is the CoreStateMachine class. Other modules using the core shall use the executeGCode function of that class.
-
-The G-Code that comes in that way is passed to the GCodeDecoder. The GCodeDecoder reads the string and extracts the data. After this step the G-Code is available as structured data(double, int,..) represented by a instance of the GCode class.
-
-The GCode decoder calls the appropriate methods to execute the detected G-Code. These methods are provided by the Executor class. As it might be more sensible for the GUI of the host the GUI may access the Executor directly.
-The Executor creates a instance of a Action class that correspondent to the requested action defined in the GCode. This action is then put into the Queue for the ActionHandler.
-
-The ActionHandler is a Thread. It receives Actions through a Queue from the Executor. Is opens all connections to the clients. It Sends to and receives from the clients. The Action Handler is the heart of the process. Here is the logic that decides what actions have to be executes and how the host has to react to the data coming in from the clients.
-
-To do this in a clear manner the Action Handler has several Devices that represent the functions of the printer. These devices are connected to the features of the clients. These devices are therefore responsible to map the abstract functions of the printer like move X axis, heat up Extruder one, .. to the concrete actions of the clients like do steps on stepper 3 of the first client, set the target temperature of heater 0 on client 2,..
-The devices use an instance of the protocol class for each connection to translate these concrete actions to the needed data packets to send out to the client.
-
-The protocol class uses a Client Connection class to send the bytes to the client.
-
-The Client Connection Instance is a Thread that listens for the responses and events from the client. These information is then given back though the Protocol instance to the ActionHandler. The ActionHandler reacts to the events and takes the appropriate actions. Responses are handed from the ActionHandler back to the the external module that issued the G-Code. The external Module can then use this response to generate the OK to signal that the execution of the GCode finished.
-
 == Modules
 This section gives detailed Information on all the Modules of the core.
 
 === CoreStateMachine
 Facade and public API to other Modules.
 
-=== Action Handler
-Central Event/ Action Handler. Uses Devices to map abstract printer features to concrete function of the connected clients. Creates all the connections to the clients.
+=== G-Code Decoder
+Takes a string and reads the G-Code from it. It then uses the Executor to create the appropriate actions.
 
 === Executor
 Creates Actions for the ActionHandler.
 
-=== G-Code Decoder
-Takes a string and reads the G-Code from it. It then uses the Executor to create the appropriate actions.
-
-=== ClientConnection
-Is a Task that handles the communications channel (Serial or TCP) to the pacemaker client.
+=== Action Handler
+Central Event/ Action Handler. The First action of the Action Handler is to Create and open all the connections to the clients. It then uses Devices to map abstract printer features to concrete function of the connected clients.  The Devices are then used to talk to the client.
+The following Devices are used:
+- Fan
+- Heater
+- Movement
+- Printer
+- Stepper
+- Temperature Sensor
 
 === Protocol
 creates and decodes Frames in the pacemaker protocol.
 
+=== ClientConnection
+Is a Task that handles the communications channel (Serial or TCP) to the pacemaker client.
 
+
+== Way of a typical G-Code through the cores modules to the Client..
+The public API for other modules to use is the CoreStateMachine class. Other modules using the core shall use the executeGCode function of that class.
+
+NOTE: G-Code is a function call to CoreStateMachine.executeGCode() passing a string.
+
+The G-Code that comes in that way is passed to the GCodeDecoder. The GCodeDecoder reads the string and extracts the data. After this step the G-Code is available as structured data(double, int,..) represented by a instance of the GCode class.
+
+NOTE: G-Code is an instance of GCode.class.
+
+
+The GCode decoder calls the appropriate methods to execute the detected G-Code. These methods are provided by the Executor class. As it might be more sensible for the GUI of the host the GUI may access the Executor directly.
+The Executor is a second API of the Core for non G-Code based Interfaces. Currently the GUI is the only Interface in that class.
+
+NOTE: The G-Code is a function call passing arguments to the Encoder.
+
+The Executor creates a instance of a Action class that correspondent to the requested action defined in the GCode. This action is then put into the Queue for the ActionHandler.
+Actions that can not be handled in a single non blocking action to the Action handler will be split into several actions. The responses to these actions will be handled by the Executor.
+The control logic that makes up complicated actions is located in the Executor.
+
+NOTE: The G-Code is one or more calls to ActionHandler.getValue() or ActionHandler.doAction() and the parameters that get passed to the functions.
+
+The ActionHandler is a Thread. It receives Actions through a Queue from the Executor. Is opens all connections to the clients. It Sends to and receives from the clients. The Action Handler is the heart of the process. Here is the logic that decides what actions have to be executes and how the host has to react to the data coming in from the clients.
+
+NOTE: The G-Code is now a call to a function of one of the devices.
+
+To do this in a clear manner the Action Handler has several Devices that represent the functions of the printer. These devices are connected to the features of the clients. These devices are therefore responsible to map the abstract functions of the printer like move X axis, heat up Extruder one, .. to the concrete actions of the clients like do steps on stepper 3 of the first client, set the target temperature of heater 0 on client 2,..
+The devices use an instance of the protocol class for each connection to translate these concrete actions to the needed data packets to send out to the client.
+
+NOTE: The G-Code is now a call to a function of the Protocol for the correct client.
+
+The protocol class uses a Client Connection class to send the bytes to the client. It translates the requested Actions into valid data frames that can be send out.
+
+NOTE: The G-Code is now a buffer with some bytes.
+
+The Client connection class then sends the data to the client.
+
+NOTE: The G-Code is now a signal on the communication channel.
+
+== .. and back to the user
+
+The Client Connection Instance is a Thread that listens for the responses and events from the client.
+Received data frames are given to the Protocol.class.
+
+NOTE: The G-Code is a buffer with bytes.
+
+The Protocol decodes the data and gives the result to the ActionHandler.
+
+NOTE: The G-Code is a return type of a function call.
+
+The ActionHandler reacts to the events and takes the appropriate actions. This may cause further calls to protocol. When all actions have been executed the Responses are handed back to the Executor.
+
+NOTE: The G-Code is a return type of a function call.
+
+The Executor hands the Result back to the G-Code Decoder. If the GUI Used the Executor directly the Result will be handed to the GUI and the handling is finished.
+
+NOTE: The G-Code is a return type of a function call.
+
+The G-Code Executor handles the Result to the CoreStateMachine.
+
+NOTE: The G-Code is a return type of a function call.
+
+The CoreStateMachine handles the Result to the caller.
+
+NOTE: The G-Code is a return type of a function call.
+
+The external module that issued the G-Code can then use this response to for example generate the OK to signal that the execution of the GCode finished.

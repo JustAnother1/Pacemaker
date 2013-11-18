@@ -21,7 +21,8 @@ import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
 
-/**
+/** Decodes Strings and gives the result to the Executor.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */

@@ -17,8 +17,7 @@ package de.nomagic.printerController;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-/**
- *
+/** collection of general utility functions.
  *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)

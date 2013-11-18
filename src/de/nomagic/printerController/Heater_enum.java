@@ -14,12 +14,15 @@
  */
 package de.nomagic.printerController;
 
-/**
+/** supported Functions of Heaters.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
 public enum Heater_enum
 {
-    Extruder_0, Extruder_1, Extruder_2, Print_Bed, Chamber
+    Extruder_0, Extruder_1, Extruder_2, Print_Bed, Chamber;
+
+    public static final int size = Heater_enum.values().length;
 }
