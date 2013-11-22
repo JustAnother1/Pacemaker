@@ -36,7 +36,7 @@ public abstract class ClientConnection extends Thread
     public static final int MAX_TRANSMISSIONS = 2; // number of tries to send the frame
     public static final int MAX_TIMEOUT_TRANSMISSIONS = 20; // number of tries to send the frame if the reason was a timeout
     public static final int ORDER_PACKET_ENVELOPE_NUM_BYTES = 5; // Sync, length, Control, Order, CRC = 5
-    public static final int RESPONSE_PACKET_ENVELOPE_NUM_BYTES = 4; // Sync, length and CRC are not included in length
+    public static final int RESPONSE_PACKET_ENVELOPE_NUM_BYTES = 3; // Sync, length and CRC are not included in length
 
     private static final Logger log = LoggerFactory.getLogger("ClientConnection");
     private static final boolean useNonBlocking = true;
