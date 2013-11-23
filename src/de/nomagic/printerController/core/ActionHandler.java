@@ -182,7 +182,7 @@ public class ActionHandler extends Thread implements EventSource
             print.put(i, new Printer(pro));
             mapFans(di, pro, i);
             mapHeaters(di, pro, i);
-            mapTemperatureSensos(di,pro,i);
+            mapTemperatureSensors(di,pro,i);
             move.addConnection(di, cfg, pro, i);
             readConfigurationFromClient(pro);
         }
@@ -208,7 +208,7 @@ public class ActionHandler extends Thread implements EventSource
         {
             String allInfo = pro.getCompleteDescriptionForSetting(settings.get(i));
             String Value = pro.readFirmwareConfigurationValue(settings.get(i));
-            log.info("" + i + " : " + allInfo + " = " + Value);
+            log.info("" + i + " : " + allInfo + " = " + Value + " !");
         }
         log.info("end of List");
     }
@@ -253,7 +253,7 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
-    private void mapTemperatureSensos(DeviceInformation di, Protocol pro, int connectionNumber)
+    private void mapTemperatureSensors(DeviceInformation di, Protocol pro, int connectionNumber)
     {
         for(int i = 0; i < di.getNumberTemperatureSensors(); i++)
         {
@@ -263,6 +263,17 @@ public class ActionHandler extends Thread implements EventSource
                 // this Temperature Sensor is used
                 TemperatureSensor s = new TemperatureSensor(pro, i);
                 TempSensors.put(func, s);
+
+                Heater h = heaters.get(func);
+                if(null == h)
+                {
+                    // No heater :-(
+                }
+                else
+                {
+                    h.setTemperatureSensor(s);
+                    heaters.put(func, h);
+                }
             }
         }
     }
@@ -286,6 +297,7 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
+    @Override
     public void run()
     {
         Event e;
