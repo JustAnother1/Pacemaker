@@ -32,12 +32,16 @@ public class Executor
     private int currentExtruder = 0; // Max 3 Extruders (0..2)
     private double[] targetTemperatures = new double[Heater_enum.size];
 
-
     // allowed difference to target temperature in degree Celsius.
-    private final double ACCEPTED_TEMPERATURE_DEVIATION = 0.1;
+    private final double ACCEPTED_TEMPERATURE_DEVIATION = 0.4;
 
     // time between to polls to client in miliseconds
-    private final int POLL_INTERVALL = 100;
+    private final int POLL_INTERVALL_MS = 100;
+
+    // time between the first time the temperature is in the accepted temperature band
+    // until the next command will be started.
+    // The time is the POLL_INTERVALL multiplied by HEATER_SETTLING_TIME_IN_POLLS.
+    private final int HEATER_SETTLING_TIME_IN_POLLS = 10;
 
 
     public Executor(ActionHandler handler)
@@ -128,7 +132,7 @@ public class Executor
         {
             try
             {
-                Thread.sleep(POLL_INTERVALL);
+                Thread.sleep(POLL_INTERVALL_MS);
             }
             catch(InterruptedException e)
             {
@@ -293,11 +297,12 @@ public class Executor
             return true;
         }
 
+        int settleCounter = 0;
         do
         {
             try
             {
-                Thread.sleep(POLL_INTERVALL);
+                Thread.sleep(POLL_INTERVALL_MS);
             }
             catch(InterruptedException e)
             {
@@ -321,8 +326,17 @@ public class Executor
                     lastTemperature = curTemperature;
                 }
             }
-        } while(   (curTemperature < targetTemp - ACCEPTED_TEMPERATURE_DEVIATION) // too cold
-                || (curTemperature > targetTemp + ACCEPTED_TEMPERATURE_DEVIATION)); // too hot
+            if(   (curTemperature < targetTemp - ACCEPTED_TEMPERATURE_DEVIATION) // too cold
+               || (curTemperature > targetTemp + ACCEPTED_TEMPERATURE_DEVIATION)) // too hot
+            {
+                // We leaved the allowed band so start again
+                settleCounter = 0;
+            }
+            else
+            {
+                settleCounter++;
+            }
+        } while(settleCounter < HEATER_SETTLING_TIME_IN_POLLS);
         return true;
     }
 
