@@ -477,8 +477,8 @@ public class ActionHandler extends Thread implements EventSource
                             TemperatureSensor sensor = TempSensors.get((Heater_enum)e.getParameter());
                             if(null == sensor)
                             {
-                                lastErrorReason = "Tried to get Heater temperature from invalid Temperature Sensor!";
-                                reportFailed(e);
+                                log.trace("Tried to get Heater temperature from invalid Temperature Sensor!");
+                                reportDoubleResult(e, 0.0);
                             }
                             else
                             {
