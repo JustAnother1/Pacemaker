@@ -27,6 +27,8 @@ import java.net.SocketException;
  */
 public class UdpInterface extends InteractiveInterface
 {
+    public static final int PORT = 2342;
+    public static final int MAX_PACKET_SIZE = 1024;
     public UdpInterface()
     {
     }
@@ -36,15 +38,15 @@ public class UdpInterface extends InteractiveInterface
         DatagramSocket serverSocket;
         try
         {
-            serverSocket = new DatagramSocket(2342);
+            serverSocket = new DatagramSocket(PORT);
         }
         catch(SocketException e)
         {
             e.printStackTrace();
             return;
         }
-        byte[] receiveData = new byte[1024];
-        byte[] sendData = new byte[1024];
+        byte[] receiveData = new byte[MAX_PACKET_SIZE];
+        byte[] sendData = new byte[MAX_PACKET_SIZE];
         while(false == isInterrupted())
         {
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);

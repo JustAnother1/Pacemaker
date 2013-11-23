@@ -73,6 +73,8 @@ public abstract class ClientConnection extends Thread
     private byte[] readBuffer = null;
     private int readPos = 0;
     private int lastPos = 0;
+    private int numberOfTimeouts = 0;
+    private int numberOfTransmissions = 0;
 
     public Reply sendRequest(final byte order, final byte[] parameter)
     {
@@ -107,37 +109,12 @@ public abstract class ClientConnection extends Thread
     public Reply sendRequest(final byte Order, final byte[] parameter, int offset, int length)
     {
         Reply r = null;
-        int numberOfTransmissions = 0;
-        int numberOfTimeouts = 0;
+        numberOfTransmissions = 0;
+        numberOfTimeouts = 0;
         boolean needsToRetransmitt = false;
+        final byte[] buf = getFrameAsBuffer(Order, parameter, offset, length);
         do
         {
-            final byte[] buf = new byte[length + ORDER_PACKET_ENVELOPE_NUM_BYTES];
-            buf[Protocol.ORDER_POS_OF_SYNC] = Protocol.START_OF_HOST_FRAME;
-            buf[Protocol.ORDER_POS_OF_LENGTH] = (byte)(length + 2); // length also includes Control and Order
-            if(false == needsToRetransmitt)
-            {
-                incrementSequenceNumber();
-            }
-            // else retransmission due to communications error
-            if(false == isFirstOrder)
-            {
-                buf[Protocol.ORDER_POS_OF_CONTROL] = sequenceNumber;
-            }
-            else
-            {
-                // signal the client that host has reset so hat the client flushes all cached responses
-                buf[Protocol.ORDER_POS_OF_CONTROL] = (byte)(Protocol.RESET_COMMUNICATION_SYNC_MASK | sequenceNumber);
-                isFirstOrder = false;
-            }
-            buf[Protocol.ORDER_POS_OF_ORDER_CODE] = Order;
-            for(int i = 0; i < length; i++)
-            {
-                buf[Protocol.ORDER_POS_OF_START_OF_PARAMETER + i] = parameter[i + offset];
-            }
-            // Sync is not included in CRC
-            buf[Protocol.ORDER_POS_OF_START_OF_PARAMETER + length]
-                    = getCRCfor(buf, Protocol.ORDER_POS_OF_START_OF_PARAMETER -1 + length, 1);
             try
             {
                 log.trace("Sending Frame: " + Tool.fromByteBufferToHexString(buf));
@@ -151,72 +128,14 @@ public abstract class ClientConnection extends Thread
                 log.error("Failed to send Request - Exception !");
                 return null;
             }
-            if(false == r.isValid())
-            {
-                if(true == isFirstOrder)
-                {
-                    log.error("Received no response - Timeout!");
-                    // Timeout
-                    if(numberOfTimeouts < MAX_TIMEOUT_TRANSMISSIONS)
-                    {
-                        // try again
-                        needsToRetransmitt = true;
-                        numberOfTransmissions = 0;
-                        numberOfTimeouts ++;
-                    }
-                    else
-                    {
-                        // give up
-                        needsToRetransmitt = false;
-                    }
-                }
-                else
-                {
-                    log.error("received invalid Frame ({})!", r);
-                    needsToRetransmitt = true;
-                }
-            }
-            else
-            {
-                // Transport error -> Retransmission ?
-                if((-1 < r.getReplyCode()) && (Protocol.RESPONSE_OK > r.getReplyCode()))
-                {
-                    // Reply codes as defined in Pacemaker Protocol
-                    if(Protocol.RESPONSE_FRAME_RECEIPT_ERROR == r.getReplyCode())
-                    {
-                        byte[] para = r.getParameter();
-                        switch(para[0])
-                        {
-                        case Protocol.RESPONSE_BAD_FRAME:
-                            log.error("received Bad Frame error Frame !");
-                            break;
-
-                        case Protocol.RESPONSE_BAD_ERROR_CHECK_CODE:
-                            log.error("received bad CRC error Frame !");
-                            break;
-
-                        case Protocol.RESPONSE_UNABLE_TO_ACCEPT_FRAME:
-                            log.error("received unable to accept error Frame !");
-                            break;
-
-                        default:
-                            log.error("received error Frame with invalid parameter !");
-                            break;
-                        }
-                    }
-                    // new error frames would be here with else if()
-                    else
-                    {
-                        log.error("received invalid error Frame !");
-                    }
-                    needsToRetransmitt = true;
-                }
-                else
-                {
-                    needsToRetransmitt = false;
-                }
-            }
+            needsToRetransmitt = retransmissionNeeded(r);
         } while((true == needsToRetransmitt) && (numberOfTransmissions < MAX_TRANSMISSIONS));
+        logReply(r);
+        return r;
+    }
+
+    private void logReply(Reply r)
+    {
         if(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR == r.getReplyCode())
         {
             // Do some logging
@@ -238,7 +157,103 @@ public abstract class ClientConnection extends Thread
             }
             log.error("Generic Application Error : " + type  + " " + r.getParameterAsString(1));
         }
-        return r;
+    }
+
+    private byte[] getFrameAsBuffer(byte order, byte[] parameter, int offset, int length)
+    {
+        final byte[] buf = new byte[length + ORDER_PACKET_ENVELOPE_NUM_BYTES];
+        buf[Protocol.ORDER_POS_OF_SYNC] = Protocol.START_OF_HOST_FRAME;
+        buf[Protocol.ORDER_POS_OF_LENGTH] = (byte)(length + 2); // length also includes Control and Order
+        incrementSequenceNumber();
+        // else retransmission due to communications error
+        if(false == isFirstOrder)
+        {
+            buf[Protocol.ORDER_POS_OF_CONTROL] = sequenceNumber;
+        }
+        else
+        {
+            // signal the client that host has reset so hat the client flushes all cached responses
+            buf[Protocol.ORDER_POS_OF_CONTROL] = (byte)(Protocol.RESET_COMMUNICATION_SYNC_MASK | sequenceNumber);
+            isFirstOrder = false;
+        }
+        buf[Protocol.ORDER_POS_OF_ORDER_CODE] = order;
+        for(int i = 0; i < length; i++)
+        {
+            buf[Protocol.ORDER_POS_OF_START_OF_PARAMETER + i] = parameter[i + offset];
+        }
+        // Sync is not included in CRC
+        buf[Protocol.ORDER_POS_OF_START_OF_PARAMETER + length]
+                = getCRCfor(buf, Protocol.ORDER_POS_OF_START_OF_PARAMETER -1 + length, 1);
+        return buf;
+    }
+
+    private boolean retransmissionNeeded(Reply r)
+    {
+        if(false == r.isValid())
+        {
+            if(true == isFirstOrder)
+            {
+                log.error("Received no response - Timeout!");
+                // Timeout
+                if(numberOfTimeouts < MAX_TIMEOUT_TRANSMISSIONS)
+                {
+                    // try again
+                    numberOfTransmissions = 0;
+                    numberOfTimeouts ++;
+                    return true;
+                }
+                else
+                {
+                    // give up
+                    return false;
+                }
+            }
+            else
+            {
+                log.error("received invalid Frame ({})!", r);
+                return true;
+            }
+        }
+        else
+        {
+            // Transport error -> Retransmission ?
+            if((-1 < r.getReplyCode()) && (Protocol.RESPONSE_OK > r.getReplyCode()))
+            {
+                // Reply codes as defined in Pacemaker Protocol
+                if(Protocol.RESPONSE_FRAME_RECEIPT_ERROR == r.getReplyCode())
+                {
+                    byte[] para = r.getParameter();
+                    switch(para[0])
+                    {
+                    case Protocol.RESPONSE_BAD_FRAME:
+                        log.error("received Bad Frame error Frame !");
+                        break;
+
+                    case Protocol.RESPONSE_BAD_ERROR_CHECK_CODE:
+                        log.error("received bad CRC error Frame !");
+                        break;
+
+                    case Protocol.RESPONSE_UNABLE_TO_ACCEPT_FRAME:
+                        log.error("received unable to accept error Frame !");
+                        break;
+
+                    default:
+                        log.error("received error Frame with invalid parameter !");
+                        break;
+                    }
+                }
+                // new error frames would be here with else if()
+                else
+                {
+                    log.error("received invalid error Frame !");
+                }
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
     }
 
     public static byte getCRCfor(final byte[] buf, final int length)

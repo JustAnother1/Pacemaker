@@ -25,6 +25,7 @@ import java.net.Socket;
  */
 public class TcpInterface extends InteractiveInterface
 {
+    public static final int PORT = 2342;
 
     public TcpInterface()
     {
@@ -35,7 +36,7 @@ public class TcpInterface extends InteractiveInterface
         ServerSocket welcomeSocket;
         try
         {
-            welcomeSocket = new ServerSocket(2342);
+            welcomeSocket = new ServerSocket(PORT);
         }
         catch(IOException e)
         {

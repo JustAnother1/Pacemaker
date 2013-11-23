@@ -297,6 +297,192 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
+    private void handleShutDown(Event e)
+    {
+        boolean success = true;
+        Set<Integer> ks = print.keySet();
+        Iterator<Integer> it = ks.iterator();
+        while(it.hasNext())
+        {
+            Printer curP =print.get(it.next());
+            if(false == curP.doShutDown())
+            {
+                success = false;
+                lastErrorReason = curP.getLastErrorReason();
+            }
+        }
+        if(false == success)
+        {
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
+    private void handleImmediateShutDown(Event e)
+    {
+        boolean success = true;
+        Set<Integer> ks = print.keySet();
+        Iterator<Integer> it = ks.iterator();
+        while(it.hasNext())
+        {
+            Printer curP =print.get(it.next());
+            if(false == curP.doImmediateShutDown())
+            {
+                success = false;
+                lastErrorReason = curP.getLastErrorReason();
+            }
+        }
+        if(false == success)
+        {
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
+    private void handlePauseMovement(Event e)
+    {
+        if(false == move.addPause((Double)e.getParameter()))
+        {
+            lastErrorReason = move.getLastErrorReason();
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
+    private void handleRelativeMove(Event e)
+    {
+        if(false == move.addRelativeMove((RelativeMove)e.getParameter()))
+        {
+            lastErrorReason = move.getLastErrorReason();
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
+    private void handleHomeAxis(Event e)
+    {
+        if(false == move.homeAxis((Axis_enum[])e.getParameter()))
+        {
+            lastErrorReason = move.getLastErrorReason();
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
+    private void handleEnableMotors(Event e)
+    {
+        if(false == move.enableAllMotors())
+        {
+            lastErrorReason = move.getLastErrorReason();
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
+    private void handleDisableMotors(Event e)
+    {
+        if(false == move.disableAllMotors())
+        {
+            lastErrorReason = move.getLastErrorReason();
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
+    private void handleSetSteppsPerMillimeter(Event e)
+    {
+        if(false == move.setStepsPerMillimeter((Axis_enum)e.getParameter(), (Double)e.getParameter2()))
+        {
+            lastErrorReason = move.getLastErrorReason();
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
+    private void handleSetFanSpeed(Event e)
+    {
+        int FanIdx = (Integer)e.getParameter();
+        Fan theFan = fans.get(FanIdx);
+        if(null == theFan)
+        {
+            log.warn("Tried to set Fan Speed for invalid({}) Fan!", FanIdx);
+            reportSuccess(e); // We do not need to stop the printing - we just ignore that fan.
+        }
+        else
+        {
+            if(false == theFan.setSpeed((Integer)e.getParameter2()))
+            {
+                lastErrorReason = theFan.getLastErrorReason();
+                reportFailed(e);
+            }
+            else
+            {
+                reportSuccess(e);
+            }
+        }
+    }
+
+    private void handleSetHeaterTemperature(Event e)
+    {
+        Heater theHeater = heaters.get((Heater_enum)e.getParameter2());
+        if(null == theHeater)
+        {
+            lastErrorReason = "Tried to set Heater temperature for invalid Heater!";
+            reportFailed(e);
+        }
+        else
+        {
+            if(false == theHeater.setTemperature((Double)e.getParameter()))
+            {
+                lastErrorReason = theHeater.getLastErrorReason();
+                reportFailed(e);
+            }
+            else
+            {
+                reportSuccess(e);
+            }
+        }
+    }
+
+    private void handleGetTemperature(Event e)
+    {
+        TemperatureSensor sensor = TempSensors.get((Heater_enum)e.getParameter());
+        if(null == sensor)
+        {
+            log.trace("Tried to get Heater temperature from invalid Temperature Sensor!");
+            reportDoubleResult(e, 0.0);
+        }
+        else
+        {
+            Double curTemp = sensor.getTemperature();
+            reportDoubleResult(e, curTemp);
+        }
+    }
+
     @Override
     public void run()
     {
@@ -313,89 +499,23 @@ public class ActionHandler extends Thread implements EventSource
                     {
                     // For data Types of parameters see Executor !
                     case doShutDown:
-                    {
-                        boolean success = true;
-                        Set<Integer> ks = print.keySet();
-                        Iterator<Integer> it = ks.iterator();
-                        while(it.hasNext())
-                        {
-                            Printer curP =print.get(it.next());
-                            if(false == curP.doShutDown())
-                            {
-                                success = false;
-                                lastErrorReason = curP.getLastErrorReason();
-                            }
-                        }
-                        if(false == success)
-                        {
-                            reportFailed(e);
-                        }
-                        else
-                        {
-                            reportSuccess(e);
-                        }
-                    }
+                        handleShutDown(e);
                         break;
 
                     case doImmediateShutDown:
-                    {
-                        boolean success = true;
-                        Set<Integer> ks = print.keySet();
-                        Iterator<Integer> it = ks.iterator();
-                        while(it.hasNext())
-                        {
-                            Printer curP =print.get(it.next());
-                            if(false == curP.doImmediateShutDown())
-                            {
-                                success = false;
-                                lastErrorReason = curP.getLastErrorReason();
-                            }
-                        }
-                        if(false == success)
-                        {
-                            reportFailed(e);
-                        }
-                        else
-                        {
-                            reportSuccess(e);
-                        }
-                    }
+                        handleImmediateShutDown(e);
                         break;
 
                     case pauseMovement:
-                        if(false == move.addPause((Double)e.getParameter()))
-                        {
-                            lastErrorReason = move.getLastErrorReason();
-                            reportFailed(e);
-                        }
-                        else
-                        {
-                            reportSuccess(e);
-                        }
+                        handlePauseMovement(e);
                         break;
 
                     case relativeMove:
-                        if(false == move.addRelativeMove((RelativeMove)e.getParameter()))
-                        {
-                            lastErrorReason = move.getLastErrorReason();
-                            reportFailed(e);
-                        }
-                        else
-                        {
-                            reportSuccess(e);
-                        }
+                        handleRelativeMove(e);
                         break;
 
                     case homeAxis:
-                        if(false == move.homeAxis((Axis_enum[])e.getParameter()))
-                        {
-                            lastErrorReason = move.getLastErrorReason();
-                            reportFailed(e);
-                        }
-                        else
-                        {
-                            reportSuccess(e);
-                        }
+                        handleHomeAxis(e);
                         break;
 
                     case getIsHoming:
@@ -404,106 +524,34 @@ public class ActionHandler extends Thread implements EventSource
                         break;
 
                     case enableMotor:
-                        if(false == move.enableAllMotors())
-                        {
-                            lastErrorReason = move.getLastErrorReason();
-                            reportFailed(e);
-                        }
-                        else
-                        {
-                            reportSuccess(e);
-                        }
+                        handleEnableMotors(e);
                         break;
 
                     case disableMotor:
-                        if(false == move.disableAllMotors())
-                        {
-                            lastErrorReason = move.getLastErrorReason();
-                            reportFailed(e);
-                        }
-                        else
-                        {
-                            reportSuccess(e);
-                        }
+                        handleDisableMotors(e);
                         break;
 
                     case setStepsPerMilimeter:
-                        if(false == move.setStepsPerMillimeter((Axis_enum)e.getParameter(), (Double)e.getParameter2()))
-                        {
-                            lastErrorReason = move.getLastErrorReason();
-                            reportFailed(e);
-                        }
-                        else
-                        {
-                            reportSuccess(e);
-                        }
+                        handleSetSteppsPerMillimeter(e);
                         break;
 
                     case setFanSpeed:
-                        int FanIdx = (Integer)e.getParameter();
-                        Fan theFan = fans.get(FanIdx);
-                        if(null == theFan)
-                        {
-                            log.warn("Tried to set Fan Speed for invalid({}) Fan!", FanIdx);
-                            reportSuccess(e); // We do not need to stop the printing - we just ignore that fan.
-                        }
-                        else
-                        {
-                            if(false == theFan.setSpeed((Integer)e.getParameter2()))
-                            {
-                                lastErrorReason = theFan.getLastErrorReason();
-                                reportFailed(e);
-                            }
-                            else
-                            {
-                                reportSuccess(e);
-                            }
-                        }
+                        handleSetFanSpeed(e);
                         break;
 
                     case setHeaterTemperature:
-                        {
-                            Heater theHeater = heaters.get((Heater_enum)e.getParameter2());
-                            if(null == theHeater)
-                            {
-                                lastErrorReason = "Tried to set Heater temperature for invalid Heater!";
-                                reportFailed(e);
-                            }
-                            else
-                            {
-                                if(false == theHeater.setTemperature((Double)e.getParameter()))
-                                {
-                                    lastErrorReason = theHeater.getLastErrorReason();
-                                    reportFailed(e);
-                                }
-                                else
-                                {
-                                    reportSuccess(e);
-                                }
-                            }
-                        }
+                        handleSetHeaterTemperature(e);
                         break;
 
                     case getTemperature:
-                        {
-                            TemperatureSensor sensor = TempSensors.get((Heater_enum)e.getParameter());
-                            if(null == sensor)
-                            {
-                                log.trace("Tried to get Heater temperature from invalid Temperature Sensor!");
-                                reportDoubleResult(e, 0.0);
-                            }
-                            else
-                            {
-                                Double curTemp = sensor.getTemperature();
-                                reportDoubleResult(e, curTemp);
-                            }
-                        }
+                        handleGetTemperature(e);
                         break;
 
                     default:
                         lastErrorReason = "Invalid Event Type ! " + e.getType();
                         log.error(lastErrorReason);
                         reportFailed(e);
+                        break;
                     }
                 }
             }
