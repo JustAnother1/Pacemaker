@@ -281,6 +281,7 @@ public class Executor
 
     private boolean waitForHeaterInLimits(final Heater_enum heater)
     {
+        double lastTemperature = 0.0;
         double curTemperature = 0.0;
         double targetTemp = 0.0;
         targetTemp = targetTemperatures[heater.ordinal()];
@@ -314,6 +315,11 @@ public class Executor
             else
             {
                 curTemperature = response.getTemperature();
+                if(lastTemperature != curTemperature)
+                {
+                    log.debug("Temperature at {} is {} !", heater, curTemperature);
+                    lastTemperature = curTemperature;
+                }
             }
         } while(   (curTemperature < targetTemp - ACCEPTED_TEMPERATURE_DEVIATION) // too cold
                 || (curTemperature > targetTemp + ACCEPTED_TEMPERATURE_DEVIATION)); // too hot
