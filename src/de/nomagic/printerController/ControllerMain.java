@@ -249,6 +249,7 @@ public class ControllerMain implements CloseApplication
                 System.out.print("\rNow sending Line " + linecount + "  ");
                 linecount ++;
                 String lineResult = pp.executeGCode(line);
+                log.debug(lineResult);
                 if(true  == lineResult.startsWith("!!"))
                 {
                     log.error("Failed to send the Line : {} !", line);
