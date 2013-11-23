@@ -226,7 +226,9 @@ public class Executor
         case 0: return setTemperatureNoWait(Heater_enum.Extruder_0, temperature);
         case 1: return setTemperatureNoWait(Heater_enum.Extruder_1, temperature);
         case 2: return setTemperatureNoWait(Heater_enum.Extruder_2, temperature);
-        default: lastErrorReason = "Invalid Extruder Number !"; return false;
+        default:
+            lastErrorReason = "Invalid Extruder Number !";
+            return false;
         }
     }
 
@@ -281,15 +283,7 @@ public class Executor
     {
         double curTemperature = 0.0;
         double targetTemp = 0.0;
-        switch(heater)
-        {
-        case Chamber:    targetTemp = targetTemperatures[0]; break;
-        case Print_Bed:  targetTemp = targetTemperatures[1]; break;
-        case Extruder_0: targetTemp = targetTemperatures[2]; break;
-        case Extruder_1: targetTemp = targetTemperatures[3]; break;
-        case Extruder_2: targetTemp = targetTemperatures[4]; break;
-        default: lastErrorReason = "Invalid Extruder Number !"; return false;
-        }
+        targetTemp = targetTemperatures[heater.ordinal()];
 
         if(   (targetTemp > 0.0 - ACCEPTED_TEMPERATURE_DEVIATION)
            && (targetTemp < 0.0 + ACCEPTED_TEMPERATURE_DEVIATION))
@@ -328,16 +322,7 @@ public class Executor
 
     private boolean setTemperatureNoWait( final Heater_enum heater, final Double temperature)
     {
-        switch(heater)
-        {
-        case Chamber:    targetTemperatures[0] = temperature; break;
-        case Print_Bed:  targetTemperatures[1] = temperature; break;
-        case Extruder_0: targetTemperatures[2] = temperature; break;
-        case Extruder_1: targetTemperatures[3] = temperature; break;
-        case Extruder_2: targetTemperatures[4] = temperature; break;
-        default: lastErrorReason = "Invalid Extruder Number !"; return false;
-        }
-
+        targetTemperatures[heater.ordinal()] = temperature;
         if(false == handler.doAction(Action_enum.setHeaterTemperature, temperature, heater))
         {
             lastErrorReason = handler.getLastErrorReason();
