@@ -428,7 +428,7 @@ public class Protocol
         final Reply r = cc.sendRequest(ORDER_REQ_TEMPERATURE, param);
         if(null == r)
         {
-            return -3;
+            return -10000.3;
         }
         if(true == r.isOKReply())
         {
@@ -436,22 +436,22 @@ public class Protocol
             if(2 > reply.length)
             {
                 // The return did not have the data
-                return -4;
+                return -1000.4;
             }
-            int reportedTemp = (reply[0] * 256) + reply[1];
+            int reportedTemp = ((0xff &reply[0]) * 256) + ( 0xff & reply[1]);
             if(SENSOR_PROBLEM == reportedTemp)
             {
-                return -1;
+                return -1000.1;
             }
             else
             {
-                return reportedTemp / 10;
+                return reportedTemp / (double)10;
             }
         }
         else
         {
             // error -> try again later
-            return -2;
+            return -1000.2;
         }
     }
 
