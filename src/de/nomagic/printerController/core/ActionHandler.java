@@ -28,6 +28,7 @@ import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.Fan_enum;
 import de.nomagic.printerController.Heater_enum;
+import de.nomagic.printerController.Output_enum;
 import de.nomagic.printerController.Setting;
 import de.nomagic.printerController.core.devices.Fan;
 import de.nomagic.printerController.core.devices.Heater;
@@ -185,6 +186,7 @@ public class ActionHandler extends Thread implements EventSource
             mapFans(di, pro, i);
             mapHeaters(di, pro, i);
             mapTemperatureSensors(di,pro,i);
+            mapOutputs(di, pro, i);
             move.addConnection(di, cfg, pro, i);
             readConfigurationFromClient(pro);
         }
@@ -251,6 +253,41 @@ public class ActionHandler extends Thread implements EventSource
                 // this Fan is used
                 Fan f = new Fan(pro, i);
                 fans.put(func.getValue(), f);
+            }
+        }
+    }
+
+    private void mapOutputs(DeviceInformation di, Protocol pro, int connectionNumber)
+    {
+        for(int i = 0; i < di.getNumberOutputSignals(); i++)
+        {
+            Output_enum func = cfg.getFunctionOfOutput(connectionNumber, i);
+            if(null != func)
+            {
+                Fan_enum fanFunc = null;
+                switch(func)
+                {
+                case Fan_Hot_End_0:
+                    fanFunc = Fan_enum.Extruder_0;
+                    break;
+
+                case Fan_Hot_End_1:
+                    fanFunc = Fan_enum.Extruder_1;
+                    break;
+
+                case Fan_Hot_End_2:
+                    fanFunc = Fan_enum.Extruder_2;
+                    break;
+
+                default:
+                    break;
+                }
+                if(null != fanFunc)
+                {
+                    // this Output is a Fan
+                    Fan f = new Fan(pro, i, false);
+                    fans.put(fanFunc.getValue(), f);
+                }
             }
         }
     }

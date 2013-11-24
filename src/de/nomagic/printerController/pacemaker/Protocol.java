@@ -105,6 +105,9 @@ public class Protocol
 
     public static final byte INPUT_HIGH = 1;
     public static final byte INPUT_LOW = 0;
+    public static final int OUTPUT_STATE_LOW = 0;
+    public static final int OUTPUT_STATE_HIGH = 0;
+    public static final int OUTPUT_STATE_DISABLED = 0;
     public static final byte ORDERED_STOP = 0;
     public static final byte EMERGENCY_STOP = 1;
     public static final int DIRECTION_INCREASING = 1;
@@ -482,7 +485,40 @@ public class Protocol
         }
         else
         {
-            log.warn("Client does not have the Fan {} ! It has only {} + 1 fans!", fan,  di.getNumberPwmSwitchedOutputs());
+            log.warn("Client does not have the Fan {} ! It has only {} + 1 fans!",
+                    fan,  di.getNumberPwmSwitchedOutputs());
+            return true;
+        }
+    }
+
+    /** sets the state of the Output.
+     *
+     * @param output specifies the effected output.
+     * @param state 0 = low; 1 = high; 2 = disabled / high-Z
+     */
+    public boolean setOutputState(final int output, final int state)
+    {
+        if((-1 < output) && (output < di.getNumberOutputSignals()))
+        {
+            final byte[] param = new byte[3];
+            param[0] = DEVICE_TYPE_OUTPUT;
+            param[1] = (byte)output;
+            param[2] = (byte)(0xff & state);
+            if(false == sendOrderExpectOK(ORDER_SET_OUTPUT, param))
+            {
+                log.error("Falied to set output state !");
+                lastErrorReason = "Falied to set output state !";
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        else
+        {
+            log.warn("Client does not have the output {} ! It has only {} + 1 output!",
+                    output,  di.getNumberOutputSignals());
             return true;
         }
     }

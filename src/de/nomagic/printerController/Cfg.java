@@ -48,12 +48,21 @@ public class Cfg
     public static final String STEPPER_MAXIMUM_ACCELLERATION = "maximum acceleration";
     public static final String STEPPER_STEPS_PER_MILLIMETER = "steps per millimeter";
 
-    private enum Sect {GENERAL, TEMPERATURES, HEATERS, FANS, SWITCHES, STEPPER, FIRMWARE_CONFIGURATION, INVALID}
+    private enum Sect {GENERAL,
+                      TEMPERATURES,
+                      HEATERS,
+                      FANS,
+                      OUTPUTS,
+                      SWITCHES,
+                      STEPPER,
+                      FIRMWARE_CONFIGURATION,
+                      INVALID}
     public static final String GENERAL_SECTION = "[general]";
     public static final String TEMPERATURES_SECTION = "[temperatures]";
     public static final String HEATERS_SECTION = "[heaters]";
     public static final String FANS_SECTION = "[fans]";
     public static final String SWITCHES_SECTION = "[switches]";
+    public static final String OUTPUTS_SECTION = "[outputs]";
     public static final String STEPPER_SECTION = "[steppers]";
     public static final String STEPPER_SECTION_OPEN = "[stepper";
     public static final String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
@@ -68,6 +77,7 @@ public class Cfg
     private HashMap<Integer,HashMap<Integer,Heater_enum>> TemperatureSensors = new HashMap<Integer,HashMap<Integer,Heater_enum>>();
     private HashMap<Integer,HashMap<Integer,Heater_enum>> Heaters = new HashMap<Integer,HashMap<Integer,Heater_enum>>();
     private HashMap<Integer,HashMap<Integer,Fan_enum>> Fans = new HashMap<Integer,HashMap<Integer,Fan_enum>>();
+    private HashMap<Integer,HashMap<Integer,Output_enum>> Outputs = new HashMap<Integer,HashMap<Integer,Output_enum>>();
     private HashMap<Integer,HashMap<Integer,Switch_enum>> Switches = new HashMap<Integer,HashMap<Integer,Switch_enum>>();
     // TODO inverted Switches
     private HashMap<Integer,Boolean> useSteppers = new HashMap<Integer,Boolean>();
@@ -181,6 +191,31 @@ public class Cfg
         else
         {
             return fan.get(FanNumber);
+        }
+    }
+
+    // Outputs
+    public void addOutput(Integer ClientNumber, Integer OutputNumber, Output_enum Function)
+    {
+        HashMap<Integer,Output_enum> sw = Outputs.get(ClientNumber);
+        if(null == sw)
+        {
+            sw = new HashMap<Integer,Output_enum>();
+        }
+        sw.put(OutputNumber, Function);
+        Outputs.put(ClientNumber, sw);
+    }
+
+    public Output_enum getFunctionOfOutput(Integer ClientNumber, Integer OutputNumber)
+    {
+        HashMap<Integer,Output_enum> sw = Outputs.get(ClientNumber);
+        if(null == sw)
+        {
+            return null;
+        }
+        else
+        {
+            return sw.get(OutputNumber);
         }
     }
 
@@ -415,6 +450,23 @@ public class Cfg
                     ow.write(curFan + SEPERATOR +  function + "\n");
                 }
 
+// Outputs :
+                ow.write(OUTPUTS_SECTION + "\n");
+                ow.write(COMMENT_START + " valid functions are :");
+                for(Output_enum ele : Output_enum.values())
+                {
+                    ow.write(" " + ele);
+                }
+                ow.write("\n");
+                HashMap<Integer, Output_enum> op = Outputs.get(ConnectionNum);
+                Set<Integer> usedOutputsSet = op.keySet();
+                Iterator<Integer> OutputsIterator = usedOutputsSet.iterator();
+                while(OutputsIterator.hasNext())
+                {
+                    Integer curOutput = OutputsIterator.next();
+                    Output_enum function = op.get(curOutput);
+                    ow.write(curOutput + SEPERATOR +  function + "\n");
+                }
 // Switches :
                 ow.write(SWITCHES_SECTION + "\n");
                 ow.write(COMMENT_START + " valid functions are :");
@@ -534,6 +586,10 @@ public class Cfg
                         {
                             curSection = Sect.FANS;
                         }
+                        else if(true == OUTPUTS_SECTION.equals(curLine))
+                        {
+                            curSection = Sect.OUTPUTS;
+                        }
                         else if(true == SWITCHES_SECTION.equals(curLine))
                         {
                             curSection = Sect.SWITCHES;
@@ -597,7 +653,7 @@ public class Cfg
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
-                                    log.error("Found invalid function : " + curLine);
+                                    log.error("Found invalid temperature sensor function : " + curLine);
                                 }
                             }
                                 break;
@@ -615,7 +671,7 @@ public class Cfg
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
-                                    log.error("Found invalid function : " + curLine);
+                                    log.error("Found invalid heater function : " + curLine);
                                 }
                             }
                                 break;
@@ -633,7 +689,25 @@ public class Cfg
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
-                                    log.error("Found invalid function : " + curLine);
+                                    log.error("Found invalid fan function : " + curLine);
+                                }
+                            }
+                                break;
+                            case OUTPUTS:
+                            {
+                                HashMap<Integer, Output_enum> curMap = Outputs.get(connectionNumber);
+                                if(null == curMap)
+                                {
+                                    curMap = new HashMap<Integer, Output_enum>();
+                                }
+                                try
+                                {
+                                    curMap.put(getIntKeyFrom(curLine), Output_enum.valueOf(getValueFrom(curLine)));
+                                    Outputs.put(connectionNumber, curMap);
+                                }
+                                catch(IllegalArgumentException iae)
+                                {
+                                    log.error("Found invalid output function : " + curLine);
                                 }
                             }
                                 break;
@@ -651,7 +725,7 @@ public class Cfg
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
-                                    log.error("Found invalid function : " + curLine);
+                                    log.error("Found invalid switch function : " + curLine);
                                 }
                             }
                                 break;
@@ -680,7 +754,7 @@ public class Cfg
                                 }
                                 else
                                 {
-                                    log.error("Invalid Setting {} !", curLine);
+                                    log.error("Invalid stepper Setting {} !", curLine);
                                 }
                             }
                                 break;
