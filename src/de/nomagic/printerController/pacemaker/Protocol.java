@@ -458,7 +458,7 @@ public class Protocol
     /** sets the speed of the Fan ( Fan 0 = Fan that cools the printed part).
      *
      * @param fan specifies the effected fan.
-     * @param speed 0 = off; 255 = max
+     * @param speed 0 = off; 65535 = max
      */
     public boolean setFanSpeedfor(final int fan, final int speed)
     {
