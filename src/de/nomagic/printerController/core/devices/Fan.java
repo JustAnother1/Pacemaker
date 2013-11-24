@@ -23,8 +23,11 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class Fan
 {
+    public static final int MAX_SPEED = 0xffff;
+
     private final Protocol pro;
     private final int num;
+    private int curSpeed = 0;
     private String lastErrorReason = null;
 
     public Fan(final Protocol pro, final int number)
@@ -38,15 +41,24 @@ public class Fan
         return lastErrorReason;
     }
 
-    public boolean setSpeed(Integer speed)
+    public boolean setSpeed(int speed)
     {
-        if(false == pro.setFanSpeedfor(num, speed))
+        if(speed != curSpeed)
         {
-            lastErrorReason = pro.getLastErrorReason();
-            return false;
+            if(false == pro.setFanSpeedfor(num, speed))
+            {
+                lastErrorReason = pro.getLastErrorReason();
+                return false;
+            }
+            else
+            {
+                curSpeed = speed;
+                return true;
+            }
         }
         else
         {
+            // Fan already set to this sped no reason to change.
             return true;
         }
     }

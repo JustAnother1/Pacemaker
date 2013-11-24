@@ -44,6 +44,8 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class ActionHandler extends Thread implements EventSource
 {
+    public static final double HOT_END_FAN_ON_TEMPERATURE = 50.0;
+
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private Cfg cfg;
     private boolean isOperational = false;
@@ -470,7 +472,8 @@ public class ActionHandler extends Thread implements EventSource
 
     private void handleGetTemperature(Event e)
     {
-        TemperatureSensor sensor = TempSensors.get((Heater_enum)e.getParameter());
+        Heater_enum location = (Heater_enum)e.getParameter();
+        TemperatureSensor sensor = TempSensors.get(location);
         if(null == sensor)
         {
             log.trace("Tried to get Heater temperature from invalid Temperature Sensor!");
@@ -479,6 +482,36 @@ public class ActionHandler extends Thread implements EventSource
         else
         {
             Double curTemp = sensor.getTemperature();
+            Fan theFan = null;
+            switch(location)
+            {
+            case Extruder_0:
+                theFan = fans.get(Fan_enum.Extruder_0.getValue());
+                break;
+
+            case Extruder_1:
+                theFan = fans.get(Fan_enum.Extruder_1.getValue());
+                break;
+
+            case Extruder_2:
+                theFan = fans.get(Fan_enum.Extruder_2.getValue());
+                break;
+
+            default:
+                // do nothing;
+                break;
+            }
+            if(null != theFan)
+            {
+                if(curTemp > HOT_END_FAN_ON_TEMPERATURE)
+                {
+                    theFan.setSpeed(Fan.MAX_SPEED);
+                }
+                else
+                {
+                    theFan.setSpeed(0);
+                }
+            }
             reportDoubleResult(e, curTemp);
         }
     }

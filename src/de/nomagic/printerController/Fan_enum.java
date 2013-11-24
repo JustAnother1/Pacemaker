@@ -22,7 +22,9 @@ package de.nomagic.printerController;
  */
 public enum Fan_enum
 {
-    Printed_Part(0);
+    // The Number is the Value for the P Word in M106
+    // with Extruder_0(1) the G-Code M106 P1 S255 will turn on the Fan on the Extruder_0 to full power.
+    Printed_Part(0), Extruder_0(1), Extruder_1(2), Extruder_2(3);
 
     private final int index;
 
