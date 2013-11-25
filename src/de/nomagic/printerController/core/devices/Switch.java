@@ -12,18 +12,34 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>
  *
  */
-package de.nomagic.printerController.core;
+package de.nomagic.printerController.core.devices;
 
-/** supported Actions of the ActionHandler.
- *
+import de.nomagic.printerController.pacemaker.Protocol;
+
+/**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public enum Action_enum
+public class Switch
 {
-    doShutDown, doImmediateShutDown,
-    pauseMovement, relativeMove, homeAxis, getIsHoming, enableMotor, disableMotor,
-    setStepsPerMilimeter,
-    setFanSpeed, setHeaterTemperature, getTemperature, getStateOfSwitch
+    private final Protocol pro;
+    private final int num;
+
+    public Switch(Protocol pro, int number)
+    {
+        this.pro = pro;
+        this.num = number;
+    }
+
+    public int getState()
+    {
+        return pro.getSwitchState(num);
+    }
+
+    @Override
+    public String toString()
+    {
+        return "Switch num=" + num;
+    }
 }

@@ -48,15 +48,8 @@ public class Cfg
     public static final String STEPPER_MAXIMUM_ACCELLERATION = "maximum acceleration";
     public static final String STEPPER_STEPS_PER_MILLIMETER = "steps per millimeter";
 
-    private enum Sect {GENERAL,
-                      TEMPERATURES,
-                      HEATERS,
-                      FANS,
-                      OUTPUTS,
-                      SWITCHES,
-                      STEPPER,
-                      FIRMWARE_CONFIGURATION,
-                      INVALID}
+    private enum Sect
+    {GENERAL, TEMPERATURES, HEATERS, FANS, OUTPUTS, SWITCHES, STEPPER, FIRMWARE_CONFIGURATION, INVALID}
     public static final String GENERAL_SECTION = "[general]";
     public static final String TEMPERATURES_SECTION = "[temperatures]";
     public static final String HEATERS_SECTION = "[heaters]";
@@ -73,18 +66,28 @@ public class Cfg
 
 
     // Settings per Connection:
-    private HashMap<Integer,String> ConnectionDefinition = new HashMap<Integer,String>();
-    private HashMap<Integer,HashMap<Integer,Heater_enum>> TemperatureSensors = new HashMap<Integer,HashMap<Integer,Heater_enum>>();
-    private HashMap<Integer,HashMap<Integer,Heater_enum>> Heaters = new HashMap<Integer,HashMap<Integer,Heater_enum>>();
-    private HashMap<Integer,HashMap<Integer,Fan_enum>> Fans = new HashMap<Integer,HashMap<Integer,Fan_enum>>();
-    private HashMap<Integer,HashMap<Integer,Output_enum>> Outputs = new HashMap<Integer,HashMap<Integer,Output_enum>>();
-    private HashMap<Integer,HashMap<Integer,Switch_enum>> Switches = new HashMap<Integer,HashMap<Integer,Switch_enum>>();
-    // TODO inverted Switches
-    private HashMap<Integer,Boolean> useSteppers = new HashMap<Integer,Boolean>();
-    private HashMap<Integer,HashMap<Integer, Boolean>> movementDirectionInverted = new HashMap<Integer,HashMap<Integer, Boolean>>();
-    private HashMap<Integer,HashMap<Integer,Axis_enum>> Steppers = new HashMap<Integer,HashMap<Integer,Axis_enum>>();
-    private HashMap<Integer,HashMap<Integer,Integer>> StepperMaxAcceleration = new HashMap<Integer,HashMap<Integer,Integer>>();
-    private HashMap<Integer,HashMap<Integer,Double>> StepperStepsPerMillimeter = new HashMap<Integer,HashMap<Integer,Double>>();
+    private HashMap<Integer,String> ConnectionDefinition
+      = new HashMap<Integer,String>();
+    private HashMap<Integer,HashMap<Integer,Heater_enum>> TemperatureSensors
+      = new HashMap<Integer,HashMap<Integer,Heater_enum>>();
+    private HashMap<Integer,HashMap<Integer,Heater_enum>> Heaters
+      = new HashMap<Integer,HashMap<Integer,Heater_enum>>();
+    private HashMap<Integer,HashMap<Integer,Fan_enum>> Fans
+      = new HashMap<Integer,HashMap<Integer,Fan_enum>>();
+    private HashMap<Integer,HashMap<Integer,Output_enum>> Outputs
+      = new HashMap<Integer,HashMap<Integer,Output_enum>>();
+    private HashMap<Integer,HashMap<Integer,Switch_enum>> Switches
+      = new HashMap<Integer,HashMap<Integer,Switch_enum>>();
+    private HashMap<Integer,Boolean> useSteppers
+      = new HashMap<Integer,Boolean>();
+    private HashMap<Integer,HashMap<Integer, Boolean>> movementDirectionInverted
+      = new HashMap<Integer,HashMap<Integer, Boolean>>();
+    private HashMap<Integer,HashMap<Integer,Axis_enum>> Steppers
+      = new HashMap<Integer,HashMap<Integer,Axis_enum>>();
+    private HashMap<Integer,HashMap<Integer,Integer>> StepperMaxAcceleration
+      = new HashMap<Integer,HashMap<Integer,Integer>>();
+    private HashMap<Integer,HashMap<Integer,Double>> StepperStepsPerMillimeter
+      = new HashMap<Integer,HashMap<Integer,Double>>();
 
     private HashMap<Integer,Vector<Setting>> firmwareCfg = new HashMap<Integer,Vector<Setting>>();
 
@@ -738,19 +741,27 @@ public class Cfg
                                 }
                                 else if(true == curLine.startsWith(STEPPER_INVERTED))
                                 {
-                                    setMovementDirectionInverted(connectionNumber, curStepper, getBooleanValueFrom(curLine));
+                                    setMovementDirectionInverted(connectionNumber,
+                                                                 curStepper,
+                                                                 getBooleanValueFrom(curLine));
                                 }
                                 else if(true == curLine.startsWith(STEPPER_AXIS))
                                 {
-                                    addStepper(connectionNumber, curStepper, Axis_enum.valueOf(getValueFrom(curLine)));
+                                    addStepper(connectionNumber,
+                                               curStepper,
+                                               Axis_enum.valueOf(getValueFrom(curLine)));
                                 }
                                 else if(true == curLine.startsWith(STEPPER_MAXIMUM_ACCELLERATION))
                                 {
-                                    setMaxAccelerationFor(connectionNumber, curStepper, getIntValueFrom(curLine));
+                                    setMaxAccelerationFor(connectionNumber,
+                                                          curStepper,
+                                                          getIntValueFrom(curLine));
                                 }
                                 else if(true == curLine.startsWith(STEPPER_STEPS_PER_MILLIMETER))
                                 {
-                                    setSteppsPerMillimeterFor(connectionNumber, curStepper, getDoubleValueFrom(curLine));
+                                    setSteppsPerMillimeterFor(connectionNumber,
+                                                              curStepper,
+                                                              getDoubleValueFrom(curLine));
                                 }
                                 else
                                 {

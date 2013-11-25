@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.Heater_enum;
+import de.nomagic.printerController.Switch_enum;
 
 /**
  * @author Lars P&ouml;tter
@@ -26,6 +27,10 @@ import de.nomagic.printerController.Heater_enum;
  */
 public class Executor
 {
+    public static final int SWITCH_STATE_OPEN = 0;
+    public static final int SWITCH_STATE_CLOSED = 1;
+    public static final int SWITCH_STATE_NOT_AVAILABLE = 2;
+
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final ActionHandler handler;
     private String lastErrorReason = null;
@@ -406,6 +411,29 @@ public class Executor
             }
         }
         return  String.valueOf(curTemperature);
+    }
+
+    public int getStateOfSwitch(Switch_enum theSwitch)
+    {
+        int curState = SWITCH_STATE_NOT_AVAILABLE;
+        ActionResponse response = handler.getValue(Action_enum.getStateOfSwitch, theSwitch);
+        if(null == response)
+        {
+            log.error("Did not get a response to get State of Switch Action !");
+        }
+        else
+        {
+            if(false == response.wasSuccessful())
+            {
+                lastErrorReason = handler.getLastErrorReason();
+                log.error(lastErrorReason);
+            }
+            else
+            {
+                curState = response.getInt();
+            }
+        }
+        return curState;
     }
 
 }

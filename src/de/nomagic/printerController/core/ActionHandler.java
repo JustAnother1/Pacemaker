@@ -30,10 +30,12 @@ import de.nomagic.printerController.Fan_enum;
 import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Output_enum;
 import de.nomagic.printerController.Setting;
+import de.nomagic.printerController.Switch_enum;
 import de.nomagic.printerController.core.devices.Fan;
 import de.nomagic.printerController.core.devices.Heater;
 import de.nomagic.printerController.core.devices.Movement;
 import de.nomagic.printerController.core.devices.Printer;
+import de.nomagic.printerController.core.devices.Switch;
 import de.nomagic.printerController.core.devices.TemperatureSensor;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
 import de.nomagic.printerController.pacemaker.Protocol;
@@ -59,6 +61,7 @@ public class ActionHandler extends Thread implements EventSource
     private HashMap<Integer, Fan> fans = new HashMap<Integer, Fan>();
     private HashMap<Heater_enum, Heater> heaters = new HashMap<Heater_enum, Heater>();
     private HashMap<Heater_enum, TemperatureSensor> TempSensors = new HashMap<Heater_enum, TemperatureSensor>();
+    private HashMap<Switch_enum, Switch> Switches = new HashMap<Switch_enum, Switch>();
 
     public ActionHandler(Cfg cfg)
     {
@@ -127,6 +130,16 @@ public class ActionHandler extends Thread implements EventSource
             }
         }
 
+        sb.append("Configured Switches:\n");
+        for (Switch_enum swe : Switch_enum.values())
+        {
+            Switch sw = Switches.get(swe);
+            if(null != sw)
+            {
+                sb.append(swe.toString() + " : " +  sw.toString() + "\n");
+            }
+        }
+
         return "ActionHandler:\n" +
                "operational : " + isOperational + "\n" +
                "Last Error : " + lastErrorReason + " \n" +
@@ -187,6 +200,7 @@ public class ActionHandler extends Thread implements EventSource
             mapHeaters(di, pro, i);
             mapTemperatureSensors(di,pro,i);
             mapOutputs(di, pro, i);
+            mapSwitches(di, pro, i);
             move.addConnection(di, cfg, pro, i);
             readConfigurationFromClient(pro);
         }
@@ -253,6 +267,20 @@ public class ActionHandler extends Thread implements EventSource
                 // this Fan is used
                 Fan f = new Fan(pro, i);
                 fans.put(func.getValue(), f);
+            }
+        }
+    }
+
+    private void mapSwitches(DeviceInformation di, Protocol pro, int connectionNumber)
+    {
+        for(int i = 0; i < di.getNumberSwitches(); i++)
+        {
+            Switch_enum func = cfg.getFunctionOfSwitch(connectionNumber, i);
+            if(null != func)
+            {
+                // this Switch is used
+                Switch sw = new Switch(pro, i);
+                Switches.put(func, sw);
             }
         }
     }
@@ -553,6 +581,21 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
+    private void handleGeStateOfSwitcht(Event e)
+    {
+        Switch_enum theSwitch = (Switch_enum) e.getParameter();
+        Switch sw = Switches.get(theSwitch);
+        if(null == sw)
+        {
+            log.trace("Tried to get State from invalid Switch !");
+            reportIntResult(e, Executor.SWITCH_STATE_NOT_AVAILABLE);
+        }
+        else
+        {
+            reportIntResult(e, sw.getState());
+        }
+    }
+
     @Override
     public void run()
     {
@@ -617,6 +660,10 @@ public class ActionHandler extends Thread implements EventSource
                         handleGetTemperature(e);
                         break;
 
+                    case getStateOfSwitch:
+                        handleGeStateOfSwitcht(e);
+                        break;
+
                     default:
                         lastErrorReason = "Invalid Event Type ! " + e.getType();
                         log.error(lastErrorReason);
@@ -640,6 +687,16 @@ public class ActionHandler extends Thread implements EventSource
             Printer curPrinter = print.get(curConn);
             curPrinter.closeConnection();
         }
+    }
+
+    private void reportIntResult(Event e, int value)
+    {
+        EventSource src = e.getSrc();
+        if(null != src)
+        {
+            src.reportEventStatus(new ActionResponse(true, value));
+        }
+        // else nobody cares
     }
 
     private void reportDoubleResult(Event e, Double value)
@@ -756,8 +813,9 @@ public class ActionHandler extends Thread implements EventSource
         Event e;
         switch(theAction)
         {
+        case getStateOfSwitch:
         case getTemperature:
-            e = new Event(Action_enum.getTemperature, param, this);
+            e = new Event(theAction, param, this);
             eventQueue.add(e);
             return getResponse();
 

@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
+import de.nomagic.printerController.Switch_enum;
 
 /** Decodes Strings and gives the result to the Executor.
  *
@@ -38,7 +39,7 @@ public class GCodeDecoder
     private final Executor exe;
 
     // G-Code State
-    private final double[] curPosition= new double[5]; // x,y,z,e,f
+    private final double[] curPosition= new double[Axis_enum.size];
     private boolean isRelative = false;
     private boolean isMetric = true;
     private String LastErrorReason = null;
@@ -59,10 +60,10 @@ public class GCodeDecoder
     public String sendLine(final String line)
     {
         LastErrorReason = null;
-        if(null == line) return "";
-        if(1 > line.length()) return "";
+        if(null == line) {return "";}
+        if(1 > line.length()) {return "";}
         final GCode code = new GCode(line);
-        if(true == code.isEmpty()) return "";
+        if(true == code.isEmpty()) {return "";}
         if(false == code.isValid())
         {
             LastErrorReason = "G-Code is invalid !";
@@ -262,6 +263,43 @@ public class GCodeDecoder
         case 116: // wait for Heaters
             if(false == exe.waitForEverythingInLimits()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
+        case 119: // interpreted status of end stop switches
+            StringBuffer sb = new StringBuffer();
+            sb.append("Reporting endstop status\r\n");
+            // X min
+            sb.append("x_min: ");
+            int swstate = exe.getStateOfSwitch(Switch_enum.Xmin);
+            sb.append(getDescriptionOfSwitchState(swstate));
+            sb.append("\r\n");
+            // X max
+            sb.append("x_max: ");
+            swstate = exe.getStateOfSwitch(Switch_enum.Xmax);
+            sb.append(getDescriptionOfSwitchState(swstate));
+            sb.append("\r\n");
+            // Y min
+            sb.append("y_min: ");
+            swstate = exe.getStateOfSwitch(Switch_enum.Ymin);
+            sb.append(getDescriptionOfSwitchState(swstate));
+            sb.append("\r\n");
+            // Y max
+            sb.append("y_max: ");
+            swstate = exe.getStateOfSwitch(Switch_enum.Ymax);
+            sb.append(getDescriptionOfSwitchState(swstate));
+            sb.append("\r\n");
+            // Z min
+            sb.append("z_min: ");
+            swstate = exe.getStateOfSwitch(Switch_enum.Zmin);
+            sb.append(getDescriptionOfSwitchState(swstate));
+            sb.append("\r\n");
+            // Z max
+            sb.append("z_max: ");
+            swstate = exe.getStateOfSwitch(Switch_enum.Zmax);
+            sb.append(getDescriptionOfSwitchState(swstate));
+            sb.append("\r\n");
+            sb.append("ok\r\n");
+            ResultValue = sb.toString();
+            return RESULT_VALUE;
+
         case 140: // set Bed Temperature - no wait
             if(false == exe.setPrintBedTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
@@ -430,6 +468,19 @@ public class GCodeDecoder
             curPosition[Axis_enum.F.ordinal()] = curPosition[Axis_enum.F.ordinal()] + getRelativeMoveForAxis(code, 'f');
         }
         return move;
+    }
+
+    private String getDescriptionOfSwitchState(int switchState)
+    {
+        switch(switchState)
+        {
+        case Executor.SWITCH_STATE_OPEN:
+            return "open";
+        case Executor.SWITCH_STATE_CLOSED:
+            return"TRIGGERED";
+        default:
+            return "unknown";
+        }
     }
 
 }

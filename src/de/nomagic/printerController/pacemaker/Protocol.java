@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Tool;
+import de.nomagic.printerController.core.Executor;
 
 /**
  * @author Lars P&ouml;tter
@@ -324,94 +325,35 @@ public class Protocol
         {
             return -1;
         }
-        if(false  != r.isOKReply())
+        if(false  == r.isOKReply())
         {
-            return -1;
+            log.error("Reply is not an OK ! " + r);
+            return -2;
         }
         final byte[] reply = r.getParameter();
         switch(reply.length)
         {
-        case 1: return reply[0]; // 8 bit int
-        case 2: return reply[0]* 256 + reply[1]; // 16 bit int
-        default: return -1;
+        case 1: return (0xff & reply[0]); // 8 bit int
+        case 2: return (0xff & reply[0])* 256 + (0xff & reply[1]); // 16 bit int
+        default: return -3;
         }
     }
-    /*
-    public boolean isEndSwitchTriggered(final int axis, final int direction)
-    {
-        int SwitchNum = -1;
-        boolean inverted = true;
 
-        if(DIRECTION_INCREASING == direction)
-        {
-            SwitchNum = axisCfg[axis].getMaxSwitch();
-            inverted = axisCfg[axis].getMaxSwitchInverted();
-        }
-        else
-        {
-            SwitchNum = axisCfg[axis].getMinSwitch();
-            inverted = axisCfg[axis].getMinSwitchInverted();
-        }
-        if(Cfg.INVALID == SwitchNum)
-        {
-            log.error("Can not read status of an Invalid switch !");
-            return false;
-        }
+    public int getSwitchState(final int num)
+    {
         final byte[] param = new byte[2];
         param[0] = DEVICE_TYPE_INPUT;
-        param[1] = (byte) SwitchNum;
+        param[1] = (byte) num;
         final int reply = sendOrderExpectInt(Protocol.ORDER_REQ_INPUT, param);
-        if(false == inverted)
+        switch(reply)
         {
-            if(INPUT_HIGH == reply)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-        else
-        {
-            if(INPUT_LOW == reply)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+        case INPUT_HIGH: return Executor.SWITCH_STATE_CLOSED;
+        case INPUT_LOW:  return Executor.SWITCH_STATE_OPEN;
+        default :        log.error("Get Switch State returned {} !", reply);
+                         return Executor.SWITCH_STATE_NOT_AVAILABLE;
         }
     }
 
-    public void waitForEndSwitchTriggered(final int axis)
-    {
-        log.info("Waiting for homing of axis {} !", axis);
-        int direction = DIRECTION_DECREASING;
-        if(true == axisCfg[axis].isHomingDecreasing())
-        {
-            direction = DIRECTION_DECREASING;
-        }
-        else
-        {
-            direction = DIRECTION_INCREASING;
-        }
-        boolean isTriggered = isEndSwitchTriggered(axis, direction);
-        while(false == isTriggered)
-        {
-            try
-            {
-                Thread.sleep(POLLING_TIME_END_SWITCH_MS);
-            }
-            catch (final InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-            isTriggered = isEndSwitchTriggered(axis, direction);
-        }
-    }
-*/
     public boolean setTemperature(final int heaterNum, Double temperature)
     {
         temperature = temperature * 10; // Client expects Temperature in 0.1 degree units.

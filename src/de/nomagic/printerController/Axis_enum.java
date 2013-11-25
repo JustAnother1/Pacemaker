@@ -24,6 +24,8 @@ public enum Axis_enum
 {
     X, Y, Z, E, F;
 
+    public static final int size = Axis_enum.values().length;
+
     public char getChar()
     {
         switch(this)
@@ -36,5 +38,4 @@ public enum Axis_enum
         default: return '?';
         }
     }
-
 }

@@ -25,12 +25,14 @@ public class ActionResponse
     private final boolean status;
     private final double temperature;
     private final boolean boolValue;
+    private final int intValue;
 
 
     public ActionResponse(boolean success)
     {
         this.status = success;
         temperature = 0.0;
+        intValue = 0;
         boolValue = false;
     }
 
@@ -38,6 +40,7 @@ public class ActionResponse
     {
         this.status = success;
         this.temperature = Temperature;
+        intValue = 0;
         boolValue = false;
     }
 
@@ -45,7 +48,16 @@ public class ActionResponse
     {
         this.status = success;
         this.temperature = 0.0;
+        intValue = 0;
         this.boolValue = boolValue;
+    }
+
+    public ActionResponse(boolean success, int intValue)
+    {
+        this.status = success;
+        this.temperature = 0.0;
+        this.intValue = intValue;
+        this.boolValue = false;
     }
 
     public boolean wasSuccessful()
@@ -63,4 +75,8 @@ public class ActionResponse
         return boolValue;
     }
 
+    public int getInt()
+    {
+        return intValue;
+    }
 }
