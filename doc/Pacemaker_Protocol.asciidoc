@@ -332,6 +332,30 @@ Some Orders can be applied to more than one device type. A common definition of 
 | 0x80-0xfe | Experimental/unapproved device types
 |================================================
 
+===== Device Type Descriptions
+
+The following section described the different device types and which orders can be used on these device types. Note however that the "Request Device Count", "Request Device Name" and "Request Device Status" orders can be used with all device types.
+
+Aside: When firmware specific configuration is mentioned for a device type, this is referring to use of the generic "Write Firmware Configuration Value" order and is not referring to the provision of firmware specific Pacemaker orders, responses or Parameter values (the latter is discouraged because it makes the host implementation also firmware specific). 
+
+The *Switch inputs* are digital input devices which are either in a "triggered" or "not triggered" state. The switch state is read using the "Request State of Switch" order. The interpretation of "triggered"/"not triggered" states depends on the device connected. For instance, the host understands what a triggered endstop switch means, regardless of whether the electrical switch is normally-open, normally-closed, active-high or active-low. Configuration between the input signal level and the triggered state is provided by client configuration including whether input pull-up needs to be provided or not.
+
+The *Switch outputs* are tri-state output devices. The "Switch an Output" order is used to change the output device state. In addition to Low and High logic levels, a switch output device also supports a tri-state/high-impedance output state. The high impedance state is the default initial state of these devices but this may be modified by client firmware configuration (and determined by reading the device status).
+
+The *PWM controlled outputs* are digital outputs which support hardware or software controlled pulse-width modulation. The duty cycle of the PWM output is controlled by the "Set PWM Output Value" order. The frequency of the PWM is implementation specific and may even be controllable through firmware specific configuration (for instance, if software controlled PWM is enabled on a pin, then this typically operates at a much low lower frequency). 
+
+The *Stepper* devices are stepper motors controlled by the client. The actual control mechanism can be through a variety of technologies, for instance, dedicated Enable/Step/Direction to a stepper control module or SPI serial bus controlled motors. The Stepper devices are primarily controlled by the commands in Stepper Control and Basic Move protocol extensions.
+
+A *Heater* device consists of the following components: the heater drive output(s), the heater control algorithm and a temperature sensor. The Heater device output is controlled through the "Set Heater Target Temperature" order. The current temperature of the heater can be read using the "Request Temperature Reading" order (or alternatively by reading the temperature of the associated temperature sensor device). The drive and control algorithm for a heater are all controlled through firmware specific configuration. The temperature sensor associated with a heater can be configured either through the Pacemaker "Configure Heater" order or through firmware specific configuration (the most appropriate option may depend on whether there is a firm association between particular temperature sensor inputs and heater output pins through labelling on the controller board).
+
+A *Temperature Sensor* device is an analogue input (only) device. The current temperature of the sensor is read using the "Request Temperature Reading" order. The thermistor or thermocouple type is configured through firmware specific configuration.
+
+A *Buzzer* device is a device which is capable of playing an audio tone of a specified frequency. The output frequency is set using the "Set Output Tone" order.
+
+A *Power off output" is a special case of digital output device. When the "Switch an Output" order is used to set the High output state of this device type (and there will only be one instance of this device type), then the client will turn itself off. Turning the client on again usually requires manual intervention. Power controls for auxiliary power supplies or auxiliary systems can usually be implemented using standard Switch Outputs as opposed to the client "Power off output". [The Power off output often requires special initialization as the device powers up, hence, the dedicated device type.]
+
+Other device types are planned for the future such as rotary encoders, GPIOs and displays. 
+
 ==== Experimental & Unapproved Functionality Identifiers
 
 For each major protocol identifier a range has been allocated for implementers to use with experimental or proposed extensions to the Pacemaker protocol. A separate range is allocated to ensure that collisions do not occur between approved extensions and experimental features. Any extensions not described in this document must use the allocated Experimental/Unapproved identifier range until adopted as a supported extension. The experimental range has been defined for protocol identifiers such as protocol extension ids, device types, order codes, reply codes, command block ids, event type ids.
@@ -375,12 +399,14 @@ If a frame is received with a valid Error Check Code then:
 
 === Client Power-On State
 
-When the client comes out of reset, it is expected to have the following state:
+When the client comes out of reset, by default it will have the following states:
 
+- the Stopped state is asserted (with Reset cause).
 - all motors stopped
 - all heaters off
-- all outputs either in a low, inactive or high-impedance state
-- the Stopped state is asserted (with Reset cause).
+- all outputs either in an inactive or high-impedance state
+
+Firmware configuration may however require that some outputs have a default active state or that internal pullups are enabled in the "disabled" state. This may be necessary for instance when a device has an active low enable state and external pullups have not been provided on the controller. The exact state of each output initially or after a stopped condition can be determined using the "Request Device Status" order.
 
 === Standard Transport Layer Reply Codes
 
@@ -441,7 +467,7 @@ The first byte of the Parameter indicates the cause of the error. The following 
 | 0x7 | Busy (e.g., if command can't be executed while Orders queued)
 | 0x8 | Failed
 | 0x9 | Firmware Error
-| 0xa | Cannot Activate Device
+| 0xa | Device Unavailable
 |============================
 
 Following the first byte of the Parameter, an optional UTF8 string is expected giving the human readable reason for the error.
@@ -454,7 +480,7 @@ The *Bad Parameter Value* reply code is sent in response to any Order received w
 
 The *Invalid Device Type Specified* reply code is specific sub-case of the more generic "Bad Parameter Value". This code indicates that the Parameter value specified an invalid device type for this order.
 
-The *Invalid Device Number Specified* reply code is specific sub-case of the more generic "Bad Parameter Value". This code indicates that the Parameter value specified an invalid device number for this order.
+The *Invalid Device Number Specified* reply code is specific sub-case of the more generic "Bad Parameter Value". This code indicates that the Parameter value specified an invalid device number for this order. 
 
 The *Incorrect mode* reply code is sent in response to any Order received where the Order code is recognized but the mode or configuration of the client prevents the Order from being accepted. For example, receiving stepper control Orders when the client is not the SPI Master is one example for this case
 
@@ -464,7 +490,7 @@ The *Failed* reply code is a generic code which can be used to indicate that the
 
 The *Firmware error* reply code indicates that a client firmware error prevented the correct handling of the message (for instance, the command handler returned without generating a response).
 
-The *Cannot Activate Device* reply code indicates that a configuration, device or client state error prevents the device being activated. The Get Device Status order (see order description) can be used to obtain more categorized information on the cause.
+The *Device Unavailable* reply code indicates that a configuration, device or client state error prevents the device being used. The Get Device Status order (see order description) can be used to obtain more categorized information on the cause.
 
 If additional Parameter information must be returned (beyond a possible error reason string), then an Order Specific Error can be used.
 
@@ -476,7 +502,7 @@ When in the Stopped state:
 - All outputs are returned to their inactive state unless firmware configuration dictates otherwise.
 - The Stopped reply code will be returned for all Orders until the Stopped state is acknowledged (or cleared), that is, until a Resume order has been recieved.
 - The Stopped reply code will also be returned for all Resume Orders until the Stopped state is successfully cleared (see Resume Order description).
-- After the stopped state has been acknowledged, the client will returned the "Cannot activate device" reply code for any Order which attempts to activate motor or heater devices until the Stopped state has been clear. The client may also return this error code for any other devices which the client knows might pose a safety concern in the Stopped state (determined for instance through firmware configuration).
+- After the stopped state has been acknowledged, the client will returned the "Device Unavailable" reply code for any Order which attempts to activate motor or heater devices until the Stopped state has been clear. The client may also return this error code for any other devices which the client knows might pose a safety concern in the Stopped state (determined for instance through firmware configuration).
 - Otherwise, after the stopped state has been acknowledged, other requests (including requests to change general switch, buzzer or PWM output device states) should be permitted.
 
 .Parameter
@@ -751,26 +777,38 @@ The first byte of the Parameter indicates the device type. The second byte of th
 | value | meaning
 | 0x0 | device active
 | 0x1 | device inactive
-| 0x2 | device configuration error
-| 0x3 | device fault
-| 0x4 | client stopped
+| 0x2 | device disabled
+| 0x3 | device configuration error
+| 0x4 | device fault
+| 0x5 | client stopped
 |=============================
 
 A status of *device active* indicates that the device currently has no detected hardware or configuration errors and has been enabled. The definition of "active" varies by device type. For instance:
 
-- Steppers are active when enabled using the Enable Stepper command.
-- Output Switches are enabled when set to something other than high impedance mode.
+- Steppers are active when enabled using the Enable Disable Stepper command. 
+- Output Switches are enabled when set to high.
 - Pwm Outputs and Buzzer devices are active when set to a non-zero value.
 - Heaters are active when set to a non-zero target temperature.
-- Input devices such as temperature sensors and input switches are always active when configured correctly.
+- Input devices such as temperature sensors and input switches are usually always active when configured correctly (indicating that they are available for reading).
 
-A status of *device inactive* indicates that there are currently no detected hardware or configuration errors but the device is not active.
+A status of *device inactive* indicates that there are currently no detected hardware or configuration errors and the device is enabled but not active.
+
+- Steppers are inactive when disabled using the Enable Disable Stepper command. 
+- Output Switches are inactive when set low.
+- Pwm Outputs and Buzzer devices are inactive when set to a zero value. 
+- Heaters are active when set to a zero target temperature.
+
+A status of *device disabled* indicates that there are currently no detected hardware or configuration errors but the device has been disabled.
+
+- Steppers are disabled when deactivated through the Activate Stepper Control or through initial state. 
+- Output Switches are disabled when in the high impedance state.
+- Pwm Outputs, Buzzer & Heaters devices are not typically disabled.
 
 A status of *device configuration error* indicates that the device is not available for use because it has missing or invalid device configuration.
 
 A status of *device fault* indicates that the device has sufficient configuration but is unavailable due to a detected hardware fault (e.g., unconnected or shorted sensor).
 
-A status of *client stopped* indicates that the device has sufficient configuration and not in a fault state but is currently unavailable due to the client currently being stopped (this would be eqivalent to the *device inactive* status were the client not in a Stopped state).
+A status of *client stopped* indicates that the device has sufficient configuration and not in a fault state but is currently unavailable due to the client currently being stopped (this would be equivalent to the *device inactive* or *device disabled* status were the client not in a Stopped state).
 
 A utf8 string may optionally follow the device status value describing the cause of any device errors.
 
@@ -856,11 +894,13 @@ This order can also be queued using the Queue Command Wrapper if the queued comm
 - OK:No Parameter data.
 - Invalid Number Specified: the requested number is not correct for the heater.
 - Invalid Parameter Value: Invalid set temperature.
-- Cannot Activate Device: Cannot activate the heater because client is in the Stopped stated or device has not been fully configured (e.g., unconfigured temperature sensor) or is faulty. Use Get Device Status order to determine categorized cause (although a descriptive error string should also be returned in this reply).
+- Device Unavailable: Cannot activate the heater because the client is in the Stopped state or the device has not been fully configured (e.g., an unconfigured temperature sensor) or is faulty. Use Get Device Status order to determine categorized cause (although a descriptive error string should also be returned in this reply).
 
 ==== Request State of Switch (0x07)
 
-The Order shall report the state of the switch devices specified in the Parameter.
+The Order shall report the state of the switch devices specified in the Parameter. The switch has two operational states which are: "Triggered/Active" (1) or "Not Triggered/Inactive" (0). These values do not necessarily map to the same voltage level on the input device pin. This arrangement provides a hardware abstraction to the host such that the host doesn't have to worry when the physical switch or wiring is normally open, normally closed, using active low, active high or requiring internal pullup.
+
+The context about what it means for a particular switch device to be "Triggered/Active" or "Not Triggered/Inactive" will vary for different switch uses or device types. 
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -876,12 +916,14 @@ The Order shall report the state of the switch devices specified in the Paramete
 The first byte of the Parameter contains the device type (see Definitions), the second byte contains the number of the switch/device. If more than one switch shall be read the next parameter bytes may contain additional pairs of device types and device number bytes.
 
 .Replies.
-- OK: Each byte of the reply Parameter will contain the state of the requested switch/device (0=Low, 1=High).
+- OK: Each byte of the reply Parameter will contain the state of the requested switch/device (0=Not triggered/Inactive, 1=Triggered/Active).
 - Bad Parameter Value: This is returned if any specified device does not support this order.
 
 ==== Switch an Output (0x08)
 
-This will switch the Output on one or more specified switch/devices to on(High/ 1/true) or off(Low/0/false).
+This will switch the Output on one or more specified switch/devices to on(High/ 1/true), off(Low/0/false) or disabled (High-Z/2/Tri-state).
+
+It should be realised that some devices use active low signalling/control and so some output switch devices may need to be configured to start in an "active" state during client power-on or when stopped (assuming that appropriate external pull ups are not provided by the controller hardware).
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -973,6 +1015,8 @@ This command sends a configuration name and value to the firmware. The host shou
 
 The supported names and the expected values are firmware dependent. All configuration names and value are encoded as utf8 strings. If the parameter name is unrecognized or the value is malformed then a Bad Parameter Value error is returned. If the value is valid but the operation fails then a Failed error response is returned.
 
+Note: The client must ensure that writing the same value to a Volatile or Non-Volatile Configuration item more than once does not return failure on subsequent writes (even if the underlying value is one-time configurable). This is so that the host does not need to reset the client to reapply config.
+
 .Example
 Setting the configuration named "Power" to "on" would result in this parameter value:
 
@@ -997,7 +1041,7 @@ Setting the configuration named "Power" to "on" would result in this parameter v
 
 ==== Read Firmware Configuration Value (0x0B)
 
-This command reads configuration data from the firmware. The supported configuration name and the returned values are defined by the specific firmware; however all configuration names are encoded as UTF8 strings. See the firmware documentation for details.
+This command reads configuration data from the firmware. The supported configuration name and the returned values are defined by the specific firmware; however all configuration names and values are encoded as UTF8 strings. See the firmware documentation for details.
 
 The Parameter simply contains the name of the configuration value to read as a utf8 string.
 
@@ -1139,7 +1183,9 @@ However when the movement is performed with the "homing mode" bit set, if any en
 
 ==== Activate Stepper Control (0x0D)
 
-This defines who is controlling the stepper motors. To make sure that the Pacemaker client will not interfere with a external control mechanism for the stepper motor the firmware will only send signals to the stepper motors if it has been allowed to do so with this command. In case of the Pacemaker control over the stepper motors it is only possible to control the stepper motors using this interface. Simultaneous control from two interfaces is not supported. The default state after reset is that the stepper control is deactivated.
+This defines who is controlling any attached stepper motors. If the client supports sharing the control of stepper devices with an external entity, then this command is used to indicate whether or not the client is currently in control. If Stepper Control is activated on this client, then the control is assumed exclusive (simultaneous control from two devices is not supported). If the client supports shared stepper control, then the default power-on/reset state for the stepper control is to be deactivated.
+
+NOTE: Not all Pacemaker clients can support the deactivation of stepper control. In this case, the client's steppers will start in an activated but inactive/disabled state. If the host discovers that a client starts with its steppers in an "inactive" state after reset (as reported by the Request Device Status order) then the host should assume that deactivation of stepper control is not supported.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1148,7 +1194,7 @@ This defines who is controlling the stepper motors. To make sure that the Pacema
 | 0 | Control Stepper motors
 |=============================
 
-If the first byte of the parameter is 0 then the Pacemaker client will not control the Stepper motors directly. If the first byte of the Parameter is 0x01 then the Pacemaker client firmware will control the stepper motors.
+If the first byte of the parameter is 0x0 then the Pacemaker client will not control the Stepper motors directly. If the first byte of the Parameter is 0x1 then the Pacemaker client firmware will control the stepper motors.
 
 .Replies
 - OK: No Parameter data.
@@ -1172,12 +1218,12 @@ If a Parameter is provided the first byte will contain the stepper motors Number
 .Replies
 - OK: No Parameter data.
 - Incorrect mode: Order received when stepper control is not activated.
-- Cannot Activate Device: Cannot activate the stepper because client is in the stopped stated or device has not been fully configured or is faulty. Use Get Device Status order to determine categorized cause (although a descriptive error string should also be returned in this reply).
+- Device Unavailable: Cannot activate the stepper because the client is in the stopped state or the device has not been fully configured or is faulty. Use Get Device Status order to determine categorized cause (although a descriptive error string should also be returned in this reply).
 
 
 ==== Configure End-stops (0x0F)
 
-This order configures the set of end-stop switches which are checked when the specified stepper is moving in either a positive or negative direction. The order also configures whether the end-stop triggers at a high level or low level.
+This order configures the set of end-stop switches which are checked when the specified stepper is moving in either a positive or negative direction.
 
 All end-stops (including both maximum and minimum) for a single stepper number must specified in the same order. Multiple end-stops can be specified for each direction. End-stops are initially disabled and must still be enabled using the Enable/Disable End-stops order before they will cause the end-stop state to affect movement.
 
@@ -1188,14 +1234,12 @@ All end-stops (including both maximum and minimum) for a single stepper number m
 | 1 | stepper number
 | 1 | input switch number
 | 1 | min or max endstop (0 = min endstop, 1 = max endstop)
-| 1 | whether end-stop is triggered at a high (0x1) or a (0x0) low level
 | 1 | input switch number [optional]
 | 1 | min or max endstop (0 = min endstop, 1 = max endstop) [optional]
-| 1 | whether end-stop is triggered at a high (0x1) or a (0x0) low level  [optional]
 | .. |
 |================================================
 
-After the first byte (identifying the target stepper number), the following Parameter data is made up of three byte tuplets each of which configures an end-stop to be checked (if enabled) when the stepper is moving in the specified direction. More than one stepper can share the same end-stop - which is common in a CoreXY configuration.
+After the first byte (identifying the target stepper number), the following Parameter data is made up of byte pairs each of which configures an end-stop to be checked (if enabled) when the stepper is moving in the specified direction. More than one stepper can share the same end-stop - which is common in a CoreXY configuration.
 
 .Replies
 - OK: No Parameter data.
