@@ -512,13 +512,13 @@ public class Protocol
         if(null != min)
         {
             param[startpos] = (byte)min.getNumber();
-            param[startpos + 1] = 0;
+            param[startpos + 1] = 0; // MIN
             startpos = startpos + 2;
         }
         if(null != max)
         {
             param[startpos] = (byte)max.getNumber();
-            param[startpos + 1] = 0;
+            param[startpos + 1] = 1; // MAX
             startpos = startpos + 2;
         }
         return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_END_STOPS, param);
