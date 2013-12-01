@@ -46,7 +46,6 @@ public class RelativeMove
         case Y: return hasY;
         case Z: return hasZ;
         case E: return hasE;
-        case F: return hasF;
         default: return false;
         }
     }
@@ -59,9 +58,18 @@ public class RelativeMove
         case Y: return y;
         case Z: return z;
         case E: return e;
-        case F: return f;
         default: return 0.0;
         }
+    }
+
+    public boolean hasFeedrate()
+    {
+        return hasF;
+    }
+
+    public double getFeedrate()
+    {
+        return f;
     }
 
     public void setX(double x)

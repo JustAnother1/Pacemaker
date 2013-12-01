@@ -45,9 +45,10 @@ import de.nomagic.printerController.pacemaker.Protocol;
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public class ActionHandler extends Thread implements EventSource
+public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 {
     public static final double HOT_END_FAN_ON_TEMPERATURE = 50.0;
+    public static final int MAX_TIMEOUT = 10;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private Cfg cfg;
@@ -56,17 +57,30 @@ public class ActionHandler extends Thread implements EventSource
     private BlockingQueue<Event> eventQueue = new LinkedBlockingQueue<Event>();
     private BlockingQueue<ActionResponse> resultQueue = new LinkedBlockingQueue<ActionResponse>();
     // Devices:
-    private Movement move = new Movement();
+    private Movement move;
     private HashMap<Integer, Printer> print = new HashMap<Integer, Printer>();
     private HashMap<Integer, Fan> fans = new HashMap<Integer, Fan>();
     private HashMap<Heater_enum, Heater> heaters = new HashMap<Heater_enum, Heater>();
     private HashMap<Heater_enum, TemperatureSensor> TempSensors = new HashMap<Heater_enum, TemperatureSensor>();
     private HashMap<Switch_enum, Switch> Switches = new HashMap<Switch_enum, Switch>();
 
+    private HashMap<Integer, Event> TimeoutEvents = new HashMap<Integer, Event>();
+    private HashMap<Integer, Integer> TimeoutTimes = new HashMap<Integer, Integer>();
+    private int nextTimeoutID = -1;
+    private int[] countdowns = new int[MAX_TIMEOUT];
+    private long lastTime = 0;
+    private boolean TimeoutsActive = false;
+
     public ActionHandler(Cfg cfg)
     {
         super("ActionHandler");
         this.cfg = cfg;
+        move = new Movement(this, cfg);
+        for(int i = 0; i < MAX_TIMEOUT; i++)
+        {
+            countdowns[i] = -1;
+        }
+
         if(true ==connectToPrinter())
         {
             isOperational = checkIfOperational();
@@ -80,11 +94,6 @@ public class ActionHandler extends Thread implements EventSource
 
     private boolean checkIfOperational()
     {
-        if(null == move)
-        {
-            log.error("Move is missing !");
-            return false;
-        }
         if(null == print)
         {
             log.error("Print is missing !");
@@ -201,7 +210,7 @@ public class ActionHandler extends Thread implements EventSource
             mapTemperatureSensors(di,pro,i);
             mapOutputs(di, pro, i);
             mapSwitches(di, pro, i);
-            move.addConnection(di, cfg, pro, i);
+            move.addConnection(di, cfg, pro, i, Switches);
             readConfigurationFromClient(pro);
         }
         return true;
@@ -438,6 +447,19 @@ public class ActionHandler extends Thread implements EventSource
         }
     }
 
+    private void handleEndOfMove(Event e)
+    {
+        if(false == move.letMovementStop())
+        {
+            lastErrorReason = move.getLastErrorReason();
+            reportFailed(e);
+        }
+        else
+        {
+            reportSuccess(e);
+        }
+    }
+
     private void handleHomeAxis(Event e)
     {
         if(false == move.homeAxis((Axis_enum[])e.getParameter()))
@@ -627,6 +649,10 @@ public class ActionHandler extends Thread implements EventSource
                         handleRelativeMove(e);
                         break;
 
+                    case endOfMove:
+                        handleEndOfMove(e);
+                        break;
+
                     case homeAxis:
                         handleHomeAxis(e);
                         break;
@@ -671,6 +697,7 @@ public class ActionHandler extends Thread implements EventSource
                         break;
                     }
                 }
+                checkTimeouts();
             }
         }
         catch(InterruptedException e1)
@@ -687,6 +714,90 @@ public class ActionHandler extends Thread implements EventSource
             Printer curPrinter = print.get(curConn);
             curPrinter.closeConnection();
         }
+    }
+
+    @Override
+    public int createTimeout(Event e, int ms)
+    {
+        nextTimeoutID ++;
+        if(MAX_TIMEOUT > nextTimeoutID)
+        {
+            TimeoutEvents.put(nextTimeoutID, e);
+            TimeoutTimes.put(nextTimeoutID, ms);
+            return nextTimeoutID;
+        }
+        else
+        {
+            return -1;
+        }
+    }
+
+    @Override
+    public void startTimeout(int timeoutId)
+    {
+        countdowns[timeoutId] = TimeoutTimes.get(timeoutId);
+        TimeoutsActive = true;
+    }
+
+    @Override
+    public void stopTimeout(int timeoutId)
+    {
+        countdowns[timeoutId] = -1;
+        for(int i = 0; i < MAX_TIMEOUT; i++)
+        {
+            if(countdowns[i] > -1)
+            {
+                return;
+            }
+        }
+        TimeoutsActive = false;
+        lastTime = 0;
+    }
+
+
+    private void checkTimeouts()
+    {
+        if(true == TimeoutsActive)
+        {
+            if(0 == lastTime)
+            {
+                // first call after activation
+                lastTime = System.currentTimeMillis();
+            }
+            else
+            {
+                if(lastTime < System.currentTimeMillis())
+                {
+                    // at least one ms has passed
+                    boolean hasMoreActiveTimeouts = false;
+                    for(int i = 0; i < MAX_TIMEOUT; i++)
+                    {
+                        if(countdowns[i] > -1)
+                        {
+                            countdowns[i] = countdowns[i] -1;
+                            if(0 == countdowns[i])
+                            {
+                                // timeout !
+                                eventQueue.add(TimeoutEvents.get(i));
+                                countdowns[i] = -1;
+                            }
+                            else
+                            {
+                                // this timeout is still active
+                                hasMoreActiveTimeouts = true;
+                            }
+                        }
+                    }
+                    if(false == hasMoreActiveTimeouts)
+                    {
+                        // all timeouts timed out or are inactive -> stop checking
+                        TimeoutsActive = false;
+                        lastTime = 0;
+                    }
+                }
+            }
+        }
+        // else nothing to do
     }
 
     private void reportIntResult(Event e, int value)

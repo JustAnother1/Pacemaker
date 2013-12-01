@@ -117,6 +117,19 @@ public class Executor
         }
     }
 
+    public boolean letMovementStop()
+    {
+        if(false == handler.doAction(Action_enum.endOfMove))
+        {
+            lastErrorReason = handler.getLastErrorReason();
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
     public boolean startHoming(Axis_enum[] axis)
     {
         if(false == handler.doAction(Action_enum.homeAxis, axis))
@@ -132,6 +145,7 @@ public class Executor
 
     public boolean waitForEndOfHoming()
     {
+        // TODO once the end stops are hit move away from end stops and move to them again but this time slower
         boolean isHoming = true;
         do
         {
@@ -243,6 +257,10 @@ public class Executor
 
     public boolean setCurrentExtruderTemperatureAndDoWait(final Double temperature)
     {
+        if(false == letMovementStop())
+        {
+            return false;
+        }
         if(true == setCurrentExtruderTemperatureNoWait(temperature))
         {
             return waitForEverythingInLimits();
@@ -278,6 +296,10 @@ public class Executor
 
     public boolean setPrintBedTemperatureAndDoWait(final Double temperature)
     {
+        if(false == letMovementStop())
+        {
+            return false;
+        }
         if(true == setTemperatureNoWait(Heater_enum.Print_Bed, temperature))
         {
             return waitForHeaterInLimits(Heater_enum.Print_Bed);

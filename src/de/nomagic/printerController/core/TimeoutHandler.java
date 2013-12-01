@@ -14,16 +14,14 @@
  */
 package de.nomagic.printerController.core;
 
-/** supported Actions of the ActionHandler.
- *
+/**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public enum Action_enum
+public interface TimeoutHandler
 {
-    doShutDown, doImmediateShutDown,
-    pauseMovement, relativeMove, endOfMove, homeAxis, getIsHoming, enableMotor, disableMotor,
-    setStepsPerMilimeter,
-    setFanSpeed, setHeaterTemperature, getTemperature, getStateOfSwitch
+    int createTimeout(Event e, int ms);
+    void startTimeout(int timeoutId);
+    void stopTimeout(int timeoutId);
 }

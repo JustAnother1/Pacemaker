@@ -21,6 +21,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
@@ -46,6 +47,7 @@ public class Cfg
     public static final String STEPPER_INVERTED = "inverted";
     public static final String STEPPER_AXIS = "axis";
     public static final String STEPPER_MAXIMUM_ACCELLERATION = "maximum acceleration";
+    public static final String STEPPER_MAXIMUM_SPEED = "maximum steps per second";
     public static final String STEPPER_STEPS_PER_MILLIMETER = "steps per millimeter";
 
     private enum Sect
@@ -63,7 +65,8 @@ public class Cfg
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     // General Section
-
+    private HashMap<String,String> GeneralSettings
+    = new HashMap<String,String>();
 
     // Settings per Connection:
     private HashMap<Integer,String> ConnectionDefinition
@@ -84,8 +87,10 @@ public class Cfg
       = new HashMap<Integer,HashMap<Integer, Boolean>>();
     private HashMap<Integer,HashMap<Integer,Axis_enum>> Steppers
       = new HashMap<Integer,HashMap<Integer,Axis_enum>>();
-    private HashMap<Integer,HashMap<Integer,Integer>> StepperMaxAcceleration
-      = new HashMap<Integer,HashMap<Integer,Integer>>();
+    private HashMap<Integer,HashMap<Integer,Double>> StepperMaxAcceleration
+      = new HashMap<Integer,HashMap<Integer,Double>>();
+    private HashMap<Integer,HashMap<Integer,Integer>> StepperMaxSpeed
+    = new HashMap<Integer,HashMap<Integer,Integer>>();
     private HashMap<Integer,HashMap<Integer,Double>> StepperStepsPerMillimeter
       = new HashMap<Integer,HashMap<Integer,Double>>();
 
@@ -97,6 +102,69 @@ public class Cfg
 
     // General
 
+    public void setValueOfSetting(String SettingName, String Value)
+    {
+        GeneralSettings.put(SettingName, Value);
+    }
+
+    public String getGeneralSetting(String Name, String Default)
+    {
+        String value = GeneralSettings.get(Name);
+        if(null == value)
+        {
+            GeneralSettings.put(Name, Default);
+            return Default;
+        }
+        else
+        {
+            return value;
+        }
+    }
+
+    public boolean getGeneralSetting(String Name, boolean Default)
+    {
+        String value = GeneralSettings.get(Name);
+        if(null == value)
+        {
+            GeneralSettings.put(Name, "" + Default);
+            return Default;
+        }
+        else
+        {
+            boolean res = Boolean.parseBoolean(value);
+            return res;
+        }
+    }
+
+    public int getGeneralSetting(String Name, int Default)
+    {
+        String value = GeneralSettings.get(Name);
+        if(null == value)
+        {
+            GeneralSettings.put(Name, "" + Default);
+            return Default;
+        }
+        else
+        {
+            Integer res = Integer.parseInt(value);
+            return res;
+        }
+    }
+
+    public double getGeneralSetting(String Name, double Default)
+    {
+        String value = GeneralSettings.get(Name);
+        if(null == value)
+        {
+            GeneralSettings.put(Name, "" + Default);
+            return Default;
+        }
+        else
+        {
+            double res = Double.parseDouble(value);
+            return res;
+        }
+    }
 
     // Connections
     public void setClientDeviceString(final Integer clientNumber, final String ClientDeviceString)
@@ -316,20 +384,44 @@ public class Cfg
         }
     }
 
-    public void setMaxAccelerationFor(int clientNumber, int stepperNumber, int acceleration)
+    public int getMaxSpeedFor(int clientNumber, int stepperNumber)
     {
-        HashMap<Integer,Integer> accel = StepperMaxAcceleration.get(clientNumber);
+        HashMap<Integer,Integer> speed = StepperMaxSpeed.get(clientNumber);
+        if(null == speed)
+        {
+            return 0;
+        }
+        else
+        {
+            return speed.get(stepperNumber);
+        }
+    }
+
+    public void setMaxSpeedFor(int clientNumber, int stepperNumber, int maxSpeed)
+    {
+        HashMap<Integer,Integer> speed = StepperMaxSpeed.get(clientNumber);
+        if(null == speed)
+        {
+            speed = new HashMap<Integer,Integer>();
+        }
+        speed.put(stepperNumber, maxSpeed);
+        StepperMaxSpeed.put(clientNumber, speed);
+    }
+
+    public void setMaxAccelerationFor(int clientNumber, int stepperNumber, double acceleration)
+    {
+        HashMap<Integer,Double> accel = StepperMaxAcceleration.get(clientNumber);
         if(null == accel)
         {
-            accel = new HashMap<Integer,Integer>();
+            accel = new HashMap<Integer,Double>();
         }
         accel.put(stepperNumber, acceleration);
         StepperMaxAcceleration.put(clientNumber, accel);
     }
 
-    public int getMaxAccelerationFor(int clientNumber, int stepperNumber)
+    public double getMaxAccelerationFor(int clientNumber, int stepperNumber)
     {
-        HashMap<Integer,Integer> accel = StepperMaxAcceleration.get(clientNumber);
+        HashMap<Integer,Double> accel = StepperMaxAcceleration.get(clientNumber);
         if(null == accel)
         {
             return 0;
@@ -389,7 +481,14 @@ public class Cfg
         final OutputStreamWriter ow = new OutputStreamWriter(out, Charset.forName("UTF-8"));
         try
         {
-            // ow.write(GENERAL_SECTION + "\n");
+            ow.write(GENERAL_SECTION + "\n");
+            Set<String> names = GeneralSettings.keySet();
+            Iterator<String> it = names.iterator();
+            while(it.hasNext())
+            {
+                String name = it.next();
+                ow.write(name + SEPERATOR + GeneralSettings.get(name));
+            }
 
             Set<Integer> connectionSet = ConnectionDefinition.keySet();
             Iterator<Integer> connectionIterator = connectionSet.iterator();
@@ -495,7 +594,8 @@ public class Cfg
                 int maxStepperIndex = getMaxStepperIndexfor(ConnectionNum);
                 HashMap<Integer, Boolean> invertedMap = movementDirectionInverted.get(ConnectionNum);
                 HashMap<Integer,Axis_enum> axisMap = Steppers.get(ConnectionNum);
-                HashMap<Integer,Integer> maxAccelMap = StepperMaxAcceleration.get(ConnectionNum);
+                HashMap<Integer,Double> maxAccelMap = StepperMaxAcceleration.get(ConnectionNum);
+                HashMap<Integer,Integer> maxSpeedMap = StepperMaxSpeed.get(ConnectionNum);
                 HashMap<Integer,Double> StepsMap = StepperStepsPerMillimeter.get(ConnectionNum);
                 for(int i = 0; i <= maxStepperIndex; i++)
                 {
@@ -511,7 +611,7 @@ public class Cfg
                         ow.write(STEPPER_AXIS + SEPERATOR + axisMap.get(i)  + "\n");
                         ow.write(STEPPER_MAXIMUM_ACCELLERATION + SEPERATOR + maxAccelMap.get(i)  + "\n");
                         ow.write(STEPPER_STEPS_PER_MILLIMETER +SEPERATOR + StepsMap.get(i)  + "\n");
-
+                        ow.write(STEPPER_MAXIMUM_SPEED + SEPERATOR + maxSpeedMap.get(i)  + "\n");
                     }
                 }
 
@@ -630,7 +730,7 @@ public class Cfg
                             switch(curSection)
                             {
                             case GENERAL:
-                                // currently no settings here
+                                GeneralSettings.put(getKeyFrom(curLine), getValueFrom(curLine));
                                 break;
 
                             default:
@@ -755,7 +855,13 @@ public class Cfg
                                 {
                                     setMaxAccelerationFor(connectionNumber,
                                                           curStepper,
-                                                          getIntValueFrom(curLine));
+                                                          getDoubleValueFrom(curLine));
+                                }
+                                else if(true == curLine.startsWith(STEPPER_MAXIMUM_SPEED))
+                                {
+                                    setMaxSpeedFor(connectionNumber,
+                                                   curStepper,
+                                                   getIntValueFrom(curLine));
                                 }
                                 else if(true == curLine.startsWith(STEPPER_STEPS_PER_MILLIMETER))
                                 {

@@ -22,7 +22,7 @@ package de.nomagic.printerController;
  */
 public enum Axis_enum
 {
-    X, Y, Z, E, F;
+    X, Y, Z, E;
 
     public static final int size = Axis_enum.values().length;
 
@@ -34,7 +34,6 @@ public enum Axis_enum
         case Y: return 'y';
         case Z: return 'z';
         case E: return 'e';
-        case F: return 'f';
         default: return '?';
         }
     }

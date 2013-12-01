@@ -24,8 +24,12 @@ import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Tool;
 import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.core.devices.Stepper;
+import de.nomagic.printerController.core.devices.Switch;
 
-/**
+/** Pacemaker protocol.
+ *  as specified in https://github.com/JustAnother1/Pacemaker/blob/master/doc/Pacemaker_Protocol.asciidoc
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
@@ -113,9 +117,11 @@ public class Protocol
     public static final byte EMERGENCY_STOP = 1;
     public static final int DIRECTION_INCREASING = 1;
     public static final int DIRECTION_DECREASING = 0;
-    public static final byte MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER = 0x01;
-    public static final byte MOVEMENT_BLOCK_TYPE_DELAY = 0x02;
-    public static final byte MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD = 0x03;
+
+    public static final byte MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER     = 0x01;
+    public static final byte MOVEMENT_BLOCK_TYPE_DELAY               = 0x02;
+    public static final byte MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE   = 0x03;
+    public static final byte MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD = 0x04;
 
 // Client
     public static final int START_OF_CLIENT_FRAME = 0x42;
@@ -181,7 +187,14 @@ public class Protocol
     // end of Magic Number from Protocol Definition
     ////////////////////////////////////////////////////////////////////////////
 
+    public static final int RESULT_SUCCESS = 0;
+    public static final int RESULT_ERROR = 1;
+    public static final int RESULT_TRY_AGAIN_LATER = 2;
+
+    public static final int MAX_STEPS_PER_MOVE = 0xffff;
+
     private static final int QUEUE_SEND_BUFFER_SIZE = 200;
+
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private String lastErrorReason = null;
@@ -195,11 +208,13 @@ public class Protocol
     private boolean isOperational = false;
     private DeviceInformation di = null;
 
-
     private final Vector<byte[]> sendQueue = new Vector<byte[]>();
     private int ClientQueueFreeSlots = 0;
+    private int ClientQueueNumberOfEnqueuedCommands = 0;
     private int ClientExecutedJobs = 0;
     private int CommandsSendToClient = 0;
+
+
 
     public Protocol(String ConnectionDefinition)
     {
@@ -217,20 +232,9 @@ public class Protocol
         }
     }
 
-    public static String getDeviceTypeName(int deviceType)
+    public String getLastErrorReason()
     {
-        switch(deviceType)
-        {
-        case DEVICE_TYPE_UNUSED:             return "unused";
-        case DEVICE_TYPE_INPUT:              return "input";
-        case DEVICE_TYPE_OUTPUT:             return "output";
-        case DEVICE_TYPE_PWM_OUTPUT:         return "PWM output(fan,..)";
-        case DEVICE_TYPE_STEPPER:            return "stepper motor";
-        case DEVICE_TYPE_HEATER:             return "heater";
-        case DEVICE_TYPE_TEMPERATURE_SENSOR: return "temperature sensor";
-        case DEVICE_TYPE_BUZZER:             return "buzzer";
-        default:                             return "undefined";
-        }
+        return lastErrorReason;
     }
 
     @Override
@@ -254,6 +258,8 @@ public class Protocol
         isOperational = false;
     }
 
+// Information
+
     public Reply sendInformationRequest(final int which) throws IOException
     {
         final byte[] request = new byte[1];
@@ -274,6 +280,22 @@ public class Protocol
         request[0] = type;
         request[1] = (byte)(0xff & index);
         return cc.sendRequest(ORDER_REQ_DEVICE_NAME, request);
+    }
+
+    public static String getDeviceTypeName(int deviceType)
+    {
+        switch(deviceType)
+        {
+        case DEVICE_TYPE_UNUSED:             return "unused";
+        case DEVICE_TYPE_INPUT:              return "input";
+        case DEVICE_TYPE_OUTPUT:             return "output";
+        case DEVICE_TYPE_PWM_OUTPUT:         return "PWM output(fan,..)";
+        case DEVICE_TYPE_STEPPER:            return "stepper motor";
+        case DEVICE_TYPE_HEATER:             return "heater";
+        case DEVICE_TYPE_TEMPERATURE_SENSOR: return "temperature sensor";
+        case DEVICE_TYPE_BUZZER:             return "buzzer";
+        default:                             return "undefined";
+        }
     }
 
     public DeviceInformation getDeviceInformation()
@@ -299,45 +321,7 @@ public class Protocol
         return null;
     }
 
-    public boolean sendOrderExpectOK(final byte order, final byte parameter)
-    {
-        byte[] help = new byte[1];
-        help[0] = parameter;
-        return sendOrderExpectOK(order, help);
-    }
-
-    public boolean sendOrderExpectOK(final byte order, final byte[] parameter)
-    {
-        final Reply r = cc.sendRequest(order, parameter);
-        if(null == r)
-        {
-            log.error("Received no Reply !");
-            lastErrorReason = "Received no Reply !";
-            return false;
-        }
-        return r.isOKReply();
-    }
-
-    public int sendOrderExpectInt(final byte order, final byte[] parameter)
-    {
-        final Reply r = cc.sendRequest(order, parameter);
-        if(null == r)
-        {
-            return -1;
-        }
-        if(false  == r.isOKReply())
-        {
-            log.error("Reply is not an OK ! " + r);
-            return -2;
-        }
-        final byte[] reply = r.getParameter();
-        switch(reply.length)
-        {
-        case 1: return (0xff & reply[0]); // 8 bit int
-        case 2: return (0xff & reply[0])* 256 + (0xff & reply[1]); // 16 bit int
-        default: return -3;
-        }
-    }
+// Input
 
     public int getSwitchState(final int num)
     {
@@ -353,6 +337,8 @@ public class Protocol
                          return Executor.SWITCH_STATE_NOT_AVAILABLE;
         }
     }
+
+// Temperature Sensor - Heater
 
     public boolean setTemperature(final int heaterNum, Double temperature)
     {
@@ -400,6 +386,8 @@ public class Protocol
         }
     }
 
+// Fans
+
     /** sets the speed of the Fan ( Fan 0 = Fan that cools the printed part).
      *
      * @param fan specifies the effected fan.
@@ -433,6 +421,8 @@ public class Protocol
         }
     }
 
+// Output
+
     /** sets the state of the Output.
      *
      * @param output specifies the effected output.
@@ -463,6 +453,75 @@ public class Protocol
                     output,  di.getNumberOutputSignals());
             return true;
         }
+    }
+
+// Stepper Motors
+
+    public boolean activateStepperControl()
+    {
+        final byte[] param = new byte[1];
+        param[0] = 0x01;
+        return sendOrderExpectOK(Protocol.ORDER_ACTIVATE_STEPPER_CONTROL, param);
+    }
+
+    public boolean configureUnderRunAvoidance(int stepperNumber, int maxSpeedStepsPerSecond, int maxAccelleration)
+    {
+        final byte[] param = new byte[9];
+        param[0] = (byte)(0xff & stepperNumber);
+        param[1] = (byte)(0xff & (maxSpeedStepsPerSecond>>24));
+        param[2] = (byte)(0xff & (maxSpeedStepsPerSecond>>16));
+        param[3] = (byte)(0xff & (maxSpeedStepsPerSecond>>8));
+        param[4] = (byte)(0xff & maxSpeedStepsPerSecond);
+        param[5] = (byte)(0xff & (maxAccelleration>>24));
+        param[6] = (byte)(0xff & (maxAccelleration>>16));
+        param[7] = (byte)(0xff & (maxAccelleration>>8));
+        param[8] = (byte)(0xff & maxAccelleration);
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS, param);
+    }
+
+    public boolean configureStepperMovementRate(int stepperNumber, int maxSpeedStepsPerSecond)
+    {
+        final byte[] param = new byte[5];
+        param[0] = (byte)(0xff & stepperNumber);
+        param[1] = (byte)(0xff & (maxSpeedStepsPerSecond>>24));
+        param[2] = (byte)(0xff & (maxSpeedStepsPerSecond>>16));
+        param[3] = (byte)(0xff & (maxSpeedStepsPerSecond>>8));
+        param[4] = (byte)(0xff & maxSpeedStepsPerSecond);
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_AXIS_MOVEMENT_RATES, param);
+    }
+
+    public boolean configureEndStop(Stepper motor, Switch min, Switch max)
+    {
+        if((null == min) && (null == max))
+        {
+            // No switch configured -> nothing to do -> But that was successful
+            return true;
+        }
+        final byte[] param;
+        if((null == min) || (null == max))
+        {
+            // only one switch configured
+            param = new byte[3];
+        }
+        else
+        {
+            param = new byte[5];
+        }
+        param[0] = (byte)motor.getStepperNumber();
+        int startpos = 1;
+        if(null != min)
+        {
+            param[startpos] = (byte)min.getNumber();
+            param[startpos + 1] = 0;
+            startpos = startpos + 2;
+        }
+        if(null != max)
+        {
+            param[startpos] = (byte)max.getNumber();
+            param[startpos + 1] = 0;
+            startpos = startpos + 2;
+        }
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_END_STOPS, param);
     }
 
     /** only needed to implement M17
@@ -500,53 +559,7 @@ public class Protocol
             return true;
         }
     }
-/*
-    public void startHomeOnAxes(final Vector<Integer> listOfHomeAxes)
-    {
-        if(null == listOfHomeAxes)
-        {
-            return;
-        }
-        final byte[] param = new byte[3 * listOfHomeAxes.size()];
-        for(int i = 0; i < listOfHomeAxes.size(); i++)
-        {
-            final int axis = listOfHomeAxes.get(i);
-            if(Cfg.INVALID == axis)
-            {
-                log.error("Tried to home an invalid axis !");
-                return;
-            }
-            final byte stepNum = (byte)axisCfg[axis].getStepperNumber();
-            if(Cfg.INVALID == stepNum)
-            {
-                log.error("Tried to home an axis with invalid stepper motor! ");
-                return;
-            }
-            byte secondStepNum = (byte)axisCfg[axis].getSecondStepper();
-            if(Cfg.INVALID == secondStepNum)
-            {
-                secondStepNum = (byte) 0xff;
-            }
 
-            byte direction = DIRECTION_DECREASING;
-            if(true == axisCfg[axis].isHomingDecreasing())
-            {
-                direction = DIRECTION_DECREASING;
-            }
-            else
-            {
-                direction = DIRECTION_INCREASING;
-            }
-            param[(i*3) +0] = stepNum;
-            param[(i*3) +1] = direction;
-            param[(i*3) +2] = secondStepNum;
-        }
-        if(false == sendOrderExpectOK(Protocol.ORDER_HOME_AXES, param))
-        {
-            log.error("Falied to Home the Axis !");
-        }
-    }
-*/
     public boolean doStopPrint()
     {
         final byte[] param = new byte[1];
@@ -561,6 +574,276 @@ public class Protocol
         return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param);
     }
 
+// Queue handling:
+
+    public int getNumberOfCommandsInClientQueue()
+    {
+        return ClientQueueNumberOfEnqueuedCommands;
+    }
+
+    public boolean hasFreeQueueSlots()
+    {
+        if(0 < ClientQueueFreeSlots)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    private void parseQueueReply(byte[] reply)
+    {
+        parseQueueReply(reply, 0);
+    }
+
+    private void parseQueueReply(byte[] reply, int offset)
+    {
+        ClientQueueFreeSlots =                ((0xff & reply[0 + offset]) * 256) + (0xff & reply[1 + offset]);
+        ClientQueueNumberOfEnqueuedCommands = ((0xff & reply[2 + offset]) * 256) + (0xff & reply[3 + offset]);
+        ClientExecutedJobs =                  ((0xff & reply[4 + offset]) * 256) + (0xff & reply[5 + offset]);
+    }
+
+    public void ClearQueue()
+    {
+        final Reply r = cc.sendRequest(ORDER_CLEAR_COMMAND_BLOCK_QUEUE, null);
+        if(true == r.isOKReply())
+        {
+            parseQueueReply(r.getParameter());
+        }
+        else
+        {
+            log.error("Could not clear the Command Queue !");
+        }
+    }
+
+    public boolean addBasicLinearMove(Integer[] activeSteppers,
+                                      boolean isHoming,
+                                      int speed,
+                                      int endSpeed,
+                                      int accellerationSteps,
+                                      int DecellerationSteps,
+                                      boolean[] axisDirectionIsIncreasing,
+                                      int primaryAxis,
+                                      Integer[] steps)
+    {
+        if(   (true == di.hasExtensionQueuedCommand())
+           && (true == di.hasExtensionBasicMove()) )
+        {
+            // detect mode
+            int maxStepperIDx = 0;
+            for(int i = 0; i < activeSteppers.length; i++)
+            {
+                if(activeSteppers[i] > maxStepperIDx)
+                {
+                    maxStepperIDx = activeSteppers[i];
+                }
+            }
+            int maxStep = accellerationSteps;
+            if(DecellerationSteps > maxStep)
+            {
+                maxStep = DecellerationSteps;
+            }
+            for(int i = 0; i < steps.length; i++)
+            {
+                if(steps[i] > maxStep)
+                {
+                    maxStep = steps[i];
+                }
+            }
+            int bytesPerStep;
+            if(255 < maxStep)
+            {
+                bytesPerStep = 1;
+            }
+            else
+            {
+                bytesPerStep = 2;
+            }
+            // Prepare data
+            final byte[] param;
+            int steppsStart;
+            if(maxStepperIDx < 7)
+            {
+                // 1 byte Axis selection mode
+                param = new byte[6 + (bytesPerStep * (2 + steps.length))];
+                param[0] = (byte)(0xff & param.length - 2); // Length
+                param[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
+                // active Steppers
+                int ActiveSteppersMap = 0;
+                for(int i = 0; i < activeSteppers.length; i++)
+                {
+                    ActiveSteppersMap = ActiveSteppersMap | 1 << activeSteppers[i];
+                }
+                param[2] = (byte)(0x7f & ActiveSteppersMap);
+                // Byte per steps
+                if(1 == bytesPerStep)
+                {
+                    param[3] = 0;
+                }
+                else
+                {
+                    param[3] = (byte) 0x80;
+                }
+                // directions
+                int DirectionMap = 0;
+                for(int i = 0; i < axisDirectionIsIncreasing.length; i++)
+                {
+                    if(true == axisDirectionIsIncreasing[i])
+                    {
+                        DirectionMap = DirectionMap | (1 << activeSteppers[i]);
+                    }
+                }
+                param[3] =  (byte)(param[3] | (0x7f | DirectionMap));
+                // Homing
+                if(true == isHoming)
+                {
+                    param[4] = 0x10;
+                }
+                // Primary Axis
+                param[4] =(byte)(param[4] | (0x0f & primaryAxis));
+                // Nominal Speed
+                param[5] = (byte)(0xff &speed);
+                // end Speed
+                param[6] = (byte)(0xff &endSpeed);
+                steppsStart = 7;
+            }
+            else if(maxStepperIDx < 15)
+            {
+                // 2 byte Axis selection mode
+                param = new byte[8 + (bytesPerStep * (2 + steps.length))];
+                param[0] = (byte)(0xff & param.length - 2); // Length
+                param[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
+                // Active Steppers
+                int ActiveSteppersMap = 0;
+                for(int i = 0; i < activeSteppers.length; i++)
+                {
+                    ActiveSteppersMap = ActiveSteppersMap | 1 << activeSteppers[i];
+                }
+                param[3] = (byte)(0xff & ActiveSteppersMap);
+                param[2] = (byte)(0x80 | (0x7f & (ActiveSteppersMap >> 8)));
+                // Byte per steps
+                if(1 == bytesPerStep)
+                {
+                    param[4] = 0;
+                }
+                else
+                {
+                    param[4] = (byte) 0x80;
+                }
+                // directions
+                int DirectionMap = 0;
+                for(int i = 0; i < axisDirectionIsIncreasing.length; i++)
+                {
+                    if(true == axisDirectionIsIncreasing[i])
+                    {
+                        DirectionMap = DirectionMap | (1 << activeSteppers[i]);
+                    }
+                }
+                param[5] =  (byte)(0xff | DirectionMap);
+                param[4] =  (byte)(param[4] | (0x7f | (DirectionMap>>8)));
+                // Homing
+                if(true == isHoming)
+                {
+                    param[6] = 0x10;
+                }
+                // Primary Axis
+                param[6] =(byte)(param[6] | (0x0f & primaryAxis));
+                // Nominal Speed
+                param[7] = (byte)(0xff &speed);
+                // end Speed
+                param[8] = (byte)(0xff &endSpeed);
+                steppsStart = 9;
+            }
+            else
+            {
+                lastErrorReason = "Too Many Steppers - Can only handle 15 !";
+                log.error(lastErrorReason);
+                return false;
+            }
+            // Add Steps
+            if(1 == bytesPerStep)
+            {
+                param[steppsStart    ] = (byte)(0xff & accellerationSteps);
+                param[steppsStart + 1] = (byte)(0xff & DecellerationSteps);
+                for(int i = 0; i < steps.length; i++)
+                {
+                    param[steppsStart + 2 + i] = (byte)(0xff & steps[i]);
+                }
+            }
+            else
+            {
+                // 2 bytes
+                param[steppsStart    ] = (byte)(0xff & (accellerationSteps>>8));
+                param[steppsStart + 1] = (byte)(0xff & accellerationSteps);
+                param[steppsStart + 2] = (byte)(0xff & (DecellerationSteps>>8));
+                param[steppsStart + 3] = (byte)(0xff & DecellerationSteps);
+                for(int i = 0; i < steps.length; i++)
+                {
+                    param[steppsStart + 4 + i*2] = (byte)(0xff & (steps[i]>>8));
+                    param[steppsStart + 5 + i*2] = (byte)(0xff & steps[i]);
+                }
+            }
+            // Send the data
+            if(RESULT_ERROR == enqueueCommand(param))
+            {
+                return false;
+            }
+            else
+            {
+                // success or try again later and data queued
+                return true;
+            }
+        }
+        else
+        {
+            lastErrorReason = "no Queue - no chance to add to it.";
+            return false;
+        }
+    }
+
+    public boolean addSetActiveToolHeadToQueue(final int activeToolHead)
+    {
+        if(   (true == di.hasExtensionQueuedCommand())
+           && (true == di.hasExtensionBasicMove()) )
+        {
+            final byte[] param = new byte[3];
+            param[0] = 1;
+            param[1] = MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD;
+            param[2] = (byte)(0xff & activeToolHead);
+            return enqueueCommandBlocking(param);
+        }
+        else
+        {
+            lastErrorReason = "no Queue - no chance to add to it.";
+            return false;
+        }
+    }
+
+    public boolean endStopOnOff(boolean on, Integer[] switches)
+    {
+        final byte[] param = new byte[3 + (switches.length * 2)];
+        param[0] = (byte)(param.length - 2);
+        param[1] = MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER;
+        param[2] = Protocol.ORDER_ENABLE_DISABLE_END_STOPS;
+        byte onOff;
+        if(true == on)
+        {
+            onOff = 0x01; // on
+        }
+        else
+        {
+            onOff = 0; // off
+        }
+        for(int i = 0; i < switches.length; i++)
+        {
+            param[3 + (i* 2)] = (byte)(0xff & switches[i]);
+            param[3 + (i* 2) + 1] = onOff;
+        }
+        return enqueueCommandBlocking(param);
+    }
+
     /** adds a pause to the Queue.
      *
      * @param ticks allowed 0..65535 (0xffff)
@@ -570,16 +853,73 @@ public class Protocol
     {
         if(true == di.hasExtensionQueuedCommand())
         {
-            final byte[] param = new byte[3];
-            param[0] = MOVEMENT_BLOCK_TYPE_DELAY;
-            param[1] = (byte)(0xff & (ticks/256));
-            param[2] = (byte)(ticks & 0xff);
+            final byte[] param = new byte[4];
+            param[0] = 2;
+            param[1] = MOVEMENT_BLOCK_TYPE_DELAY;
+            param[2] = (byte)(0xff & (ticks/256));
+            param[3] = (byte)(ticks & 0xff);
             return enqueueCommandBlocking(param);
         }
         else
         {
             lastErrorReason = "no Queue - no chance to add to it.";
             return false;
+        }
+    }
+
+    private int sendDataToClientQueue(byte[] param, int length, int numBlocksInBuffer)
+    {
+        final Reply r = cc.sendRequest(ORDER_QUEUE_COMMAND_BLOCKS,
+                                       param, // data
+                                       0, // offset
+                                       length // length
+                                       );
+        // and see what happens.
+        if(null == r)
+        {
+            lastErrorReason = "Received No Reply from Client !";
+            log.error(lastErrorReason);
+            return RESULT_ERROR;
+        }
+        if(true == r.isOKReply())
+        {
+            parseQueueReply(r.getParameter());
+            CommandsSendToClient = CommandsSendToClient + numBlocksInBuffer;
+            for(int i = 0; i < numBlocksInBuffer; i++)
+            {
+                sendQueue.remove(0);
+            }
+            return RESULT_SUCCESS;
+        }
+        else if(RESPONSE_ORDER_SPECIFIC_ERROR == r.getReplyCode())
+        {
+            // Order Specific Error
+            byte[] response = r.getParameter();
+            // partly Queued
+            int numberOfQueued = response[1];
+            for(int i = 0; i < numberOfQueued; i++)
+            {
+                sendQueue.remove(0);
+            }
+            parseQueueReply(response, 2);
+            if(0x01 != response[0])
+            {
+                // Error caused by bad Data !
+                lastErrorReason = "Could not Queue Block as Client Reports invalid Data !";
+                log.error(lastErrorReason);
+                log.error("Send Data: {} !", Tool.fromByteBufferToHexString(param, length));
+                log.error("Received : {} !", Tool.fromByteBufferToHexString(response));
+                return RESULT_ERROR;
+            }
+            // else queue full so try next time
+            return RESULT_TRY_AGAIN_LATER;
+        }
+        else
+        {
+            // error -> send commands later
+            lastErrorReason = "Protocol violation - Unexpected Reply !";
+            log.error(lastErrorReason);
+            return RESULT_ERROR;
         }
     }
 
@@ -590,152 +930,57 @@ public class Protocol
      * call. If in this situation try calling enqueueCommandBlocking() !
      *
      * @param param Data of only one command !
-     * @return true = success; false= command could not be put in the queue but
-     * will be send with the next command that shall be enqueued.
+     * @return RESULT_SUCCESS,  RESULT_ERROR or RESULT_TRY_AGAIN_LATER
      */
-    private boolean enqueueCommand(byte[] param)
+    private int enqueueCommand(byte[] param)
     {
-        if(false == sendQueue.isEmpty())
+        // add the new command, and...
+        sendQueue.add(param);
+        // TODO wait for enough bytes in Buffer ?
+        // try to get the Queue empty again.
+        if(0 == ClientQueueFreeSlots)
         {
-            // add the new command, and...
-            sendQueue.add(param);
-            // try to get the Queue empty again.
-            if(0 == ClientQueueFreeSlots)
+            // send only the first command from the command queue
+            byte[] firstCommand = sendQueue.get(0);
+            return sendDataToClientQueue(firstCommand, firstCommand.length, 1);
+        }
+        else
+        {
+            byte[] sendBuffer = new byte[QUEUE_SEND_BUFFER_SIZE];
+            int writePos = 0;
+            int idx = 0;
+            int numBlocksInBuffer = 0;
+            for(int i = 0; i < ClientQueueFreeSlots; i++)
             {
-                // send only the first command from the command queue
-                byte[] firstCommand = sendQueue.get(0);
-                final Reply r = cc.sendRequest(ORDER_QUEUE_COMMAND_BLOCKS, firstCommand);
-                if(null == r)
+                // add a block to the send buffer until
+                // either send Buffer if full
+                // or all commands have been put in the buffer
+                // or the number of free slots on the client has been reached
+                byte[] buf = sendQueue.get(idx);
+                if(null != buf)
                 {
-                    return false;
-                }
-                if(true == r.isOKReply())
-                {
-                    byte[] reply = r.getParameter();
-                    ClientQueueFreeSlots = (reply[0] * 256) + reply[1];
-                    ClientExecutedJobs = (reply[2] * 256) + reply[3];
-                    CommandsSendToClient ++;
-                    sendQueue.remove(0);
-                    return true;
-                }
-                else
-                {
-                    // error -> try again later
-                    return false;
-                }
-            }
-            else
-            {
-                byte[] sendBuffer = new byte[QUEUE_SEND_BUFFER_SIZE];
-                int writePos = 0;
-                int idx = 0;
-                int numBlocksInBuffer = 0;
-                for(int i = 0; i < ClientQueueFreeSlots; i++)
-                {
-                    // add a block to the send buffer until
-                    // either send Buffer if full
-                    // or all commands have been put in the buffer
-                    byte[] buf = sendQueue.get(idx);
-                    if(null != buf)
+                    if(buf.length < QUEUE_SEND_BUFFER_SIZE - writePos)
                     {
-                        if(buf.length < QUEUE_SEND_BUFFER_SIZE - writePos)
+                        for(int j = 0; j < buf.length; j++)
                         {
-                            for(int j = 0; j < buf.length; j++)
-                            {
-                                sendBuffer[writePos + j] = buf[j];
-                            }
-                            writePos = writePos + buf.length;
-                            numBlocksInBuffer ++;
+                            sendBuffer[writePos + j] = buf[j];
                         }
-                        else
-                        {
-                            break;
-                        }
+                        writePos = writePos + buf.length;
+                        numBlocksInBuffer ++;
                     }
                     else
                     {
                         break;
                     }
-                    idx++;
-                }
-                // or the loop ends
-                // then send them
-                final Reply r = cc.sendRequest(ORDER_QUEUE_COMMAND_BLOCKS,
-                                               sendBuffer, // data
-                                               0, // offset
-                                               writePos // length
-                                               );
-                // and see what happens.
-                if(null == r)
-                {
-                    return false;
-                }
-                if(true == r.isOKReply())
-                {
-                    byte[] reply = r.getParameter();
-                    ClientQueueFreeSlots = (reply[0] * 256) + reply[1];
-                    ClientExecutedJobs = (reply[2] * 256) + reply[3];
-                    CommandsSendToClient = CommandsSendToClient + numBlocksInBuffer;
-                    for(int i = 0; i < numBlocksInBuffer; i++)
-                    {
-                        sendQueue.remove(0);
-                    }
-                    return true;
-                }
-                else if(RESPONSE_ORDER_SPECIFIC_ERROR == r.getReplyCode())
-                {
-                    // Order Specific Error
-                    byte[] response = r.getParameter();
-                    // partly Queued
-                    int numberOfQueued = response[1];
-                    for(int i = 0; i < numberOfQueued; i++)
-                    {
-                        sendQueue.remove(0);
-                    }
-                    ClientQueueFreeSlots = (response[2] * 256) + response[3];
-                    ClientExecutedJobs = (response[4] * 256) + response[5];
-                    if(0x01 != response[0])
-                    {
-                        // Error caused by bad Data !
-                        log.error("Could not Queue Block as Client Reports invalid Data !");
-                        log.error("Send Data: {} !", Tool.fromByteBufferToHexString(sendBuffer, writePos));
-                        log.error("Received : {} !", Tool.fromByteBufferToHexString(response));
-                        log.error("Can not recover !");
-                        System.exit(1);
-                        // what else can I do ?
-                    }
-                    // else queue full so try next time
-                    return false;
                 }
                 else
                 {
-                    // error -> send commands later
-                    return false;
+                    break;
                 }
+                idx++;
             }
-        }
-        else
-        {
-            // Fast lane. Just send it out.
-            final Reply r = cc.sendRequest(ORDER_QUEUE_COMMAND_BLOCKS, param);
-            if(null == r)
-            {
-                return false;
-            }
-            if(true == r.isOKReply())
-            {
-                byte[] reply = r.getParameter();
-                ClientQueueFreeSlots = (reply[0] * 256) + reply[1];
-                ClientExecutedJobs = (reply[2] * 256) + reply[3];
-                CommandsSendToClient ++;
-                return true;
-            }
-            else
-            {
-                // error -> send command later
-                sendQueue.add(param);
-                return false;
-            }
+            // then send them
+            return sendDataToClientQueue(sendBuffer, writePos, numBlocksInBuffer);
         }
     }
 
@@ -753,17 +998,18 @@ public class Protocol
         // prepare data
         if(null == param)
         {
-            log.error("Tried To enque without data !");
             lastErrorReason = "Tried To enque without data !";
+            log.error(lastErrorReason);
+
             return false;
         }
         if(1 < param.length)
         {
-            log.error("Tried To enque with too few bytes !");
             lastErrorReason = "Tried To enque with too few bytes !";
+            log.error(lastErrorReason);
             return false;
         }
-        if(false == enqueueCommand(param))
+        if(RESULT_TRY_AGAIN_LATER == enqueueCommand(param))
         {
             int delayCounter = 0;
             do
@@ -781,14 +1027,17 @@ public class Protocol
                 }
                 else
                 {
-                    // TODO report Error
+                    lastErrorReason = "Could not enque - Timeout !";
+                    log.error(lastErrorReason);
                     return false;
                 }
-            }while(false == enqueueCommand(null));
+            }while(RESULT_TRY_AGAIN_LATER == enqueueCommand(null));
         }
         // else sending succeeded !
         return true;
     }
+
+// Firmware specific configuration:
 
     public boolean writeFirmwareConfigurationValue(String name, String value)
     {
@@ -814,11 +1063,6 @@ public class Protocol
         {
             return true;
         }
-    }
-
-    public String getLastErrorReason()
-    {
-        return lastErrorReason;
     }
 
     public String getCompleteDescriptionForSetting(String curSetting)
@@ -969,6 +1213,47 @@ public class Protocol
         {
             e.printStackTrace();
             return "";
+        }
+    }
+
+
+    private boolean sendOrderExpectOK(final byte order, final byte parameter)
+    {
+        byte[] help = new byte[1];
+        help[0] = parameter;
+        return sendOrderExpectOK(order, help);
+    }
+
+    private boolean sendOrderExpectOK(final byte order, final byte[] parameter)
+    {
+        final Reply r = cc.sendRequest(order, parameter);
+        if(null == r)
+        {
+            log.error("Received no Reply !");
+            lastErrorReason = "Received no Reply !";
+            return false;
+        }
+        return r.isOKReply();
+    }
+
+    private int sendOrderExpectInt(final byte order, final byte[] parameter)
+    {
+        final Reply r = cc.sendRequest(order, parameter);
+        if(null == r)
+        {
+            return -1;
+        }
+        if(false  == r.isOKReply())
+        {
+            log.error("Reply is not an OK ! " + r);
+            return -2;
+        }
+        final byte[] reply = r.getParameter();
+        switch(reply.length)
+        {
+        case 1: return (0xff & reply[0]); // 8 bit int
+        case 2: return (0xff & reply[0])* 256 + (0xff & reply[1]); // 16 bit int
+        default: return -3;
         }
     }
 

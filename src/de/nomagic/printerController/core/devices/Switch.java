@@ -37,6 +37,11 @@ public class Switch
         return pro.getSwitchState(num);
     }
 
+    public int getNumber()
+    {
+        return num;
+    }
+
     @Override
     public String toString()
     {

@@ -39,7 +39,7 @@ public class GCodeDecoder
     private final Executor exe;
 
     // G-Code State
-    private final double[] curPosition= new double[Axis_enum.size];
+    private final double[] curPosition= new double[Axis_enum.size + 1]; // last entry is Feedrate
     private boolean isRelative = false;
     private boolean isMetric = true;
     private String LastErrorReason = null;
@@ -417,7 +417,7 @@ public class GCodeDecoder
                 case 'y': index = Axis_enum.Y.ordinal(); break;
                 case 'z': index = Axis_enum.Z.ordinal(); break;
                 case 'e': index = Axis_enum.E.ordinal(); break;
-                case 'f': index = Axis_enum.F.ordinal() + 1; break;
+                case 'f': index = curPosition.length -1; break;
                 default:
                     log.error("Requested Move for Illigal Axis {} !", axis);
                     return 0.0;
@@ -465,7 +465,7 @@ public class GCodeDecoder
         if(true == code.hasWord('f'))
         {
             move.setF(getRelativeMoveForAxis(code, 'f'));
-            curPosition[Axis_enum.F.ordinal()] = curPosition[Axis_enum.F.ordinal()] + getRelativeMoveForAxis(code, 'f');
+            curPosition[curPosition.length -1] = curPosition[curPosition.length -1] + getRelativeMoveForAxis(code, 'f');
         }
         return move;
     }
