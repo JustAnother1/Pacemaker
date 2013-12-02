@@ -809,7 +809,7 @@ public class Protocol
            && (true == di.hasExtensionBasicMove()) )
         {
             final byte[] param = new byte[3];
-            param[0] = 1;
+            param[0] = 2;
             param[1] = MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD;
             param[2] = (byte)(0xff & activeToolHead);
             return enqueueCommandBlocking(param);
@@ -824,7 +824,7 @@ public class Protocol
     public boolean endStopOnOff(boolean on, Integer[] switches)
     {
         final byte[] param = new byte[3 + (switches.length * 2)];
-        param[0] = (byte)(param.length - 2);
+        param[0] = (byte)(param.length - 1);
         param[1] = MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER;
         param[2] = Protocol.ORDER_ENABLE_DISABLE_END_STOPS;
         byte onOff;
@@ -854,7 +854,7 @@ public class Protocol
         if(true == di.hasExtensionQueuedCommand())
         {
             final byte[] param = new byte[4];
-            param[0] = 2;
+            param[0] = 3;
             param[1] = MOVEMENT_BLOCK_TYPE_DELAY;
             param[2] = (byte)(0xff & (ticks/256));
             param[3] = (byte)(ticks & 0xff);
@@ -887,7 +887,10 @@ public class Protocol
             CommandsSendToClient = CommandsSendToClient + numBlocksInBuffer;
             for(int i = 0; i < numBlocksInBuffer; i++)
             {
-                sendQueue.remove(0);
+                if(0 < sendQueue.size())
+                {
+                    sendQueue.remove(0);
+                }
             }
             return RESULT_SUCCESS;
         }
@@ -896,10 +899,13 @@ public class Protocol
             // Order Specific Error
             byte[] response = r.getParameter();
             // partly Queued
-            int numberOfQueued = response[1];
+            int numberOfQueued = (0xff & response[1]);
             for(int i = 0; i < numberOfQueued; i++)
             {
-                sendQueue.remove(0);
+                if(0 < sendQueue.size())
+                {
+                    sendQueue.remove(0);
+                }
             }
             parseQueueReply(response, 2);
             if(0x01 != response[0])
@@ -907,6 +913,11 @@ public class Protocol
                 // Error caused by bad Data !
                 lastErrorReason = "Could not Queue Block as Client Reports invalid Data !";
                 log.error(lastErrorReason);
+                log.error("Error Reply Code : " + (0xff & response[8]));
+                if(9 < response.length)
+                {
+                    log.error("Description : " + r.getParameterAsString(9));
+                }
                 log.error("Send Data: {} !", Tool.fromByteBufferToHexString(param, length));
                 log.error("Received : {} !", Tool.fromByteBufferToHexString(response));
                 return RESULT_ERROR;
@@ -938,6 +949,11 @@ public class Protocol
         sendQueue.add(param);
         // TODO wait for enough bytes in Buffer ?
         // try to get the Queue empty again.
+        if(0 == sendQueue.size())
+        {
+            // nothing to send
+            return RESULT_SUCCESS;
+        }
         if(0 == ClientQueueFreeSlots)
         {
             // send only the first command from the command queue
@@ -948,36 +964,43 @@ public class Protocol
         {
             byte[] sendBuffer = new byte[QUEUE_SEND_BUFFER_SIZE];
             int writePos = 0;
-            int idx = 0;
             int numBlocksInBuffer = 0;
+            int idx = 0;
             for(int i = 0; i < ClientQueueFreeSlots; i++)
             {
                 // add a block to the send buffer until
                 // either send Buffer if full
                 // or all commands have been put in the buffer
                 // or the number of free slots on the client has been reached
-                byte[] buf = sendQueue.get(idx);
-                if(null != buf)
+                if(idx < sendQueue.size())
                 {
-                    if(buf.length < QUEUE_SEND_BUFFER_SIZE - writePos)
+                    byte[] buf = sendQueue.get(idx);
+                    if(null != buf)
                     {
-                        for(int j = 0; j < buf.length; j++)
+                        if(buf.length < QUEUE_SEND_BUFFER_SIZE - writePos)
                         {
-                            sendBuffer[writePos + j] = buf[j];
+                            for(int j = 0; j < buf.length; j++)
+                            {
+                                sendBuffer[writePos + j] = buf[j];
+                            }
+                            writePos = writePos + buf.length;
+                            numBlocksInBuffer ++;
                         }
-                        writePos = writePos + buf.length;
-                        numBlocksInBuffer ++;
+                        else
+                        {
+                            break;
+                        }
                     }
                     else
                     {
                         break;
                     }
+                    idx++;
                 }
                 else
                 {
                     break;
                 }
-                idx++;
             }
             // then send them
             return sendDataToClientQueue(sendBuffer, writePos, numBlocksInBuffer);
@@ -1000,16 +1023,16 @@ public class Protocol
         {
             lastErrorReason = "Tried To enque without data !";
             log.error(lastErrorReason);
-
             return false;
         }
-        if(1 < param.length)
+        if(2 > param.length)
         {
             lastErrorReason = "Tried To enque with too few bytes !";
             log.error(lastErrorReason);
             return false;
         }
-        if(RESULT_TRY_AGAIN_LATER == enqueueCommand(param))
+        int Result = enqueueCommand(param);
+        if(RESULT_TRY_AGAIN_LATER == Result)
         {
             int delayCounter = 0;
             do
@@ -1031,10 +1054,18 @@ public class Protocol
                     log.error(lastErrorReason);
                     return false;
                 }
-            }while(RESULT_TRY_AGAIN_LATER == enqueueCommand(null));
+                Result = enqueueCommand(null);
+            }while(RESULT_TRY_AGAIN_LATER == Result);
         }
-        // else sending succeeded !
-        return true;
+        if(RESULT_SUCCESS == Result)
+        {
+            // sending succeeded !
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 
 // Firmware specific configuration:

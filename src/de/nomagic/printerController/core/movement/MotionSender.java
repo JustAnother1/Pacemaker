@@ -40,6 +40,12 @@ public class MotionSender
     {
     }
 
+    @Override
+    public String toString()
+    {
+        return "MotionSender pro=" + pro;
+    }
+
     public void setProtocol(Protocol pro)
     {
         this.pro = pro;

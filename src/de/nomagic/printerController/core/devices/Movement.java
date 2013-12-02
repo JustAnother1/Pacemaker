@@ -67,7 +67,7 @@ public class Movement
     @Override
     public String toString()
     {
-        return "table : " + table.toString() + ", planner : " + sender.toString();
+        return "table : " + table.toString() + " sender : " + sender.toString();
     }
 
     public String getLastErrorReason()

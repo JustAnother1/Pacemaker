@@ -856,6 +856,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         switch(theAction)
         {
         case doShutDown:
+        case endOfMove:
         case doImmediateShutDown:
             e = new Event(theAction, null, this);
             eventQueue.add(e);
