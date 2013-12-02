@@ -68,7 +68,14 @@ public class MovementQueue
 
     public StepperMove getMove(int idx)
     {
-        return entries.get(idx);
+        if(idx < entries.size())
+        {
+            return entries.get(idx);
+        }
+        else
+        {
+            return null;
+        }
     }
 
     public void finishedOneMove()

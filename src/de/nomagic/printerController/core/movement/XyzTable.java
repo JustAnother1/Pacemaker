@@ -774,6 +774,11 @@ public class XyzTable
 
     private void sendAllPossibleMoves(boolean isLastMove)
     {
+        if(1 > PlannerQueue.size())
+        {
+            // no moves available to send
+            return;
+        }
         StepperMove firstMove = null;
         double[] firstVector = null;
         int i = 0;

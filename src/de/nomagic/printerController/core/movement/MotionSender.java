@@ -95,7 +95,7 @@ public class MotionSender
             // Client has free slots,...
             sendMoveCommand();
             clientHasFreeSlots = pro.hasFreeQueueSlots();
-        }while(true == clientHasFreeSlots);
+        }while((true == clientHasFreeSlots) && (0 < mq.size()));
     }
 
     private double getBrakingDistance(double v1, double v2, double a)
@@ -123,6 +123,10 @@ public class MotionSender
     private void sendMoveCommand()
     {
         StepperMove sm = mq.getMove(0);
+        if(null == sm)
+        {
+            return;
+        }
         if(true == sm.hasCommand())
         {
             if(false == pro.endStopOnOff(sm.getOn(), sm.getSwitches()))

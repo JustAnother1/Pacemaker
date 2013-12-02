@@ -108,6 +108,9 @@ public class Movement
                                 protocols.put(maxProtocol, pro);
                                 thisProtocolIdx = maxProtocol;
                                 maxProtocol++;
+                                sender = new MotionSender();
+                                sender.setProtocol(pro);
+                                table.addSender(sender);
                                 log.debug("Using this protocol as number {} !", thisProtocolIdx);
                             }
                             // else protocol already added
