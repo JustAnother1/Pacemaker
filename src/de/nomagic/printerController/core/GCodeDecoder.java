@@ -187,6 +187,7 @@ public class GCodeDecoder
             if(false == exe.enableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 18: // Disable all stepper motors
+        case 84: // Stop Idle hold
             if(false == exe.disableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 92: // Set axis_steps_per_unit
