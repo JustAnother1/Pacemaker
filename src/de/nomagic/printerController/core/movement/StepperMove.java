@@ -18,6 +18,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.nomagic.printerController.core.devices.Stepper;
 
 /**
@@ -27,6 +30,7 @@ import de.nomagic.printerController.core.devices.Stepper;
  */
 public class StepperMove
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private boolean isHomingMove = false;
     private boolean hasCommand = false;
     private double mmX = 0.0;
@@ -150,7 +154,7 @@ public class StepperMove
 
     public int getStepperWithMostSteps()
     {
-        int maxSteps = 0;
+        long maxSteps = 0;
         int MotorIdx = -1;
         Set<Integer> s = activeAxis.keySet();
         Iterator<Integer> it = s.iterator();
@@ -158,7 +162,7 @@ public class StepperMove
         {
             int idx = it.next();
             Stepper motor = activeAxis.get(idx);
-            int steps = motor.getSteps();
+            long steps = Math.abs(motor.getSteps());
             if(steps > maxSteps)
             {
                 maxSteps = steps;
@@ -229,6 +233,7 @@ public class StepperMove
         Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
+            log.trace("Asked for inactive Axis ! {}", axis);
             return 0;
         }
         else
@@ -242,6 +247,7 @@ public class StepperMove
         Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
+            log.trace("Asked for inactive Axis ! {}", axis);
             return 0;
         }
         else
@@ -255,6 +261,7 @@ public class StepperMove
         Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
+            log.trace("Asked for inactive Axis ! {}", axis);
             return 0;
         }
         else
@@ -285,6 +292,7 @@ public class StepperMove
         Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
+            log.trace("Asked for inactive Axis ! {}", axis);
             return 0.0;
         }
         else
@@ -298,6 +306,7 @@ public class StepperMove
         Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
+            log.trace("Asked for inactive Axis ! {}", axis);
             return 0.0;
         }
         else
@@ -311,6 +320,7 @@ public class StepperMove
         Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
+            log.trace("Asked for inactive Axis ! {}", axis);
             return 0.0;
         }
         else
@@ -324,6 +334,7 @@ public class StepperMove
         Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
+            log.trace("Asked for inactive Axis ! {}", axis);
             return 0.0;
         }
         else

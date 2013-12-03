@@ -139,21 +139,38 @@ public class MotionSender
             {
                 log.error("Could not enable/diable the end stop switches !");
             }
+            else
+            {
+                log.trace("Send end Stop command");
+            }
         }
         Integer[] activeSteppers = sm.getAllActiveSteppers();
         if(1 > activeSteppers.length)
         {
             // this is an empty move as end of move marking,
+            log.trace("found empty Move");
             mq.finishedOneMove();
             return;
         }
         // there is movement in this Move
         boolean[] axisDirectionIsIncreasing = sm.getAxisDirectionIsIncreasing();
         Integer[] steps = sm.getSteps();
+        for(int i = 0; i < activeSteppers.length; i++)
+        {
+            log.trace("Active Axis = {}", activeSteppers[i]);
+            log.trace("Steps on Axis = {}", steps[i]);
+            if(0 > steps[i])
+            {
+                axisDirectionIsIncreasing[i] = !axisDirectionIsIncreasing[i];
+                steps[i] = Math.abs(steps[i]);
+            }
+        }
         int primaryAxis = sm.getStepperWithMostSteps();
+        log.trace("primary Axis = {}", primaryAxis);
 
         // Speed calculation
         int StepsOnAxis = Math.abs(sm.getStepsOnStepper(primaryAxis));
+        log.trace("Steps on Axis = {}", StepsOnAxis);
         int accellerationSteps = 0;
         int DecellerationSteps = 0;
 
@@ -162,10 +179,15 @@ public class MotionSender
         {
             startSpeed = 0.0;
         }
+        log.trace("start Speed = {}", startSpeed);
         double MaxEndSpeed = sm.getMaxEndSpeedStepsPerSecondFor(primaryAxis);
+        log.trace("max end Speed = {}", MaxEndSpeed);
         double MaxTravelSpeed = sm.getMaxSpeedStepsPerSecondFor(primaryAxis);
+        log.trace("max travel Speed = {}", MaxTravelSpeed);
         double MaxAccelleration = sm.getMaxAccelerationStepsPerSecond2(primaryAxis);
+        log.trace("max Acceleration = {}", MaxAccelleration);
         double MaxPossibleSpeed = sm.getMaxPossibleSpeedStepsPerSecond(primaryAxis);
+        log.trace("max possible Speed = {}", MaxPossibleSpeed);
 
         if(startSpeed > MaxEndSpeed)
         {
@@ -208,11 +230,17 @@ public class MotionSender
             }
         }
 
+        log.trace("accelleration Steps = {}", accellerationSteps);
+        log.trace("decelleration Steps = {}", DecellerationSteps);
         double speed = getSpeedfor(startSpeed, accellerationSteps, MaxAccelleration, true);
         double endSpeed = getSpeedfor(speed, DecellerationSteps,MaxAccelleration, false);
+        log.trace("speed = {}", speed);
+        log.trace("end speed = {}", endSpeed);
 
         int speedFactor = (int)((speed /MaxPossibleSpeed) * 256);
+        log.trace("speed factor = {}", speedFactor);
         int endSpeedFactor = (int)((endSpeed /MaxPossibleSpeed) * 256);
+        log.trace("end speed factor = {}", endSpeedFactor);
         // Update start Speeds
         double speedPerStep = endSpeed/ Math.abs(sm.getStepsOnStepper(primaryAxis));
         for(int i = 0; i < activeSteppers.length; i++)

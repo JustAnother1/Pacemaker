@@ -35,7 +35,8 @@ import de.nomagic.printerController.core.devices.Switch;
 public class XyzTable
 {
     public static final double HOMING_MOVE_SFAETY_FACTOR = 1.5;
-    public final static double MIN_MOVEMENT_DISTANCE = 0.00001;
+    public static final double MIN_MOVEMENT_DISTANCE = 0.00001;
+    public static final double MIN_MOVEMENT_SPEED_MM_SECOND = 0.1;
 
     public static final String CFG_NAME_AUTO_END_STOP_DISABLE = "automatically disable end stops";
     public static final String CFG_NAME_END_STOP_ALLOWANCE = "end stop allowance";
@@ -613,20 +614,28 @@ public class XyzTable
            FeedrateMmPerMinute = relMov.getFeedrate();
        }
        // else  reuse last Feedrate
-       double ditanceOnXYZMm = 0.0;
+       log.trace("Feedrate = {} mm/Minute", FeedrateMmPerMinute);
+       double distanceOnXYZMm = 0.0;
        if(true == relMov.has(Axis_enum.X))
        {
-           ditanceOnXYZMm = ditanceOnXYZMm + relMov.get(Axis_enum.X);
+           distanceOnXYZMm = distanceOnXYZMm + Math.abs(relMov.get(Axis_enum.X));
        }
        if(true == relMov.has(Axis_enum.Y))
        {
-           ditanceOnXYZMm = ditanceOnXYZMm + relMov.get(Axis_enum.Y);
+           distanceOnXYZMm = distanceOnXYZMm + Math.abs(relMov.get(Axis_enum.Y));
        }
        if(true == relMov.has(Axis_enum.Z))
        {
-           ditanceOnXYZMm = ditanceOnXYZMm + relMov.get(Axis_enum.Z);
+           distanceOnXYZMm = distanceOnXYZMm + Math.abs(relMov.get(Axis_enum.Z));
        }
-       double SpeedPerMm = (FeedrateMmPerMinute/60) / ditanceOnXYZMm;
+       log.trace("distance on X Y Z = {} mm", distanceOnXYZMm);
+       double SpeedPerMm = (FeedrateMmPerMinute/60) / distanceOnXYZMm;
+       if(MIN_MOVEMENT_SPEED_MM_SECOND > SpeedPerMm)
+       {
+           log.error("Feedrate too low !");
+           SpeedPerMm = MIN_MOVEMENT_SPEED_MM_SECOND;
+       }
+       log.trace("Speed = {} mm/second", SpeedPerMm);
        StepperMove res = new StepperMove();
        for(Axis_enum ax: Axis_enum.values())
        {
@@ -637,7 +646,7 @@ public class XyzTable
                case X:
                    curPosition[X] = curPosition[X] + relMov.get(Axis_enum.X);
                    res.setMmX(relMov.get(Axis_enum.X));
-                   double XSpeed = relMov.get(ax) * SpeedPerMm;
+                   double XSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
                    if(null != X0)
                    {
                        X0.addMove(relMov.get(ax));
@@ -655,7 +664,7 @@ public class XyzTable
                case Y:
                    curPosition[Y] = curPosition[Y] + relMov.get(Axis_enum.Y);
                    res.setMmY(relMov.get(Axis_enum.Y));
-                   double YSpeed = relMov.get(ax) * SpeedPerMm;
+                   double YSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
                    if(null != Y0)
                    {
                        Y0.addMove(relMov.get(ax));
@@ -673,7 +682,7 @@ public class XyzTable
                case Z:
                    curPosition[Z] = curPosition[Z] + relMov.get(Axis_enum.Z);
                    res.setMmZ(relMov.get(Axis_enum.Z));
-                   double ZSpeed = relMov.get(ax) * SpeedPerMm;
+                   double ZSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
                    if(null != Z0)
                    {
                        Z0.addMove(relMov.get(ax));
@@ -844,11 +853,13 @@ public class XyzTable
                         // -> send the first move and this becomes the new first move
 
                         // set end Speed
-                        double endSpeedFactor = getMaxEndSpeedFactotFor(firstVector, curVector);
+                        double endSpeedFactor = getMaxEndSpeedFactorFor(firstVector, curVector);
+                        log.trace("endSpeedFactor = {}", endSpeedFactor);
                         Integer[] steppers = firstMove.getAllActiveSteppers();
                         for(int j = 0; j < steppers.length; j++)
                         {
                             double maxSpeed = firstMove.getMaxSpeedMmPerSecondFor(steppers[j]);
+                            log.trace("maxSpeed = {}", maxSpeed);
                             firstMove.setMaxEndSpeedMmPerSecondFor(steppers[j], maxSpeed * endSpeedFactor);
                         }
                         // send first move
@@ -900,11 +911,11 @@ public class XyzTable
         }
     }
 
-    private double getMaxEndSpeedFactotFor(double[] vec_one, double[] vec_two)
+    private double getMaxEndSpeedFactorFor(double[] vec_one, double[] vec_two)
     {
-        return 1 - (   Math.abs(vec_one[X] - vec_two[X])
-                    +  Math.abs(vec_one[Y] - vec_two[Y])
-                    +  Math.abs(vec_one[Z] - vec_two[Z]));
+        return Math.abs(1 - (   Math.abs(vec_one[X] - vec_two[X])
+                             +  Math.abs(vec_one[Y] - vec_two[Y])
+                             +  Math.abs(vec_one[Z] - vec_two[Z])));
     }
 
     private boolean hasMovementData(double[] vec)
