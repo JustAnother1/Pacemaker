@@ -459,4 +459,18 @@ public class Executor
         return curState;
     }
 
+    public boolean switchExtruderTo(int num)
+    {
+        /*
+         * The sequence followed is:
+         * - Set the current extruder to its standby temperature specified by G10,
+         * - Set the new extruder to its operating temperature specified by G10
+         *   and wait for all temperatures to stabilise,
+         * - Apply any X, Y, Z offset for the new extruder specified by G10,
+         * - Use the new extruder.
+         */
+        // TODO parking position
+        return false;
+    }
+
 }

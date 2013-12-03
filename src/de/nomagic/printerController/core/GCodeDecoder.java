@@ -115,9 +115,13 @@ public class GCodeDecoder
         {
             result = decode_Miscellaneous_Function_Code(code);
         }
+        else if(true == code.hasWord('T'))
+        {
+            result = decode_Tool_Function_Code(code);
+        }
         else
         {
-            LastErrorReason = "Line has no G and no M Code !";
+            LastErrorReason = "Line has no G, M or T Code !";
             log.error(LastErrorReason);
             return "!! " + LastErrorReason;
         }
@@ -389,6 +393,20 @@ public class GCodeDecoder
         default:
             LastErrorReason = "G" + num + " not yet implemented !";
             log.error(LastErrorReason);
+            return RESULT_ERROR;
+        }
+    }
+
+    private int decode_Tool_Function_Code(GCode code)
+    {
+        final Double Number = code.getWordValue('T');
+        final int num = Number.intValue();
+        if(true == exe.switchExtruderTo(num))
+        {
+            return RESULT_OK;
+        }
+        else
+        {
             return RESULT_ERROR;
         }
     }
