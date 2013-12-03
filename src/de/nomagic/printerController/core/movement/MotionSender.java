@@ -234,6 +234,7 @@ public class MotionSender
         {
             log.error("Oh oh !");
             //TODO
+            mq.finishedOneMove();
         }
         else
         {

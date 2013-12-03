@@ -667,8 +667,8 @@ public class Protocol
             if(maxStepperIDx < 7)
             {
                 // 1 byte Axis selection mode
-                param = new byte[6 + (bytesPerStep * (2 + steps.length))];
-                param[0] = (byte)(0xff & param.length - 2); // Length
+                param = new byte[7 + (bytesPerStep * (2 + steps.length))];
+                param[0] = (byte)(0xff & param.length - 1); // Length
                 param[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
                 // active Steppers
                 int ActiveSteppersMap = 0;
@@ -712,8 +712,8 @@ public class Protocol
             else if(maxStepperIDx < 15)
             {
                 // 2 byte Axis selection mode
-                param = new byte[8 + (bytesPerStep * (2 + steps.length))];
-                param[0] = (byte)(0xff & param.length - 2); // Length
+                param = new byte[9 + (bytesPerStep * (2 + steps.length))];
+                param[0] = (byte)(0xff & param.length - 1); // Length
                 param[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
                 // Active Steppers
                 int ActiveSteppersMap = 0;

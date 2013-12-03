@@ -47,7 +47,7 @@
             <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
         </tstamp>
 
-        <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false">
+        <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false" debug="true" debuglevel="lines,vars,source">
             <classpath refid="project.class.path"/>
         </javac>
 

@@ -26,7 +26,6 @@ import de.nomagic.printerController.Switch_enum;
 import de.nomagic.printerController.core.RelativeMove;
 import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.core.devices.Switch;
-import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
  * @author Lars P&ouml;tter
@@ -62,7 +61,11 @@ public class XyzTable
     private Stepper E0 = null;
     private Stepper E1 = null;
 
-    private double[] curPosition = new double[3];
+    private double[] curPosition = {0,0,0};
+    private boolean XisHomed = false;
+    private boolean YisHomed = false;
+    private boolean ZisHomed = false;
+
     private double[] HomePosition = {0,0,0};
 
     private double endstopAllowance;
@@ -80,9 +83,6 @@ public class XyzTable
     private boolean endStopYmaxOn = false;
     private boolean endStopZminOn = false;
     private boolean endStopZmaxOn = false;
-    private boolean XisHomed = false;
-    private boolean YisHomed = false;
-    private boolean ZisHomed = false;
     private int endStop_Xmin = -1;
     private int endStop_Xmax = -1;
     private int endStop_Ymin = -1;
@@ -114,14 +114,38 @@ public class XyzTable
     {
         StringBuffer sb = new StringBuffer();
         sb.append("Configured Steppers:\n");
-        sb.append("X0 : " + X0 + "\n");
-        sb.append("X1 : " + X1 + "\n");
-        sb.append("Y0 : " + Y0 + "\n");
-        sb.append("Y1 : " + Y1 + "\n");
-        sb.append("Z0 : " + Z0 + "\n");
-        sb.append("Z1 : " + Z1 + "\n");
-        sb.append("E0 : " + E0 + "\n");
-        sb.append("E1 : " + E1 + "\n");
+        if(null != X0)
+        {
+            sb.append("X0 : " + X0 + "\n");
+        }
+        if(null != X1)
+        {
+            sb.append("X1 : " + X1 + "\n");
+        }
+        if(null != Y0)
+        {
+            sb.append("Y0 : " + Y0 + "\n");
+        }
+        if(null != Y1)
+        {
+            sb.append("Y1 : " + Y1 + "\n");
+        }
+        if(null != Z0)
+        {
+            sb.append("Z0 : " + Z0 + "\n");
+        }
+        if(null != Z1)
+        {
+            sb.append("Z1 : " + Z1 + "\n");
+        }
+        if(null != E0)
+        {
+            sb.append("E0 : " + E0 + "\n");
+        }
+        if(null != E1)
+        {
+            sb.append("E1 : " + E1 + "\n");
+        }
         return sb.toString();
     }
 
@@ -553,7 +577,7 @@ public class XyzTable
             {
                 E0.setStepsPerMillimeter(steps);
             }
-            else if((1 == activeToolhead) &&(null != E1))
+            else if((1 == activeToolhead) && (null != E1))
             {
                 E1.setStepsPerMillimeter(steps);
             }
@@ -576,11 +600,13 @@ public class XyzTable
     */
    public void letMovementStop()
    {
+       log.trace("letting the movement stop");
        prepareMoveForSending(null, true);
    }
 
    public void addRelativeMove(RelativeMove relMov)
    {
+       log.trace("adding the move {}", relMov);
        // Feedrate
        if(true == relMov.hasFeedrate())
        {
@@ -689,6 +715,7 @@ public class XyzTable
 
    public void homeAxis(Axis_enum[] axis)
    {
+       log.trace("homing Axis");
        // TODO Homing direction (inverted = - homingDistance)
        StepperMove res = new StepperMove();
        res.setIsHoming(true);
@@ -760,6 +787,7 @@ public class XyzTable
 
    private void prepareMoveForSending(StepperMove aMove, boolean isLastMove)
    {
+       log.trace("preparing the move : {}", aMove);
        Vector<StepperMove> moves = updateEndStopActivation(aMove);
        for(int i = 0; i < moves.size(); i++)
        {
@@ -768,6 +796,7 @@ public class XyzTable
        sendAllPossibleMoves(isLastMove);
        if(true == isLastMove)
        {
+           log.trace("flushing Queue to Client");
            sender.flushQueueToClient();
        }
    }

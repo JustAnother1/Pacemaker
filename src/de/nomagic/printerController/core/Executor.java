@@ -106,6 +106,7 @@ public class Executor
 
     public boolean addMoveTo(final RelativeMove move)
     {
+        log.trace("adding the move {}", move);
         if(false == handler.doAction(Action_enum.relativeMove, move))
         {
             lastErrorReason = handler.getLastErrorReason();

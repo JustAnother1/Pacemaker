@@ -41,6 +41,17 @@ public class StepperMove
     {
     }
 
+    @Override
+    public String toString()
+    {
+        return "StepperMove [isHomingMove=" + isHomingMove +
+                            ", hasCommand=" + hasCommand +
+                            ", mmX=" + mmX +
+                            ", mmY=" + mmY +
+                            ", mmZ=" + mmZ +
+                            "]";
+    }
+
     public void addAxisMotors(Stepper motor)
     {
         activeAxis.put(motor.getStepperNumber(), motor);
@@ -206,26 +217,50 @@ public class StepperMove
     public void setMaxEndSpeedMmPerSecondFor(int axis, double speed)
     {
         Stepper motor = activeAxis.get(axis);
-        motor.setMaxEndSpeedMmPerSecond(speed);
-        activeAxis.put(axis, motor);
+        if(null != motor)
+        {
+            motor.setMaxEndSpeedMmPerSecond(speed);
+            activeAxis.put(axis, motor);
+        }
     }
 
     public double getMaxEndSpeedMmPerSecondFor(int axis)
     {
         Stepper motor = activeAxis.get(axis);
-        return motor.getMaxEndSpeedMmPerSecond();
+        if(null == motor)
+        {
+            return 0;
+        }
+        else
+        {
+            return motor.getMaxEndSpeedMmPerSecond();
+        }
     }
 
     public double getMaxSpeedMmPerSecondFor(int axis)
     {
         Stepper motor = activeAxis.get(axis);
-        return motor.getMaxSpeedMmPerSecond();
+        if(null == motor)
+        {
+            return 0;
+        }
+        else
+        {
+            return motor.getMaxSpeedMmPerSecond();
+        }
     }
 
     public int getStepsOnStepper(int axis)
     {
         Stepper motor = activeAxis.get(axis);
-        return motor.getSteps();
+        if(null == motor)
+        {
+            return 0;
+        }
+        else
+        {
+            return motor.getSteps();
+        }
     }
 
     public void addEndStopOnOffCommand(boolean on, Integer[] switches)
@@ -248,25 +283,53 @@ public class StepperMove
     public double getMaxEndSpeedStepsPerSecondFor(int axis)
     {
         Stepper motor = activeAxis.get(axis);
-        return motor.getMaxEndSpeedStepsPerSecond();
+        if(null == motor)
+        {
+            return 0.0;
+        }
+        else
+        {
+            return motor.getMaxEndSpeedStepsPerSecond();
+        }
     }
 
     public double getMaxSpeedStepsPerSecondFor(int axis)
     {
         Stepper motor = activeAxis.get(axis);
-        return motor.getMaxTravelSpeedStepsPerSecond();
+        if(null == motor)
+        {
+            return 0.0;
+        }
+        else
+        {
+            return motor.getMaxTravelSpeedStepsPerSecond();
+        }
     }
 
     public double getMaxAccelerationStepsPerSecond2(int axis)
     {
         Stepper motor = activeAxis.get(axis);
-        return motor.getMaxAccelerationStepsPerSecond();
+        if(null == motor)
+        {
+            return 0.0;
+        }
+        else
+        {
+            return motor.getMaxAccelerationStepsPerSecond();
+        }
     }
 
     public double getMaxPossibleSpeedStepsPerSecond(int axis)
     {
         Stepper motor = activeAxis.get(axis);
-        return motor.getMaxPossibleSpeedStepsPerSecond();
+        if(null == motor)
+        {
+            return 0.0;
+        }
+        else
+        {
+            return motor.getMaxPossibleSpeedStepsPerSecond();
+        }
     }
 
     public double getMmX()

@@ -413,11 +413,11 @@ public class GCodeDecoder
                 int index = -1;
                 switch(axis)
                 {
-                case 'x': index = Axis_enum.X.ordinal(); break;
-                case 'y': index = Axis_enum.Y.ordinal(); break;
-                case 'z': index = Axis_enum.Z.ordinal(); break;
-                case 'e': index = Axis_enum.E.ordinal(); break;
-                case 'f': index = curPosition.length -1; break;
+                case 'X': index = Axis_enum.X.ordinal(); break;
+                case 'Y': index = Axis_enum.Y.ordinal(); break;
+                case 'Z': index = Axis_enum.Z.ordinal(); break;
+                case 'E': index = Axis_enum.E.ordinal(); break;
+                case 'F': index = curPosition.length -1; break;
                 default:
                     log.error("Requested Move for Illigal Axis {} !", axis);
                     return 0.0;
@@ -442,30 +442,30 @@ public class GCodeDecoder
     private RelativeMove getRelativeMovefor(final GCode code)
     {
         RelativeMove move = new RelativeMove();
-        if(true == code.hasWord('x'))
+        if(true == code.hasWord('X'))
         {
-            move.setX(getRelativeMoveForAxis(code, 'x'));
-            curPosition[Axis_enum.X.ordinal()] = curPosition[Axis_enum.X.ordinal()] + getRelativeMoveForAxis(code, 'x');
+            move.setX(getRelativeMoveForAxis(code, 'X'));
+            curPosition[Axis_enum.X.ordinal()] = curPosition[Axis_enum.X.ordinal()] + getRelativeMoveForAxis(code, 'X');
         }
-        if(true == code.hasWord('y'))
+        if(true == code.hasWord('Y'))
         {
-            move.setY(getRelativeMoveForAxis(code, 'y'));
-            curPosition[Axis_enum.Y.ordinal()] = curPosition[Axis_enum.Y.ordinal()] + getRelativeMoveForAxis(code, 'y');
+            move.setY(getRelativeMoveForAxis(code, 'Y'));
+            curPosition[Axis_enum.Y.ordinal()] = curPosition[Axis_enum.Y.ordinal()] + getRelativeMoveForAxis(code, 'Y');
         }
-        if(true == code.hasWord('z'))
+        if(true == code.hasWord('Z'))
         {
-            move.setZ(getRelativeMoveForAxis(code, 'z'));
-            curPosition[Axis_enum.Z.ordinal()] = curPosition[Axis_enum.Z.ordinal()] + getRelativeMoveForAxis(code, 'z');
+            move.setZ(getRelativeMoveForAxis(code, 'Z'));
+            curPosition[Axis_enum.Z.ordinal()] = curPosition[Axis_enum.Z.ordinal()] + getRelativeMoveForAxis(code, 'Z');
         }
-        if(true == code.hasWord('e'))
+        if(true == code.hasWord('E'))
         {
-            move.setE(getRelativeMoveForAxis(code, 'e'));
-            curPosition[Axis_enum.E.ordinal()] = curPosition[Axis_enum.E.ordinal()] + getRelativeMoveForAxis(code, 'e');
+            move.setE(getRelativeMoveForAxis(code, 'E'));
+            curPosition[Axis_enum.E.ordinal()] = curPosition[Axis_enum.E.ordinal()] + getRelativeMoveForAxis(code, 'E');
         }
-        if(true == code.hasWord('f'))
+        if(true == code.hasWord('F'))
         {
-            move.setF(getRelativeMoveForAxis(code, 'f'));
-            curPosition[curPosition.length -1] = curPosition[curPosition.length -1] + getRelativeMoveForAxis(code, 'f');
+            move.setF(getRelativeMoveForAxis(code, 'F'));
+            curPosition[curPosition.length -1] = curPosition[curPosition.length -1] + getRelativeMoveForAxis(code, 'F');
         }
         return move;
     }

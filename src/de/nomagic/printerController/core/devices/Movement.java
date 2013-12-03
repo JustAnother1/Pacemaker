@@ -29,7 +29,6 @@ import de.nomagic.printerController.core.Event;
 import de.nomagic.printerController.core.RelativeMove;
 import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.core.movement.MotionSender;
-import de.nomagic.printerController.core.movement.StepperMove;
 import de.nomagic.printerController.core.movement.XyzTable;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
 import de.nomagic.printerController.pacemaker.Protocol;

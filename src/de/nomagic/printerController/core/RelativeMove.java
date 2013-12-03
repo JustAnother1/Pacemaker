@@ -23,6 +23,7 @@ import de.nomagic.printerController.Axis_enum;
  */
 public class RelativeMove
 {
+
     private double x;
     private boolean hasX = false;
     private double y;
@@ -36,6 +37,35 @@ public class RelativeMove
 
     public RelativeMove()
     {
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuffer sb = new StringBuffer();
+        sb.append("RelativeMove [");
+        if(true == hasX)
+        {
+            sb.append(" x=" + x);
+        }
+        if(true == hasY)
+        {
+            sb.append(" y=" + y);
+        }
+        if(true == hasZ)
+        {
+            sb.append(" z=" + z);
+        }
+        if(true == hasE)
+        {
+            sb.append(" e=" + e);
+        }
+        if(true == hasF)
+        {
+            sb.append(" f=" + f);
+        }
+        sb.append(" ]");
+        return sb.toString();
     }
 
     public boolean has(Axis_enum axis)
