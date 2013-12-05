@@ -49,6 +49,11 @@ public class Reply
         }
     }
 
+    public String getDump()
+    {
+        return "Reply " + Tool.fromByteBufferToHexString(data);
+    }
+
     @Override
     public String toString()
     {

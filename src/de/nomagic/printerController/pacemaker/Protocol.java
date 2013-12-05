@@ -163,7 +163,6 @@ public class Protocol
 
     public static final byte RESPONSE_ORDER_SPECIFIC_ERROR = 0x13;
     public static final int SENSOR_PROBLEM = 0x7fff;
-    public static final int RESPONSE_MAX = 0x13;
 
     public static final byte RESPONSE_DEBUG_FRAME_DEBUG_MESSAGE = 0x50;
     public static final byte RESPONSE_DEBUG_FRAME_NEW_EVENT = 0x51;
@@ -214,7 +213,110 @@ public class Protocol
     private int ClientExecutedJobs = 0;
     private int CommandsSendToClient = 0;
 
+    public static String parse(byte[] buf)
+    {
+        if(null == buf)
+        {
+            return "no data";
+        }
+        if(1 > buf.length)
+        {
+            return "no data";
+        }
+        StringBuffer res = new StringBuffer();
+        if(ORDER_POS_OF_SYNC < buf.length)
+        {
+            if(START_OF_HOST_FRAME == buf[ORDER_POS_OF_SYNC])
+            {
+                res.append("Order:");
+                if(ORDER_POS_OF_ORDER_CODE < buf.length)
+                {
+                    res.append(orderCodeToString(buf[ORDER_POS_OF_ORDER_CODE]));
+                    if(ORDER_POS_OF_START_OF_PARAMETER < buf.length)
+                    {
+                        int length = (0xff & buf[ORDER_POS_OF_LENGTH]) -2;
+                        int offset = ORDER_POS_OF_START_OF_PARAMETER;
+                        if(0 < length)
+                        {
+                            res.append(Tool.fromByteBufferToHexString(buf, length, offset));
+                        }
+                    }
+                }
+            }
+        }
+        if(REPLY_POS_OF_SYNC < buf.length)
+        {
+            if(START_OF_CLIENT_FRAME == buf[REPLY_POS_OF_SYNC])
+            {
+                res.append("Response:");
+                if(REPLY_POS_OF_REPLY_CODE < buf.length)
+                {
+                    res.append(replyCodeToString(buf[REPLY_POS_OF_REPLY_CODE]));
+                    if(REPLY_POS_OF_START_OF_PARAMETER < buf.length)
+                    {
+                        int length = (0xff & buf[REPLY_POS_OF_LENGTH]) -2;
+                        int offset = REPLY_POS_OF_START_OF_PARAMETER;
+                        if(0 < length)
+                        {
+                            res.append(Tool.fromByteBufferToHexString(buf, length, offset));
+                        }
+                    }
+                }
+            }
+        }
+        return res.toString();
+    }
 
+    private static String replyCodeToString(byte b)
+    {
+        switch(b)
+        {
+        case RESPONSE_FRAME_RECEIPT_ERROR: return "Frame Receipt Error";
+        case RESPONSE_OK: return "ok";
+        case RESPONSE_GENERIC_APPLICATION_ERROR: return "generic application Error";
+        case RESPONSE_STOPPED: return "stopped";
+        case RESPONSE_ORDER_SPECIFIC_ERROR: return "order specific error";
+        case RESPONSE_DEBUG_FRAME_DEBUG_MESSAGE: return "debug";
+        default: return "Invalid Reply Code";
+        }
+    }
+
+    private static String orderCodeToString(byte b)
+    {
+        switch(b)
+        {
+        case ORDER_RESUME: return "resume";
+        case ORDER_REQ_INFORMATION: return "req Information";
+        case ORDER_REQ_DEVICE_NAME: return "req Device name";
+        case ORDER_REQ_TEMPERATURE: return "req Temperature";
+        case ORDER_GET_HEATER_CONFIGURATION: return "get Heater cfg";
+        case ORDER_CONFIGURE_HEATER: return "cfg Heater";
+        case ORDER_SET_HEATER_TARGET_TEMPERATURE: return "set Heater Temperature";
+        case ORDER_REQ_INPUT: return "req Input";
+        case ORDER_SET_OUTPUT: return "set Output";
+        case ORDER_SET_PWM: return "set PWM";
+        case ORDER_WRITE_FIRMWARE_CONFIGURATION: return "write FWcfg";
+        case ORDER_READ_FIRMWARE_CONFIGURATION: return "read FWcfg";
+        case ORDER_STOP_PRINT: return "stop print";
+        case ORDER_ACTIVATE_STEPPER_CONTROL: return "activate stepper control";
+        case ORDER_ENABLE_DISABLE_STEPPER_MOTORS: return "en/disable stepper";
+        case ORDER_CONFIGURE_END_STOPS: return "cfg end stop";
+        case ORDER_ENABLE_DISABLE_END_STOPS: return "en/disable end stops";
+        case ORDER_REQUEST_DEVICE_COUNT: return "req. Device count";
+        case ORDER_QUEUE_COMMAND_BLOCKS: return "add to Queue";
+        case ORDER_CONFIGURE_AXIS_MOVEMENT_RATES: return "cfg Axis movement rate";
+        case ORDER_RETRIEVE_EVENTS: return "retrieve Events";
+        case ORDER_GET_NUMBER_EVENT_FORMAT_IDS: return "get Num. Event Format IDs";
+        case ORDER_GET_EVENT_STRING_FORMAT_ID: return "get Event String Format ID";
+        case ORDER_CLEAR_COMMAND_BLOCK_QUEUE: return "clear Queue";
+        case ORDER_REQUEST_DEVICE_STATUS: return "req Device status";
+        case ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS: return "cfg under run avoidance";
+        case ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES: return "get FWcfg value Props";
+        case ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES: return "traverse FWcfg Values";
+        case ORDER_RESET: return "reset";
+        default: return "Invalid Order Code";
+        }
+    }
 
     public Protocol(String ConnectionDefinition)
     {
@@ -1246,7 +1348,6 @@ public class Protocol
             return "";
         }
     }
-
 
     private boolean sendOrderExpectOK(final byte order, final byte parameter)
     {

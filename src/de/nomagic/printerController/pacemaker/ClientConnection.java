@@ -122,6 +122,7 @@ public abstract class ClientConnection extends Thread
             try
             {
                 log.trace("Sending Frame: " + Tool.fromByteBufferToHexString(buf));
+                log.trace(Protocol.parse(buf));
                 out.write(buf);
                 numberOfTransmissions++;
                 r =  getReply();
@@ -288,7 +289,6 @@ public abstract class ClientConnection extends Thread
             {
                 throw new IOException("Channel closed");
             }
-            log.trace("Received the Byte: " + String.format("%02X", res));
             return res;
         }
         else
@@ -297,7 +297,6 @@ public abstract class ClientConnection extends Thread
             {
                 // we have some Bytes already in the in Buffer.
                 int res = 0xff & readBuffer[readPos];
-                log.trace("Received the Byte: " + String.format("%02X", res));
                 readPos++;
                 if(readPos > lastPos)
                 {
@@ -341,7 +340,6 @@ public abstract class ClientConnection extends Thread
                 {
                     throw new IOException("Channel closed");
                 }
-                log.trace("Received the Byte: " + String.format("%02X", readBuffer[0]));
                 int res = readBuffer[0];
                 if(0 == lastPos)
                 {
@@ -431,7 +429,6 @@ public abstract class ClientConnection extends Thread
                         isSynced = false;
                     }
                 } while (false == isSynced);
-                log.trace("Synced to client!");
 
                 final int replyLength;
                 final int control;
@@ -514,6 +511,8 @@ public abstract class ClientConnection extends Thread
                 }
 
                 Reply curReply = new Reply(buf);
+                log.trace(curReply.getDump());
+                log.trace(Protocol.parse(buf));
                 if(true == curReply.isDebugFrame())
                 {
                     log.info(curReply.toString());
