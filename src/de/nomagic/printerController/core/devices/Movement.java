@@ -125,8 +125,6 @@ public class Movement
                             connectEndSwitchesToStepper(ae, motor, switches, pro);
                             configureStepperMaxSpeed(motor, pro);
                             configureUnderRunAvoidance(motor, pro);
-                            sender.setProtocol(pro);
-                            table.addSender(sender);
                             table.addEndStopSwitches(switches);
                             break;
 

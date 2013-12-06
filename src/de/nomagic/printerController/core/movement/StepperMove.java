@@ -17,6 +17,7 @@ package de.nomagic.printerController.core.movement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,18 +65,27 @@ public class StepperMove
     public Integer[] getAllActiveSteppers()
     {
         Set<Integer> s = activeAxis.keySet();
-        return s.toArray(new Integer[0]);
+        Iterator<Integer> it = s.iterator();
+        Vector<Integer> res = new Vector<Integer>();
+        while(true == it.hasNext())
+        {
+            Integer curAxis = it.next();
+            Stepper motor = activeAxis.get(curAxis);
+            if(0 != motor.getSteps())
+            {
+                res.add(curAxis);
+            }
+        }
+        return res.toArray(new Integer[0]);
     }
 
-    public boolean[] getAxisDirectionIsIncreasing()
+    public boolean[] getAxisDirectionIsIncreasing(Integer[] activeSteppers)
     {
-        boolean[] res = new boolean[activeAxis.size()];
-        Set<Integer> s = activeAxis.keySet();
-        Iterator<Integer> it = s.iterator();
-        int i = 0;
-        while(it.hasNext())
+        boolean[] res = new boolean[activeSteppers.length];
+        for(int i = 0; i < activeSteppers.length; i++)
         {
-            Stepper motor = activeAxis.get(it.next());
+            Integer curAxis = activeSteppers[i];
+            Stepper motor = activeAxis.get(curAxis);
             int steps = motor.getSteps();
             if(0 > steps)
             {
@@ -99,22 +109,17 @@ public class StepperMove
                     res[i] = false;
                 }
             }
-            i++;
         }
         return res;
     }
 
-    public Integer[] getSteps()
+    public Integer[] getSteps(Integer[] activeSteppers)
     {
-        Integer[] res = new Integer[activeAxis.size()];
-        Set<Integer> s = activeAxis.keySet();
-        Iterator<Integer> it = s.iterator();
-        int i = 0;
-        while(it.hasNext())
+        Integer[] res = new Integer[activeSteppers.length];
+        for(int i = 0; i < activeSteppers.length; i++)
         {
-            Stepper motor = activeAxis.get(it.next());
+            Stepper motor = activeAxis.get(activeSteppers[i]);
             res[i] = motor.getSteps();
-            i++;
         }
         return res;
     }

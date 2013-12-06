@@ -189,7 +189,6 @@ public class XyzTable
         {
             endStop_Zmax = zmax.getNumber();
         }
-        prepareMoveForSending(null, true);
     }
 
     private Vector<StepperMove> updateEndStopActivation(StepperMove move)
@@ -796,12 +795,16 @@ public class XyzTable
 
    private void prepareMoveForSending(StepperMove aMove, boolean isLastMove)
    {
-       log.trace("preparing the move : {}", aMove);
-       Vector<StepperMove> moves = updateEndStopActivation(aMove);
-       for(int i = 0; i < moves.size(); i++)
+       if(null != aMove)
        {
-           PlannerQueue.add(moves.get(i));
+           log.trace("preparing the move : {}", aMove);
+           Vector<StepperMove> moves = updateEndStopActivation(aMove);
+           for(int i = 0; i < moves.size(); i++)
+           {
+               PlannerQueue.add(moves.get(i));
+           }
        }
+       // else no new movement data, but we now know that this is the end of the move.
        sendAllPossibleMoves(isLastMove);
        if(true == isLastMove)
        {

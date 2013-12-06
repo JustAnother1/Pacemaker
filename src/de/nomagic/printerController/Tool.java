@@ -54,6 +54,22 @@ public final class Tool
         return fromByteBufferToHexString(buf, length, 0);
     }
 
+
+    public static String fromByteBufferToHexString(int[] buf, int length, int offset)
+    {
+        if(null == buf)
+        {
+            return "[]";
+        }
+        final StringBuffer sb = new StringBuffer();
+        for(int i = 0; i < length; i++)
+        {
+            sb.append(String.format("%02X", (0xff & buf[i + offset])));
+            sb.append(" ");
+        }
+        return "[" + (sb.toString()).trim() + "]";
+    }
+
     public static String fromByteBufferToHexString(final byte[] buf, int length, int offset)
     {
         if(null == buf)

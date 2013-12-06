@@ -73,7 +73,8 @@ public class Stepper
         return "[num=" + StepperNumber +
                " maxAccel=" + MaxAccelleration +
                " dirInv=" + DirectionInverted +
-               " stepsPerMm=" + StepsPerMillimeter + "]\n";
+               " steps/mm=" + StepsPerMillimeter +
+               " max possible Steps/s=" + maxPossibleStepsPerSecond + "]\n";
     }
 
     public int getStepperNumber()

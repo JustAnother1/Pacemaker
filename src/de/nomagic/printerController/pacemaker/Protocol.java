@@ -65,23 +65,23 @@ public class Protocol
     public static final byte ORDER_REQ_INPUT                                        = 7;
     public static final byte ORDER_SET_OUTPUT                                       = 8;
     public static final byte ORDER_SET_PWM                                          = 9;
-    public static final byte ORDER_WRITE_FIRMWARE_CONFIGURATION                     = 0x0A;
-    public static final byte ORDER_READ_FIRMWARE_CONFIGURATION                      = 0x0B;
-    public static final byte ORDER_STOP_PRINT                                       = 0x0C;
-    public static final byte ORDER_ACTIVATE_STEPPER_CONTROL                         = 0x0D;
-    public static final byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS                    = 0x0E;
-    public static final byte ORDER_CONFIGURE_END_STOPS                              = 0x0F;
-    public static final byte ORDER_ENABLE_DISABLE_END_STOPS                         = 0x10;
-    public static final byte ORDER_REQUEST_DEVICE_COUNT                             = 0x11;
-    public static final byte ORDER_QUEUE_COMMAND_BLOCKS                             = 0x12;
-    public static final byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES                    = 0x13;
-    public static final byte ORDER_RETRIEVE_EVENTS                                  = 0x14;
-    public static final byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS                      = 0x15;
-    public static final byte ORDER_GET_EVENT_STRING_FORMAT_ID                       = 0x16;
-    public static final byte ORDER_CLEAR_COMMAND_BLOCK_QUEUE                        = 0x17;
-    public static final byte ORDER_REQUEST_DEVICE_STATUS                            = 0x18;
-    public static final byte ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS = 0x19;
-    public static final byte ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES      = 0x1a;
+    public static final byte ORDER_WRITE_FIRMWARE_CONFIGURATION                     = 0x0A; // 10
+    public static final byte ORDER_READ_FIRMWARE_CONFIGURATION                      = 0x0B; // 11
+    public static final byte ORDER_STOP_PRINT                                       = 0x0C; // 12
+    public static final byte ORDER_ACTIVATE_STEPPER_CONTROL                         = 0x0D; // 13
+    public static final byte ORDER_ENABLE_DISABLE_STEPPER_MOTORS                    = 0x0E; // 14
+    public static final byte ORDER_CONFIGURE_END_STOPS                              = 0x0F; // 15
+    public static final byte ORDER_ENABLE_DISABLE_END_STOPS                         = 0x10; // 16
+    public static final byte ORDER_REQUEST_DEVICE_COUNT                             = 0x11; // 17
+    public static final byte ORDER_QUEUE_COMMAND_BLOCKS                             = 0x12; // 18
+    public static final byte ORDER_CONFIGURE_AXIS_MOVEMENT_RATES                    = 0x13; // 19
+    public static final byte ORDER_RETRIEVE_EVENTS                                  = 0x14; // 20
+    public static final byte ORDER_GET_NUMBER_EVENT_FORMAT_IDS                      = 0x15; // 21
+    public static final byte ORDER_GET_EVENT_STRING_FORMAT_ID                       = 0x16; // 22
+    public static final byte ORDER_CLEAR_COMMAND_BLOCK_QUEUE                        = 0x17; // 23
+    public static final byte ORDER_REQUEST_DEVICE_STATUS                            = 0x18; // 24
+    public static final byte ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS = 0x19; // 25
+    public static final byte ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES      = 0x1a; // 26
     public static final byte ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES           = 0x1b;
     public static final byte ORDER_RESET                                            = (byte)0x7f;
 
@@ -281,7 +281,7 @@ public class Protocol
         }
     }
 
-    private static String orderCodeToString(byte b)
+    public static String orderCodeToString(byte b)
     {
         switch(b)
         {
@@ -407,7 +407,6 @@ public class Protocol
         {
             if(true == paceMaker.readDeviceInformationFrom(this))
             {
-                log.info(paceMaker.toString());
                 di = paceMaker;
                 return paceMaker;
             }
@@ -702,9 +701,12 @@ public class Protocol
 
     private void parseQueueReply(byte[] reply, int offset)
     {
-        ClientQueueFreeSlots =                ((0xff & reply[0 + offset]) * 256) + (0xff & reply[1 + offset]);
-        ClientQueueNumberOfEnqueuedCommands = ((0xff & reply[2 + offset]) * 256) + (0xff & reply[3 + offset]);
-        ClientExecutedJobs =                  ((0xff & reply[4 + offset]) * 256) + (0xff & reply[5 + offset]);
+        if((5 + offset)< reply.length)
+        {
+            ClientQueueFreeSlots =                ((0xff & reply[0 + offset]) * 256) + (0xff & reply[1 + offset]);
+            ClientQueueNumberOfEnqueuedCommands = ((0xff & reply[2 + offset]) * 256) + (0xff & reply[3 + offset]);
+            ClientExecutedJobs =                  ((0xff & reply[4 + offset]) * 256) + (0xff & reply[5 + offset]);
+        }
     }
 
     public void ClearQueue()

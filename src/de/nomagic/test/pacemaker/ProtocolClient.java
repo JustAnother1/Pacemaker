@@ -44,13 +44,13 @@ public class ProtocolClient
     private int control = -1;
     private boolean hasEvent = false;
     private boolean StepperControlActive = false;
-    private final int totalSlots = 500;
     private int lastWritenSlot = -1;
     private int lastExecutedSlot = -1;
-    private final Slot[] orderQueue = new Slot[totalSlots];
     private boolean isConnected = false;
     private boolean inStoppedState = true;
     private boolean stoppedStateAcknowleadged = false;
+
+    private CommandQueue cmdQueue = new CommandQueue();
 
     public ProtocolClient(final InputStream in, final OutputStream out, final Hardware hw)
     {
@@ -113,7 +113,7 @@ public class ProtocolClient
                     for(int i = 0; i < length -2; i++)
                     {
                         final int h = getAByte();
-                        parameter[i] = h;
+                        parameter[i] = (0xff & h);
                     }
                     final int checksum = 0xff & getAByte();
                     int calculatedCheckSum = calculateChecksum(order, length, control, parameter);
@@ -183,7 +183,7 @@ public class ProtocolClient
                 break;
 
             case Protocol.ORDER_RESUME:
-                System.err.println("Order not implemented in this state !");
+                System.err.println("Order (Resume) not implemented in this state !");
                 sendOK();
                 break;
 
@@ -224,17 +224,17 @@ public class ProtocolClient
                 break;
 
             case Protocol.ORDER_WRITE_FIRMWARE_CONFIGURATION:
-                System.err.println("Order not implemented in this state !");
+                System.err.println("Order (write Firmware Configuration) not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_READ_FIRMWARE_CONFIGURATION:
-                System.err.println("Order not implemented in this state !");
+                System.err.println("Order (read Firmware Configuration) not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_STOP_PRINT:
-                System.err.println("Order not implemented in this state !");
+                System.err.println("Order (stop print) not implemented in this state !");
                 sendOK();
                 break;
 
@@ -248,40 +248,43 @@ public class ProtocolClient
                 break;
 
             case Protocol.ORDER_CONFIGURE_END_STOPS:
-                System.err.println("Order not implemented in this state !");
+                // System.err.println("Order not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_ENABLE_DISABLE_END_STOPS:
-                System.err.println("Order not implemented in this state !");
+                // System.err.println("Order not implemented in this state !");
                 sendOK();
                 break;
 
                 // Queued Command Extension
             case Protocol.ORDER_QUEUE_COMMAND_BLOCKS:
-                System.err.println("Order not implemented in this state !");
-                sendOK();
+                sendByteArray(cmdQueue.add(parameter, length));
+                break;
+
+            case Protocol.ORDER_CLEAR_COMMAND_BLOCK_QUEUE:
+                sendByteArray(cmdQueue.clear());
                 break;
 
                 // Basic Move Extension
             case Protocol.ORDER_CONFIGURE_AXIS_MOVEMENT_RATES:
-                System.err.println("Order not implemented in this state !");
+                // System.err.println("Order not implemented in this state !");
                 sendOK();
                 break;
 
                 // Event Reporting Extension
             case Protocol.ORDER_RETRIEVE_EVENTS:
-                System.err.println("Order not implemented in this state !");
+                System.err.println("Order (Retrieve Events) not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_GET_NUMBER_EVENT_FORMAT_IDS:
-                System.err.println("Order not implemented in this state !");
+                System.err.println("Order (get Number Event Format IDs) not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_GET_EVENT_STRING_FORMAT_ID:
-                System.err.println("Order not implemented in this state !");
+                System.err.println("Order (get Event String Format ID) not implemented in this state !");
                 sendOK();
                 break;
 
@@ -302,6 +305,27 @@ public class ProtocolClient
                     break;
                 }
                 break;
+
+            case Protocol.ORDER_REQUEST_DEVICE_STATUS:
+                // System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS:
+                // System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES:
+                // System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
+            case Protocol.ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES:
+                // System.err.println("Order not implemented in this state !");
+                sendOK();
+                break;
+
 
             // New Orders go here
             default:
@@ -658,7 +682,7 @@ public class ProtocolClient
         {
             throw new IOException("Channel closed");
         }
-        return res;
+        return (0xff & res);
     }
 
     private void sendCachedResponse() throws IOException
@@ -715,6 +739,10 @@ public class ProtocolClient
 
     private void sendByteArray(final byte[] list) throws IOException
     {
+        if(null == list)
+        {
+            return;
+        }
         response[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_OK;
         response[Protocol.REPLY_POS_OF_LENGTH] = (byte) (list.length + 2);
         // 3 = control
