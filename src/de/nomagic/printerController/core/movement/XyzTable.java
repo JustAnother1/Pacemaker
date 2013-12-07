@@ -914,11 +914,27 @@ public class XyzTable
         }
     }
 
+    private double cornerBreakFactor(double in, double out)
+    {
+        if((in > 0) && (out > 0))
+        {
+            return Math.abs(in -out);
+        }
+        if((in < 0) && ( out < 0))
+        {
+            return Math.abs(in -out);
+        }
+        // else one is 0 or they point in opposing directions
+        return 0.0;
+    }
+
+
     private double getMaxEndSpeedFactorFor(double[] vec_one, double[] vec_two)
     {
-        return Math.abs(1 - (   Math.abs(vec_one[X] - vec_two[X])
-                             +  Math.abs(vec_one[Y] - vec_two[Y])
-                             +  Math.abs(vec_one[Z] - vec_two[Z])));
+        return Math.max(Math.max(cornerBreakFactor(vec_one[X], vec_two[X]),
+                                 cornerBreakFactor(vec_one[Y], vec_two[Y])),
+                                 cornerBreakFactor(vec_one[Z], vec_two[Z]));
+
     }
 
     private boolean hasMovementData(double[] vec)

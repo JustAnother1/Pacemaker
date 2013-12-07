@@ -63,8 +63,6 @@ public class MotionSender
         if(Protocol.MAX_STEPS_PER_MOVE > steps)
         {
             mq.add(sm);
-            checkQueue();
-            return;
         }
         else
         {
@@ -74,8 +72,8 @@ public class MotionSender
             {
                 mq.add(moves[i]);
             }
-            return;
         }
+        checkQueue();
     }
 
     public void flushQueueToClient()
@@ -222,11 +220,17 @@ public class MotionSender
             double adoptedSpeed = Math.max(startSpeed, MaxEndSpeed);
             // we can now _try_ to accelerate to the max travel speed
             int neededSteps = (int)getBrakingDistance(adoptedSpeed, MaxTravelSpeed, MaxAccelleration);
-            if(neededSteps > 2*neededSteps)
+            if(StepsOnAxis > 2*neededSteps)
             {
                 // we have the steps so lets do it
                 accellerationSteps = accellerationSteps + neededSteps;
                 DecellerationSteps =  DecellerationSteps + neededSteps;
+            }
+            else
+            {
+                // we can not accelerate to the max speed so go as fast as possible
+                accellerationSteps = StepsOnAxis/2;
+                DecellerationSteps = StepsOnAxis - accellerationSteps;
             }
         }
 
