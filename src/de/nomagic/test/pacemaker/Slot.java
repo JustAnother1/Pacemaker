@@ -107,15 +107,14 @@ public class Slot
         }
         int primaryAxis = (0x0f & data[nextByte]);
         res.append(" primaryAxis=" + primaryAxis);
-        boolean isHoming;
         if(0 == (0x10 & data[nextByte]))
         {
-            isHoming = false;
+            // normal move
         }
         else
         {
+            // homing move
             res.append(" homing");
-            isHoming = true;
         }
         nextByte++;
         int nominalSpeed = (0xff & data[nextByte]);
@@ -123,10 +122,11 @@ public class Slot
         nextByte++;
         int endSpeed = (0xff & data[nextByte]);
         res.append(" endSpeed=" + endSpeed);
+        nextByte++;
         int accelerationSteps;
         if(true == twoByteStepCount)
         {
-            accelerationSteps = (0xff & data[nextByte])<<8 + (0xff & data[nextByte + 1]);
+            accelerationSteps = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
             nextByte = nextByte + 2;
         }
         else
@@ -138,7 +138,7 @@ public class Slot
         int decelerationSteps;
         if(true == twoByteStepCount)
         {
-            decelerationSteps = (0xff & data[nextByte])<<8 + (0xff & data[nextByte + 1]);
+            decelerationSteps = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
             nextByte = nextByte + 2;
         }
         else
@@ -155,7 +155,7 @@ public class Slot
                 int StepsOnAxis;
                 if(true == twoByteStepCount)
                 {
-                    StepsOnAxis = (0xff & data[nextByte])<<8 + (0xff & data[nextByte + 1]);
+                    StepsOnAxis = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
                     nextByte = nextByte + 2;
                 }
                 else

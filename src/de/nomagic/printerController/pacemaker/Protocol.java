@@ -238,7 +238,14 @@ public class Protocol
                         int offset = ORDER_POS_OF_START_OF_PARAMETER;
                         if(0 < length)
                         {
-                            res.append(Tool.fromByteBufferToHexString(buf, length, offset));
+                            if(ORDER_QUEUE_COMMAND_BLOCKS == buf[ORDER_POS_OF_ORDER_CODE])
+                            {
+                                res.append(parseQueueBlock(buf, length, offset));
+                            }
+                            else
+                            {
+                                res.append(Tool.fromByteBufferToHexString(buf, length, offset));
+                            }
                         }
                     }
                 }
@@ -264,6 +271,162 @@ public class Protocol
                 }
             }
         }
+        return res.toString();
+    }
+
+    private static String parseQueueBlock(byte[] buf, int length, int offset)
+    {
+        StringBuffer res = new StringBuffer();
+        int bytesToGo = length;
+        do
+        {
+            int blockLength = buf[offset];
+            int BlockType = buf[offset + 1];
+            switch(BlockType)
+            {
+            case MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER:
+                res.append("[order:" + orderCodeToString(buf[offset + 2]));
+                res.append(Tool.fromByteBufferToHexString(buf, blockLength -3, offset + 3));
+                break;
+
+            case MOVEMENT_BLOCK_TYPE_DELAY:
+                res.append("[delay " + (((0xff & buf[offset + 2])*256 + (0xff & buf[offset + 3]))*10) + "us]");
+                break;
+
+            case MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE:
+                res.append(parseBasicLinearMove(buf, blockLength -2, offset +2));
+                break;
+
+            case MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD:
+                res.append("[use Toolhead " + (0xff & buf[offset + 2]) + "]");
+                break;
+
+            default:
+                res.append(Tool.fromByteBufferToHexString(buf, blockLength, offset));
+                break;
+            }
+            offset = offset + blockLength;
+            bytesToGo = bytesToGo - blockLength;
+        } while(1 >bytesToGo);
+        return res.toString();
+    }
+
+    private static String parseBasicLinearMove(byte[] data, int length, int offset)
+    {
+        StringBuffer res = new StringBuffer();
+        res.append("[");
+        boolean twoByteAxisFormat;
+        if(0 == (0x80 & data[offset]))
+        {
+            twoByteAxisFormat = false;
+        }
+        else
+        {
+            twoByteAxisFormat = true;
+        }
+        int AxisSelection;
+        int nextByte;
+        if(false == twoByteAxisFormat)
+        {
+            AxisSelection = (0x7f & data[offset]);
+            nextByte = offset + 1;
+        }
+        else
+        {
+            AxisSelection = (0x7f & data[offset])<<8 + (0xff & data[offset + 1]);
+            nextByte = offset + 2;
+        }
+        boolean twoByteStepCount;
+        if(0 == (0x80 & data[nextByte]))
+        {
+            twoByteStepCount = false;
+        }
+        else
+        {
+            twoByteStepCount = true;
+        }
+        int AxisDirection;
+        if(false == twoByteAxisFormat)
+        {
+            AxisDirection = (0x7f & data[nextByte]);
+            nextByte = nextByte + 1;
+        }
+        else
+        {
+            AxisDirection = (0x7f & data[nextByte])<<8 + (0xff & data[nextByte + 1]);
+            nextByte = nextByte + 2;
+        }
+        int primaryAxis = (0x0f & data[nextByte]);
+        res.append("primaryAxis=" + primaryAxis);
+        if(0 == (0x10 & data[nextByte]))
+        {
+            // normal move
+        }
+        else
+        {
+            // homing move
+            res.append(" homing");
+        }
+        nextByte++;
+        int nominalSpeed = (0xff & data[nextByte]);
+        res.append(" nominalSpeed=" + nominalSpeed);
+        nextByte++;
+        int endSpeed = (0xff & data[nextByte]);
+        res.append(" endSpeed=" + endSpeed);
+        nextByte++;
+        int accelerationSteps;
+        if(true == twoByteStepCount)
+        {
+            accelerationSteps = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
+            nextByte = nextByte + 2;
+        }
+        else
+        {
+            accelerationSteps = (0xff & data[nextByte]);
+            nextByte ++;
+        }
+        res.append(" accelSteps=" + accelerationSteps);
+        int decelerationSteps;
+        if(true == twoByteStepCount)
+        {
+            decelerationSteps = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
+            nextByte = nextByte + 2;
+        }
+        else
+        {
+            decelerationSteps = (0xff & data[nextByte]);
+            nextByte ++;
+        }
+        res.append(" decelSteps=" + decelerationSteps);
+        for(int i = 0; i < 16; i++)
+        {
+            int pattern = 0x1<<i;
+            if(pattern == (AxisSelection & pattern))
+            {
+                int StepsOnAxis;
+                if(true == twoByteStepCount)
+                {
+                    StepsOnAxis = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
+                    nextByte = nextByte + 2;
+                }
+                else
+                {
+                    StepsOnAxis = (0xff & data[nextByte]);
+                    nextByte ++;
+                }
+                res.append("(" + StepsOnAxis + " Steps on Axis " + i);
+                if(pattern == (AxisDirection & pattern))
+                {
+                    res.append(" direction increasing)");
+                }
+                else
+                {
+                    res.append(" direction decreasing)");
+                }
+            }
+            // else this axis is not selected
+        }
+        res.append("]");
         return res.toString();
     }
 
@@ -756,15 +919,17 @@ public class Protocol
                     maxStep = steps[i];
                 }
             }
+            log.trace("Max Steps = {}", maxStep);
             int bytesPerStep;
             if(255 < maxStep)
             {
-                bytesPerStep = 1;
+                bytesPerStep = 2;
             }
             else
             {
-                bytesPerStep = 2;
+                bytesPerStep = 1;
             }
+            log.trace("bytes per step = {}", bytesPerStep);
             // Prepare data
             final byte[] param;
             int steppsStart;
