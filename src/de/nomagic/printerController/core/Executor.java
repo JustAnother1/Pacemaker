@@ -61,6 +61,7 @@ public class Executor
 
     public void close()
     {
+        letMovementStop();
     }
 
     public boolean doShutDown()
@@ -471,6 +472,51 @@ public class Executor
          */
         // TODO parking position
         return false;
+    }
+
+    public void waitForClientQueueEmpty()
+    {
+        letMovementStop();
+        int numUsedSlots = getNumberOfUserSlotsInClientQueue();
+        if(0 < numUsedSlots)
+        {
+            do
+            {
+                try
+                {
+                    Thread.sleep(POLL_INTERVALL_MS);
+                }
+                catch(InterruptedException e)
+                {
+                }
+                numUsedSlots = getNumberOfUserSlotsInClientQueue();
+                log.trace("used Slots: {}", numUsedSlots);
+            }while(0 < numUsedSlots);
+        }
+        // else Queue already empty
+    }
+
+    private int getNumberOfUserSlotsInClientQueue()
+    {
+        int usedSlots = 0;
+        ActionResponse response = handler.getValue(Action_enum.getUsedSlotsClientQueue);
+        if(null == response)
+        {
+            log.error("Did not get a response to get Number of used Slot in Client Queue Action !");
+        }
+        else
+        {
+            if(false == response.wasSuccessful())
+            {
+                lastErrorReason = handler.getLastErrorReason();
+                log.error(lastErrorReason);
+            }
+            else
+            {
+                usedSlots = response.getInt();
+            }
+        }
+        return usedSlots;
     }
 
 }

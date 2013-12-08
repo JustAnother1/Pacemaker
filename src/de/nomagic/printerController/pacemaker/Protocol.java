@@ -191,9 +191,10 @@ public class Protocol
     public static final int RESULT_TRY_AGAIN_LATER = 2;
 
     public static final int MAX_STEPS_PER_MOVE = 0xffff;
+    public static final int QUEUE_TIMEOUT_MS  = 500;
+
 
     private static final int QUEUE_SEND_BUFFER_SIZE = 200;
-
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private String lastErrorReason = null;
@@ -212,6 +213,7 @@ public class Protocol
     private int ClientQueueNumberOfEnqueuedCommands = 0;
     private int ClientExecutedJobs = 0;
     private int CommandsSendToClient = 0;
+    private long timeofLastClientQueueUpdate;
 
     public static String parse(byte[] buf)
     {
@@ -842,6 +844,11 @@ public class Protocol
 
     public int getNumberOfCommandsInClientQueue()
     {
+        long now = System.currentTimeMillis();
+        if((now - timeofLastClientQueueUpdate) > QUEUE_TIMEOUT_MS)
+        {
+            enqueueCommand(null);
+        }
         return ClientQueueNumberOfEnqueuedCommands;
     }
 
@@ -869,6 +876,7 @@ public class Protocol
             ClientQueueFreeSlots =                ((0xff & reply[0 + offset]) * 256) + (0xff & reply[1 + offset]);
             ClientQueueNumberOfEnqueuedCommands = ((0xff & reply[2 + offset]) * 256) + (0xff & reply[3 + offset]);
             ClientExecutedJobs =                  ((0xff & reply[4 + offset]) * 256) + (0xff & reply[5 + offset]);
+            timeofLastClientQueueUpdate = System.currentTimeMillis();
         }
     }
 
@@ -1214,8 +1222,11 @@ public class Protocol
      */
     private int enqueueCommand(byte[] param)
     {
-        // add the new command, and...
-        sendQueue.add(param);
+        if(null != param)
+        {
+            // add the new command, and...
+            sendQueue.add(param);
+        }
         // TODO wait for enough bytes in Buffer ?
         // try to get the Queue empty again.
         if(0 == sendQueue.size())

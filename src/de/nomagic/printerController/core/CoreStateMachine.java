@@ -92,9 +92,18 @@ public final class CoreStateMachine
 
     public void close()
     {
-        if(null != decoder) { decoder.close(); }
-        if(null != exe)     { exe.close();     }
-        if(null != handler) { handler.close(); }
+        if(null != decoder)
+        {
+            decoder.close();
+        }
+        if(null != exe)
+        {
+            exe.close();
+        }
+        if(null != handler)
+        {
+            handler.close();
+        }
     }
 
 }

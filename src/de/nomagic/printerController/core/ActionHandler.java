@@ -70,6 +70,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     private int[] countdowns = new int[MAX_TIMEOUT];
     private long lastTime = 0;
     private boolean TimeoutsActive = false;
+    private volatile boolean isRunning = false;
 
     public ActionHandler(Cfg cfg)
     {
@@ -618,14 +619,34 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         }
     }
 
+    private void handleUsedSlotsClientQueue(Event e)
+    {
+        reportIntResult(e, move.getNumberOfUsedSlotsInClientQueue());
+    }
+
     @Override
     public void run()
     {
         Event e;
-        try
+        boolean shouldClose = false;
+        isRunning = true;
+        while((false == shouldClose) || (0 < eventQueue.size()))
         {
-            while(false == isInterrupted())
+            try
             {
+                if(true == this.isInterrupted())
+                {
+                    shouldClose = true;
+                }
+                if(true == shouldClose)
+                {
+                    int size = eventQueue.size();
+                    log.trace("Shuting down: remeining Evnets: {} !", size);
+                    if(0 == size)
+                    {
+                        break;
+                    }
+                }
                 e = eventQueue.take();
                 if(null != e)
                 {
@@ -690,6 +711,10 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                         handleGeStateOfSwitcht(e);
                         break;
 
+                    case getUsedSlotsClientQueue:
+                        handleUsedSlotsClientQueue(e);
+                        break;
+
                     default:
                         lastErrorReason = "Invalid Event Type ! " + e.getType();
                         log.error(lastErrorReason);
@@ -699,13 +724,14 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                 }
                 checkTimeouts();
             }
+            catch(InterruptedException e1)
+            {
+                log.info("Has been Interrupted !");
+                // -> end the thread
+                shouldClose = true;
+            }
         }
-        catch(InterruptedException e1)
-        {
-            log.info("Has been Interrupted !");
-            // -> end the thread
-        }
-        // close all connections
+        log.trace("close all connections");
         Set<Integer> conSet = print.keySet();
         Iterator<Integer> conIt = conSet.iterator();
         while(conIt.hasNext())
@@ -714,6 +740,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
             Printer curPrinter = print.get(curConn);
             curPrinter.closeConnection();
         }
+        isRunning = false;
     }
 
     @Override
@@ -910,7 +937,8 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         switch(theAction)
         {
         case getIsHoming:
-            e = new Event(Action_enum.getIsHoming, null, this);
+        case getUsedSlotsClientQueue:
+            e = new Event(theAction, null, this);
             eventQueue.add(e);
             return getResponse();
 
@@ -944,7 +972,20 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     public void close()
     {
-        this.interrupt(); // task will shut down after this.
+        log.trace("Requesting Action Handler to close,...");
+        this.interrupt();
+        while(true == isRunning)
+        {
+            try
+            {
+                sleep(1);
+            }
+            catch(InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+        }
+        log.trace("Action Handler has closed !");
     }
 
     private ActionResponse getResponse()

@@ -321,4 +321,17 @@ public class Movement
         return success;
     }
 
+    public int getNumberOfUsedSlotsInClientQueue()
+    {
+        Collection<Protocol> col = protocols.values();
+        Iterator<Protocol> it = col.iterator();
+        int res = 0;
+        while(true == it.hasNext())
+        {
+            Protocol pro = it.next();
+            res = res + pro.getNumberOfCommandsInClientQueue();
+        }
+        return res;
+    }
+
 }

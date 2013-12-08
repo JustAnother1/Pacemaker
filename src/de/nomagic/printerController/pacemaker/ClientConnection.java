@@ -17,6 +17,7 @@ package de.nomagic.printerController.pacemaker;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.channels.ClosedByInterruptException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -532,9 +533,14 @@ public abstract class ClientConnection extends Thread
             log.info("Has been Interrupted !");
             // end the thread
         }
+        catch(ClosedByInterruptException ie)
+        {
+            log.info("Has been Interrupted !");
+            // end the thread
+        }
         catch (final IOException e)
         {
-            log.error("Failed to read Reply - Exception !");
+            log.warn("IOException !");
             e.printStackTrace();
         }
         log.info("Receive Thread stopped !");

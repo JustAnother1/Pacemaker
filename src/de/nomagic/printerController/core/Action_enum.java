@@ -25,5 +25,6 @@ public enum Action_enum
     doShutDown, doImmediateShutDown,
     pauseMovement, relativeMove, endOfMove, homeAxis, getIsHoming, enableMotor, disableMotor,
     setStepsPerMilimeter,
-    setFanSpeed, setHeaterTemperature, getTemperature, getStateOfSwitch
+    setFanSpeed, setHeaterTemperature, getTemperature, getStateOfSwitch,
+    getUsedSlotsClientQueue
 }

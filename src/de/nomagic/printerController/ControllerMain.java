@@ -41,6 +41,7 @@ import de.nomagic.printerController.Interface.StandardStreamInterface;
 import de.nomagic.printerController.Interface.TcpInterface;
 import de.nomagic.printerController.Interface.UdpInterface;
 import de.nomagic.printerController.core.CoreStateMachine;
+import de.nomagic.printerController.core.Executor;
 import de.nomagic.printerController.gui.MainWindow;
 
 /**
@@ -197,7 +198,8 @@ public class ControllerMain implements CloseApplication
         // read default configuration
         if(false == hasReadConfiguration)
         {
-            System.out.println("No Configuration File defined. Trying default (" + DEFAULT_CONFIGURATION_FILE_NAME + ") !");
+            System.out.println("No Configuration File defined. Trying default ("
+                               + DEFAULT_CONFIGURATION_FILE_NAME + ") !");
             try
             {
                 final FileInputStream cfgIn = new FileInputStream(new File(DEFAULT_CONFIGURATION_FILE_NAME));
@@ -269,6 +271,8 @@ public class ControllerMain implements CloseApplication
         {
             e.printStackTrace();
         }
+        Executor exe = pp.getExecutor();
+        exe.waitForClientQueueEmpty();
         pp.close();
     }
 
