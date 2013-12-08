@@ -159,7 +159,9 @@ public class Protocol
     public static final byte CAUSE_DEVICE_FAULT = 4;
     public static final byte CAUSE_ELECTRICAL_FAULT = 5;
     public static final byte CAUSE_FIRMWARE_FAULT = 6;
-    public static final byte CAUSE_OTHER_FAULT = 7;
+    public static final byte CAUSE_USER_REQUESTED = 7;
+    public static final byte CAUSE_HOST_TIMEOUT = 8;
+    public static final byte CAUSE_OTHER_FAULT = 9;
 
     public static final byte RESPONSE_ORDER_SPECIFIC_ERROR = 0x13;
     public static final int SENSOR_PROBLEM = 0x7fff;
@@ -482,6 +484,69 @@ public class Protocol
         case ORDER_RESET: return "reset";
         default: return "Invalid Order Code";
         }
+    }
+
+    public String getDescriptionOfStopped(byte[] stoppedMessage)
+    {
+        if(2 > stoppedMessage.length)
+        {
+            return "invalid Message";
+        }
+        String res = "";
+        // TODO parse recovery options
+        switch(stoppedMessage[1])
+        {
+        case CAUSE_RESET:
+            res = res + "reset";
+            break;
+
+        case CAUSE_END_STOP_HIT:
+            res = res + "end stop has triggered";
+            break;
+
+        case CAUSE_MOVEMENT_ERROR:
+            res = res + "movement error";
+            break;
+
+        case CAUSE_TEMPERATURE_ERROR:
+            res = res + "temperature error";
+            break;
+
+        case CAUSE_DEVICE_FAULT:
+            res = res + "device fault";
+            break;
+
+        case CAUSE_ELECTRICAL_FAULT:
+            res = res + "electrical fault";
+            break;
+
+        case CAUSE_FIRMWARE_FAULT:
+            res = res + "firmware fault";
+            break;
+
+        case CAUSE_USER_REQUESTED:
+            res = res + "user request";
+            break;
+
+        case CAUSE_HOST_TIMEOUT:
+            res = res + "host timeout";
+            break;
+
+        case CAUSE_OTHER_FAULT:
+            res = res + "other cause";
+            break;
+
+        default:
+            res = res + "invalid cause !";
+            break;
+        }
+        if(2 < stoppedMessage.length)
+        {
+             res = res + new String(stoppedMessage,
+                                    2, (stoppedMessage.length - 2),
+                                    Charset.forName("UTF-8"));
+        }
+        return res;
     }
 
     public Protocol(String ConnectionDefinition)
@@ -849,7 +914,10 @@ public class Protocol
         if((now - timeofLastClientQueueUpdate) > QUEUE_TIMEOUT_MS)
         {
             log.trace("polling client for Queue status");
-            enqueueCommand(null);
+            if(RESULT_ERROR == enqueueCommand(null))
+            {
+                return -1;
+            }
         }
         return ClientQueueNumberOfEnqueuedCommands;
     }
@@ -1209,6 +1277,15 @@ public class Protocol
             }
             // else queue full so try next time
             return RESULT_TRY_AGAIN_LATER;
+        }
+        else if(RESPONSE_STOPPED == r.getReplyCode())
+        {
+            //TODO
+            byte[] stoppedMessage = r.getParameter();
+            String stoppedDescription = getDescriptionOfStopped(stoppedMessage);
+            lastErrorReason = "Client entered Stopped Mode (" + stoppedDescription + ")!";
+            log.error(lastErrorReason);
+            return RESULT_ERROR;
         }
         else
         {

@@ -323,13 +323,19 @@ public class Movement
 
     public int getNumberOfUsedSlotsInClientQueue()
     {
-        Collection<Protocol> col = protocols.values();
-        Iterator<Protocol> it = col.iterator();
+        final Collection<Protocol> col = protocols.values();
+        final Iterator<Protocol> it = col.iterator();
         int res = 0;
         while(true == it.hasNext())
         {
-            Protocol pro = it.next();
-            res = res + pro.getNumberOfCommandsInClientQueue();
+            final Protocol pro = it.next();
+            final int cur = pro.getNumberOfCommandsInClientQueue();
+            if(0 > cur)
+            {
+                lastErrorReason = "Client in Stopped Mode !";
+                return -1;
+            }
+            res = res + cur;
         }
         return res;
     }

@@ -500,7 +500,7 @@ public class Executor
     private int getNumberOfUserSlotsInClientQueue()
     {
         int usedSlots = 0;
-        ActionResponse response = handler.getValue(Action_enum.getUsedSlotsClientQueue);
+        final ActionResponse response = handler.getValue(Action_enum.getUsedSlotsClientQueue);
         if(null == response)
         {
             log.error("Did not get a response to get Number of used Slot in Client Queue Action !");
@@ -511,6 +511,7 @@ public class Executor
             {
                 lastErrorReason = handler.getLastErrorReason();
                 log.error(lastErrorReason);
+                usedSlots = -1;
             }
             else
             {

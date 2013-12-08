@@ -621,7 +621,12 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void handleUsedSlotsClientQueue(Event e)
     {
-        reportIntResult(e, move.getNumberOfUsedSlotsInClientQueue());
+        final int res = move.getNumberOfUsedSlotsInClientQueue();
+        if(0 > res)
+        {
+            lastErrorReason = move.getLastErrorReason();
+        }
+        reportIntResult(e, res);
     }
 
     @Override
@@ -937,10 +942,22 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         switch(theAction)
         {
         case getIsHoming:
-        case getUsedSlotsClientQueue:
             e = new Event(theAction, null, this);
             eventQueue.add(e);
             return getResponse();
+
+        case getUsedSlotsClientQueue:
+            e = new Event(theAction, null, this);
+            eventQueue.add(e);
+            final ActionResponse res = getResponse();
+            if( 0 > res.getInt())
+            {
+                return new ActionResponse(false, res.getInt());
+            }
+            else
+            {
+                return res;
+            }
 
         default:
             lastErrorReason = "Action " + theAction + " not implemented !";
