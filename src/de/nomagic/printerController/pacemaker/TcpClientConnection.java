@@ -72,6 +72,7 @@ public class TcpClientConnection extends ClientConnection
 
     public TcpClientConnection(final Socket pms) throws IOException
     {
+        super("TcpClientConnection");
         pms.setSoTimeout(0);
         pms.setKeepAlive(true);
         pms.setTcpNoDelay(true);

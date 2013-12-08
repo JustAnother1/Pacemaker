@@ -236,6 +236,7 @@ public final class UartClientConnection extends ClientConnection
 
     public UartClientConnection(String data)
     {
+        super("UartClientConnection");
         Properties systemProperties = System.getProperties();
         systemProperties.setProperty("jna.nosys", "true");
         String PortName = getPortNameFromDescriptor(data);

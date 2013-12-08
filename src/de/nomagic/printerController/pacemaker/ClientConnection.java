@@ -81,6 +81,11 @@ public abstract class ClientConnection extends Thread
     private int numberOfTimeouts = 0;
     private int numberOfTransmissions = 0;
 
+    public ClientConnection(String name)
+    {
+        super(name);
+    }
+
     public Reply sendRequest(final byte order, final byte[] parameter)
     {
         if(null == parameter)
