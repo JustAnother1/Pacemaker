@@ -34,8 +34,13 @@ import de.nomagic.printerController.core.devices.Switch;
  */
 public class XyzTable
 {
+    /** used to calculate the length of the homing movement.
+     * minimum Value is 1.0. Everything more is just to be sure.
+     * 1.5 is 50% longer move to be sure to reach the end of the axis. */
     public static final double HOMING_MOVE_SFAETY_FACTOR = 1.5;
+    /** everything shorter than this will be assumed to be 0 */
     public static final double MIN_MOVEMENT_DISTANCE = 0.00001;
+    /** if the axis has steps the speed may not be 0. So this is the speed is will have at least */
     public static final double MIN_MOVEMENT_SPEED_MM_SECOND = 0.1;
 
     public static final String CFG_NAME_AUTO_END_STOP_DISABLE = "automatically disable end stops";
@@ -634,7 +639,7 @@ public class XyzTable
            log.error("Feedrate too low !");
            SpeedPerMm = MIN_MOVEMENT_SPEED_MM_SECOND;
        }
-       log.trace("Speed = {} mm/second", SpeedPerMm);
+       log.trace("Speed Factor = {} mm/second", SpeedPerMm);
        StepperMove res = new StepperMove();
        for(Axis_enum ax: Axis_enum.values())
        {
@@ -949,7 +954,6 @@ public class XyzTable
         {
             sendLastMove();
         }
-        sendCommands();
         log.trace("send everything");
     }
 

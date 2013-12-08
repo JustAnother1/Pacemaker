@@ -64,13 +64,13 @@ public class StepperMove
 
     public Integer[] getAllActiveSteppers()
     {
-        Set<Integer> s = activeAxis.keySet();
-        Iterator<Integer> it = s.iterator();
-        Vector<Integer> res = new Vector<Integer>();
+        final Set<Integer> s = activeAxis.keySet();
+        final Iterator<Integer> it = s.iterator();
+        final Vector<Integer> res = new Vector<Integer>();
         while(true == it.hasNext())
         {
-            Integer curAxis = it.next();
-            Stepper motor = activeAxis.get(curAxis);
+            final Integer curAxis = it.next();
+            final Stepper motor = activeAxis.get(curAxis);
             if(0 != motor.getSteps())
             {
                 res.add(curAxis);
@@ -81,12 +81,12 @@ public class StepperMove
 
     public boolean[] getAxisDirectionIsIncreasing(Integer[] activeSteppers)
     {
-        boolean[] res = new boolean[activeSteppers.length];
+        final boolean[] res = new boolean[activeSteppers.length];
         for(int i = 0; i < activeSteppers.length; i++)
         {
-            Integer curAxis = activeSteppers[i];
-            Stepper motor = activeAxis.get(curAxis);
-            int steps = motor.getSteps();
+            final Integer curAxis = activeSteppers[i];
+            final Stepper motor = activeAxis.get(curAxis);
+            final int steps = motor.getSteps();
             if(0 > steps)
             {
                 if(false == motor.isDirectionInverted())
@@ -115,10 +115,10 @@ public class StepperMove
 
     public Integer[] getSteps(Integer[] activeSteppers)
     {
-        Integer[] res = new Integer[activeSteppers.length];
+        final Integer[] res = new Integer[activeSteppers.length];
         for(int i = 0; i < activeSteppers.length; i++)
         {
-            Stepper motor = activeAxis.get(activeSteppers[i]);
+            final Stepper motor = activeAxis.get(activeSteppers[i]);
             res[i] = motor.getSteps();
         }
         return res;
@@ -142,13 +142,13 @@ public class StepperMove
     public int getMaxSteps()
     {
         int maxSteps = 0;
-        Set<Integer> s = activeAxis.keySet();
-        Iterator<Integer> it = s.iterator();
+        final Set<Integer> s = activeAxis.keySet();
+        final Iterator<Integer> it = s.iterator();
         while(true == it.hasNext())
         {
-            int idx = it.next();
-            Stepper motor = activeAxis.get(idx);
-            int steps = motor.getSteps();
+            final int idx = it.next();
+            final Stepper motor = activeAxis.get(idx);
+            final int steps = motor.getSteps();
             if(steps > maxSteps)
             {
                 maxSteps = steps;
@@ -161,13 +161,13 @@ public class StepperMove
     {
         long maxSteps = 0;
         int MotorIdx = -1;
-        Set<Integer> s = activeAxis.keySet();
-        Iterator<Integer> it = s.iterator();
+        final Set<Integer> s = activeAxis.keySet();
+        final Iterator<Integer> it = s.iterator();
         while(true == it.hasNext())
         {
-            int idx = it.next();
-            Stepper motor = activeAxis.get(idx);
-            long steps = Math.abs(motor.getSteps());
+            final int idx = it.next();
+            final Stepper motor = activeAxis.get(idx);
+            final long steps = Math.abs(motor.getSteps());
             if(steps > maxSteps)
             {
                 maxSteps = steps;
@@ -184,8 +184,8 @@ public class StepperMove
      */
     public StepperMove[] splitInto(int maxStepsPerMove)
     {
-        Stepper MaxMotor = activeAxis.get(getStepperWithMostSteps());
-        int maxSteps = MaxMotor.getSteps();
+        final Stepper MaxMotor = activeAxis.get(getStepperWithMostSteps());
+        final int maxSteps = MaxMotor.getSteps();
         int numParts = maxSteps / maxStepsPerMove;
         if(maxSteps > numParts * maxStepsPerMove)
         {
@@ -193,30 +193,30 @@ public class StepperMove
             numParts = numParts + 1;
         }
         // create the classes
-        StepperMove[] res = new StepperMove[numParts];
+        final StepperMove[] res = new StepperMove[numParts];
         for(int i = 0; i < numParts; i++)
         {
-            StepperMove sm = new StepperMove();
+            final StepperMove sm = new StepperMove();
             sm.isHomingMove = this.isHomingMove;
             res[i] = sm;
         }
         // add the move parts
-        Set<Integer> s = activeAxis.keySet();
-        Iterator<Integer> it = s.iterator();
+        final Set<Integer> s = activeAxis.keySet();
+        final Iterator<Integer> it = s.iterator();
         while(true == it.hasNext())
         {
-            int idx = it.next();
-            Stepper motor = activeAxis.get(idx);
-            int Steps = motor.getSteps();
-            int stepsPerSplit = Steps / numParts;
+            final int idx = it.next();
+            final Stepper motor = activeAxis.get(idx);
+            final int Steps = motor.getSteps();
+            final int stepsPerSplit = Steps / numParts;
             for(int i = 0; i < (numParts - 1); i++)
             {
-                Stepper splitMotor = new Stepper(motor);
+                final Stepper splitMotor = new Stepper(motor);
                 splitMotor.setSteps(stepsPerSplit);
                 res[i].addAxisMotors(splitMotor);
             }
-            Stepper splitMotor = new Stepper(motor);
-            int restOfSteps = Steps - ((numParts -1) * stepsPerSplit);
+            final Stepper splitMotor = new Stepper(motor);
+            final int restOfSteps = Steps - ((numParts -1) * stepsPerSplit);
             splitMotor.setSteps(restOfSteps);
             res[numParts -1].addAxisMotors(splitMotor);
         }
@@ -225,7 +225,7 @@ public class StepperMove
 
     public void setMaxEndSpeedMmPerSecondFor(int axis, double speed)
     {
-        Stepper motor = activeAxis.get(axis);
+        final Stepper motor = activeAxis.get(axis);
         if(null != motor)
         {
             motor.setMaxEndSpeedMmPerSecond(speed);
@@ -235,7 +235,7 @@ public class StepperMove
 
     public double getMaxEndSpeedMmPerSecondFor(int axis)
     {
-        Stepper motor = activeAxis.get(axis);
+        final Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
             log.trace("Asked for inactive Axis ! {}", axis);
@@ -249,7 +249,7 @@ public class StepperMove
 
     public double getMaxSpeedMmPerSecondFor(int axis)
     {
-        Stepper motor = activeAxis.get(axis);
+        final Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
             log.trace("Asked for inactive Axis ! {}", axis);
@@ -263,7 +263,7 @@ public class StepperMove
 
     public int getStepsOnStepper(int axis)
     {
-        Stepper motor = activeAxis.get(axis);
+        final Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
             log.trace("Asked for inactive Axis ! {}", axis);
@@ -294,7 +294,7 @@ public class StepperMove
 
     public double getMaxEndSpeedStepsPerSecondFor(int axis)
     {
-        Stepper motor = activeAxis.get(axis);
+        final Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
             log.trace("Asked for inactive Axis ! {}", axis);
@@ -308,7 +308,7 @@ public class StepperMove
 
     public double getMaxSpeedStepsPerSecondFor(int axis)
     {
-        Stepper motor = activeAxis.get(axis);
+        final Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
             log.trace("Asked for inactive Axis ! {}", axis);
@@ -322,7 +322,7 @@ public class StepperMove
 
     public double getMaxAccelerationStepsPerSecond2(int axis)
     {
-        Stepper motor = activeAxis.get(axis);
+        final Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
             log.trace("Asked for inactive Axis ! {}", axis);
@@ -336,7 +336,7 @@ public class StepperMove
 
     public double getMaxPossibleSpeedStepsPerSecond(int axis)
     {
-        Stepper motor = activeAxis.get(axis);
+        final Stepper motor = activeAxis.get(axis);
         if(null == motor)
         {
             log.trace("Asked for inactive Axis ! {}", axis);

@@ -15,6 +15,7 @@
 package de.nomagic.printerController.core;
 
 import de.nomagic.printerController.Axis_enum;
+import de.nomagic.printerController.core.movement.XyzTable;
 
 /** represents a movement relative to the last position.
  *
@@ -42,7 +43,7 @@ public class RelativeMove
     @Override
     public String toString()
     {
-        StringBuffer sb = new StringBuffer();
+        final StringBuffer sb = new StringBuffer();
         sb.append("RelativeMove [");
         if(true == hasX)
         {
@@ -105,31 +106,51 @@ public class RelativeMove
     public void setX(double x)
     {
         this.x = x;
-        hasX = true;
+        if((x < -XyzTable.MIN_MOVEMENT_DISTANCE) || (x > XyzTable.MIN_MOVEMENT_DISTANCE))
+        {
+            hasX = true;
+        }
+        // else x was set to 0
     }
 
     public void setY(double y)
     {
         this.y = y;
-        hasY = true;
+        if((y < -XyzTable.MIN_MOVEMENT_DISTANCE) || (y > XyzTable.MIN_MOVEMENT_DISTANCE))
+        {
+            hasY = true;
+        }
+        // else y was set to 0
     }
 
     public void setZ(double z)
     {
         this.z = z;
-        hasZ = true;
+        if((z < -XyzTable.MIN_MOVEMENT_DISTANCE) || (z > XyzTable.MIN_MOVEMENT_DISTANCE))
+        {
+            hasZ = true;
+        }
+        // else z was set to 0
     }
 
     public void setE(double e)
     {
         this.e = e;
-        hasE = true;
+        if((e < -XyzTable.MIN_MOVEMENT_DISTANCE) || (e > XyzTable.MIN_MOVEMENT_DISTANCE))
+        {
+            hasE = true;
+        }
+        // else e was set to 0
     }
 
     public void setF(double f)
     {
         this.f = f;
-        hasF = true;
+        if((f < -XyzTable.MIN_MOVEMENT_DISTANCE) || (f > XyzTable.MIN_MOVEMENT_DISTANCE))
+        {
+            hasF = true;
+        }
+        // else f was set to 0
     }
 
 }
