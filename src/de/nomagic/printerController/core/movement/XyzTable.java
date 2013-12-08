@@ -646,16 +646,29 @@ public class XyzTable
                    curPosition[X] = curPosition[X] + relMov.get(Axis_enum.X);
                    res.setMmX(relMov.get(Axis_enum.X));
                    double XSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
+                   log.trace("XSpeed = {}", XSpeed);
                    if(null != X0)
                    {
                        X0.addMove(relMov.get(ax));
                        X0.setMaxSpeedMmPerSecond(XSpeed);
+                       int max = X0.getMaxPossibleSpeedStepsPerSecond();
+                       int speed = (int)X0.getMaxTravelSpeedStepsPerSecond();
+                       if(speed > max)
+                       {
+                           X0.setMaxSpeedStepsPerSecond(max);
+                       }
                        res.addAxisMotors(X0);
                    }
                    if(null != X1)
                    {
                        X1.addMove(relMov.get(ax));
                        X1.setMaxSpeedMmPerSecond(XSpeed);
+                       int max = X1.getMaxPossibleSpeedStepsPerSecond();
+                       int speed = (int)X1.getMaxTravelSpeedStepsPerSecond();
+                       if(speed > max)
+                       {
+                           X1.setMaxSpeedStepsPerSecond(max);
+                       }
                        res.addAxisMotors(X1);
                    }
                    break;
@@ -664,16 +677,29 @@ public class XyzTable
                    curPosition[Y] = curPosition[Y] + relMov.get(Axis_enum.Y);
                    res.setMmY(relMov.get(Axis_enum.Y));
                    double YSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
+                   log.trace("YSpeed = {}", YSpeed);
                    if(null != Y0)
                    {
                        Y0.addMove(relMov.get(ax));
                        Y0.setMaxSpeedMmPerSecond(YSpeed);
+                       int max = Y0.getMaxPossibleSpeedStepsPerSecond();
+                       int speed = (int)Y0.getMaxTravelSpeedStepsPerSecond();
+                       if(speed > max)
+                       {
+                           Y0.setMaxSpeedStepsPerSecond(max);
+                       }
                        res.addAxisMotors(Y0);
                    }
                    if(null != Y1)
                    {
                        Y1.addMove(relMov.get(ax));
                        Y1.setMaxSpeedMmPerSecond(YSpeed);
+                       int max = Y1.getMaxPossibleSpeedStepsPerSecond();
+                       int speed = (int)Y1.getMaxTravelSpeedStepsPerSecond();
+                       if(speed > max)
+                       {
+                           Y1.setMaxSpeedStepsPerSecond(max);
+                       }
                        res.addAxisMotors(Y1);
                    }
                    break;
@@ -682,16 +708,29 @@ public class XyzTable
                    curPosition[Z] = curPosition[Z] + relMov.get(Axis_enum.Z);
                    res.setMmZ(relMov.get(Axis_enum.Z));
                    double ZSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
+                   log.trace("ZSpeed = {}", ZSpeed);
                    if(null != Z0)
                    {
                        Z0.addMove(relMov.get(ax));
                        Z0.setMaxSpeedMmPerSecond(ZSpeed);
+                       int max = Z0.getMaxPossibleSpeedStepsPerSecond();
+                       int speed = (int)Z0.getMaxTravelSpeedStepsPerSecond();
+                       if(speed > max)
+                       {
+                           Z0.setMaxSpeedStepsPerSecond(max);
+                       }
                        res.addAxisMotors(Z0);
                    }
                    if(null != Z1)
                    {
                        Z1.addMove(relMov.get(ax));
                        Z1.setMaxSpeedMmPerSecond(ZSpeed);
+                       int max = Z1.getMaxPossibleSpeedStepsPerSecond();
+                       int speed = (int)Z1.getMaxTravelSpeedStepsPerSecond();
+                       if(speed > max)
+                       {
+                           Z1.setMaxSpeedStepsPerSecond(max);
+                       }
                        res.addAxisMotors(Z1);
                    }
                    break;

@@ -134,6 +134,11 @@ public class Stepper
         this.maxSpeed = maxSpeed;
     }
 
+    public void setMaxSpeedStepsPerSecond(double maxSpeed)
+    {
+        this.maxSpeed = maxSpeed / StepsPerMillimeter;
+    }
+
     public int getMaxPossibleSpeedStepsPerSecond()
     {
         return maxPossibleStepsPerSecond;
