@@ -358,8 +358,9 @@ public class Protocol
             AxisDirection = (0x7f & data[nextByte])<<8 + (0xff & data[nextByte + 1]);
             nextByte = nextByte + 2;
         }
+        res.append("AxisDirections=" + AxisDirection);
         int primaryAxis = (0x0f & data[nextByte]);
-        res.append("primaryAxis=" + primaryAxis);
+        res.append(" primaryAxis=" + primaryAxis);
         if(0 == (0x10 & data[nextByte]))
         {
             // normal move
@@ -847,6 +848,7 @@ public class Protocol
         long now = System.currentTimeMillis();
         if((now - timeofLastClientQueueUpdate) > QUEUE_TIMEOUT_MS)
         {
+            log.trace("polling client for Queue status");
             enqueueCommand(null);
         }
         return ClientQueueNumberOfEnqueuedCommands;
@@ -965,14 +967,17 @@ public class Protocol
                 }
                 // directions
                 int DirectionMap = 0;
+                log.trace("Direction Map = {}", DirectionMap);
                 for(int i = 0; i < axisDirectionIsIncreasing.length; i++)
                 {
                     if(true == axisDirectionIsIncreasing[i])
                     {
                         DirectionMap = DirectionMap | (1 << activeSteppers[i]);
+                        log.trace("Direction Map = {}", DirectionMap);
                     }
                 }
-                param[3] =  (byte)(param[3] | (0x7f | DirectionMap));
+                log.trace("Direction Map = {}", DirectionMap);
+                param[3] =  (byte)(param[3] | (0x7f & DirectionMap));
                 // Homing
                 if(true == isHoming)
                 {
@@ -981,9 +986,9 @@ public class Protocol
                 // Primary Axis
                 param[4] =(byte)(param[4] | (0x0f & primaryAxis));
                 // Nominal Speed
-                param[5] = (byte)(0xff &speed);
+                param[5] = (byte)(0xff & speed);
                 // end Speed
-                param[6] = (byte)(0xff &endSpeed);
+                param[6] = (byte)(0xff & endSpeed);
                 steppsStart = 7;
             }
             else if(maxStepperIDx < 15)
@@ -1011,15 +1016,18 @@ public class Protocol
                 }
                 // directions
                 int DirectionMap = 0;
+                log.trace("Direction Map = {}", DirectionMap);
                 for(int i = 0; i < axisDirectionIsIncreasing.length; i++)
                 {
                     if(true == axisDirectionIsIncreasing[i])
                     {
                         DirectionMap = DirectionMap | (1 << activeSteppers[i]);
+                        log.trace("Direction Map = {}", DirectionMap);
                     }
                 }
-                param[5] =  (byte)(0xff | DirectionMap);
-                param[4] =  (byte)(param[4] | (0x7f | (DirectionMap>>8)));
+                log.trace("Direction Map = {}", DirectionMap);
+                param[5] =  (byte)(0xff & DirectionMap);
+                param[4] =  (byte)(param[4] | (0x7f & (DirectionMap>>8)));
                 // Homing
                 if(true == isHoming)
                 {
@@ -1028,9 +1036,9 @@ public class Protocol
                 // Primary Axis
                 param[6] =(byte)(param[6] | (0x0f & primaryAxis));
                 // Nominal Speed
-                param[7] = (byte)(0xff &speed);
+                param[7] = (byte)(0xff & speed);
                 // end Speed
-                param[8] = (byte)(0xff &endSpeed);
+                param[8] = (byte)(0xff & endSpeed);
                 steppsStart = 9;
             }
             else
@@ -1231,8 +1239,8 @@ public class Protocol
         // try to get the Queue empty again.
         if(0 == sendQueue.size())
         {
-            // nothing to send
-            return RESULT_SUCCESS;
+            // nothing to send -> poll client to get number of Slots used
+            return sendDataToClientQueue(new byte[0], 0, 0);
         }
         if(0 == ClientQueueFreeSlots)
         {

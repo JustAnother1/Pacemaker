@@ -852,6 +852,85 @@ public class XyzTable
        }
    }
 
+   private void sendOneMove(StepperMove aMove, double endSpeedFactor)
+   {
+       log.trace("endSpeedFactor = {}", endSpeedFactor);
+       Integer[] steppers = aMove.getAllActiveSteppers();
+       for(int j = 0; j < steppers.length; j++)
+       {
+           log.trace("Stepper {}:", steppers[j]);
+           double maxSpeed = aMove.getMaxSpeedMmPerSecondFor(steppers[j]);
+           log.trace("maxSpeed = {}", maxSpeed);
+           aMove.setMaxEndSpeedMmPerSecondFor(steppers[j], maxSpeed * endSpeedFactor);
+       }
+       sender.add(aMove);
+       PlannerQueue.finishedOneMove();
+   }
+
+   private boolean sendOneMoveThatHasAnotherFolling()
+   {
+       if(2 > PlannerQueue.size())
+       {
+           // we need at least two moves
+           return false;
+       }
+       StepperMove firstMove = PlannerQueue.getMove(0);
+       double[] firstVector =new double[3];
+       firstVector[X] = firstMove.getMmX();
+       firstVector[Y] = firstMove.getMmY();
+       firstVector[Z] = firstMove.getMmZ();
+       log.trace("getting the move [{},{},z]", firstVector[X], firstVector[Y]);
+
+       Integer[] steppers = firstMove.getAllActiveSteppers();
+       for(int j = 0; j < steppers.length; j++)
+       {
+           log.trace("Stepper {}:", steppers[j]);
+       }
+
+       // find second move
+       int i = 1;
+       boolean found = false;
+       double[] secondVector;
+       do
+       {
+           StepperMove curMove = PlannerQueue.getMove(i);
+           secondVector = new double[3];
+           secondVector[X] = curMove.getMmX();
+           secondVector[Y] = curMove.getMmY();
+           secondVector[Z] = curMove.getMmZ();
+           log.trace("getting the move [{},{},z]", secondVector[X], secondVector[Y]);
+           if(true == hasMovementData(secondVector))
+           {
+               found = true;
+           }
+           //else  we found a empty stepperMove with a command in it -> skip for now
+           i++;
+       } while((i < PlannerQueue.size()) && (false == found));
+
+       if(true == found)
+       {
+           // we have two moves so send the first
+           // set end Speed
+           double endSpeedFactor = getMaxEndSpeedFactorFor(firstVector, secondVector);
+           // send first move
+           log.trace("sending {}", firstMove);
+           sendOneMove(firstMove, endSpeedFactor);
+           return true;
+       }
+       else
+       {
+           // no second move found
+           return false;
+       }
+   }
+
+   private void sendLastMove()
+   {
+       StepperMove curMove = PlannerQueue.getMove(0);
+       log.trace("sending last move");
+       sendOneMove(curMove, 0.0);
+   }
+
     private void sendAllPossibleMoves(boolean isLastMove)
     {
         if(1 > PlannerQueue.size())
@@ -859,97 +938,45 @@ public class XyzTable
             // no moves available to send
             return;
         }
-        StepperMove firstMove = null;
-        double[] firstVector = null;
-        int i = 0;
+        sendCommands();
+        boolean goon = true;
         do
         {
-            StepperMove curMove = PlannerQueue.getMove(i);
-            if((null == firstMove) && (true == curMove.hasCommand()))
+            goon = sendOneMoveThatHasAnotherFolling();
+            sendCommands();
+        }while(true == goon);
+        if(true == isLastMove)
+        {
+            sendLastMove();
+        }
+        sendCommands();
+        log.trace("send everything");
+    }
+
+    private void sendCommands()
+    {
+        while(0 < PlannerQueue.size())
+        {
+            StepperMove curMove = PlannerQueue.getMove(0);
+            if(true == curMove.hasCommand())
             {
                 // This move can be send
+                log.trace("sending command");
                 sender.add(curMove);
-                PlannerQueue.finishedOneMove();
-                // i gets not increased
+            }
+            double[] curVector = new double[3];
+            curVector[X] = curMove.getMmX();
+            curVector[Y] = curMove.getMmY();
+            curVector[Z] = curMove.getMmZ();
+            if(true == hasMovementData(curVector))
+            {
+                break;
             }
             else
             {
-                double[] curVector = new double[3];
-                curVector[X] = curMove.getMmX();
-                curVector[Y] = curMove.getMmY();
-                curVector[Z] = curMove.getMmZ();
-                curVector = normalize(curVector);
-                if(true == hasMovementData(curVector))
-                {
-                    // We have a move, so if
-                    if(null == firstMove)
-                    {
-                        // this is the first move -> wait for next move
-                        firstMove = curMove;
-                        firstVector = curVector;
-                        i++;
-                    }
-                    else
-                    {
-                        // this is already the second move
-                        // -> send the first move and this becomes the new first move
-
-                        // set end Speed
-                        double endSpeedFactor = getMaxEndSpeedFactorFor(firstVector, curVector);
-                        log.trace("endSpeedFactor = {}", endSpeedFactor);
-                        Integer[] steppers = firstMove.getAllActiveSteppers();
-                        for(int j = 0; j < steppers.length; j++)
-                        {
-                            double maxSpeed = firstMove.getMaxSpeedMmPerSecondFor(steppers[j]);
-                            log.trace("maxSpeed = {}", maxSpeed);
-                            firstMove.setMaxEndSpeedMmPerSecondFor(steppers[j], maxSpeed * endSpeedFactor);
-                        }
-                        // send first move
-                        sender.add(curMove);
-                        PlannerQueue.finishedOneMove();
-                        // the first move was at index 0 !
-                        if(i != 1)
-                        {
-                            // we skipped a move
-                            for(int s = 0; s < (i-1); s++)
-                            {
-                                sender.add(PlannerQueue.getMove(0));
-                                PlannerQueue.finishedOneMove();
-                            }
-                            i = 1;
-                        }
-                        firstMove = curMove;
-                        firstVector = curVector;
-                    }
-                }
-                else
-                {
-                    // we found a stepperMove with a command in it -> skip for now
-                    i++;
-                }
-            }
-        } while(i < PlannerQueue.size());
-        // do we have a first move stored?
-        if(null != firstMove)
-        {
-            if(true == isLastMove)
-            {
-                Integer[] steppers = firstMove.getAllActiveSteppers();
-                for(int j = 0; j < steppers.length; j++)
-                {
-                    // last move so stop at the end
-                    firstMove.setMaxEndSpeedMmPerSecondFor(steppers[j], 0.0);
-                }
-                sender.add(firstMove);
+                // empty move -> remove from queue
                 PlannerQueue.finishedOneMove();
-                for(int j = 0; j < PlannerQueue.size(); j++)
-                {
-                    // send all command moves that are still in the Queue
-                    sender.add(PlannerQueue.getMove(0));
-                    PlannerQueue.finishedOneMove();
-                }
             }
-            // else we can not send that one move
         }
     }
 
@@ -970,6 +997,8 @@ public class XyzTable
 
     private double getMaxEndSpeedFactorFor(double[] vec_one, double[] vec_two)
     {
+        vec_one = normalize(vec_one);
+        vec_two = normalize(vec_two);
         return Math.max(Math.max(cornerBreakFactor(vec_one[X], vec_two[X]),
                                  cornerBreakFactor(vec_one[Y], vec_two[Y])),
                                  cornerBreakFactor(vec_one[Z], vec_two[Z]));

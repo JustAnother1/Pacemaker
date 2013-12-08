@@ -152,9 +152,11 @@ public class MotionSender
         }
         // there is movement in this Move
         boolean[] axisDirectionIsIncreasing = sm.getAxisDirectionIsIncreasing(activeSteppers);
+
         Integer[] steps = sm.getSteps(activeSteppers);
         for(int i = 0; i < activeSteppers.length; i++)
         {
+            log.trace("direction is increasing = {}", axisDirectionIsIncreasing[i]);
             log.trace("Active Axis = {}", activeSteppers[i]);
             log.trace("Steps on Axis = {}", steps[i]);
             if(0 > steps[i])
@@ -162,6 +164,7 @@ public class MotionSender
                 axisDirectionIsIncreasing[i] = !axisDirectionIsIncreasing[i];
                 steps[i] = Math.abs(steps[i]);
             }
+            log.trace("direction is increasing = {}", axisDirectionIsIncreasing[i]);
         }
         int primaryAxis = sm.getStepperWithMostSteps();
         log.trace("primary Axis = {}", primaryAxis);

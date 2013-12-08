@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
+import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
  * @author Lars P&ouml;tter
@@ -484,13 +485,13 @@ public class Executor
             {
                 try
                 {
-                    Thread.sleep(POLL_INTERVALL_MS);
+                    Thread.sleep(Protocol.QUEUE_TIMEOUT_MS);
                 }
                 catch(InterruptedException e)
                 {
                 }
                 numUsedSlots = getNumberOfUserSlotsInClientQueue();
-                log.trace("used Slots: {}", numUsedSlots);
+                log.debug("used Slots: {}", numUsedSlots);
             }while(0 < numUsedSlots);
         }
         // else Queue already empty

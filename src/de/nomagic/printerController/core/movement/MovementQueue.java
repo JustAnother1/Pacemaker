@@ -16,6 +16,9 @@ package de.nomagic.printerController.core.movement;
 
 import java.util.LinkedList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -24,7 +27,7 @@ import java.util.LinkedList;
 public class MovementQueue
 {
     public static final int MAX_QUEUE_SIZE = 1000;
-
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private LinkedList<StepperMove> entries = new LinkedList<StepperMove>();
 
 
@@ -80,6 +83,7 @@ public class MovementQueue
 
     public void finishedOneMove()
     {
+        log.trace("Removing a move");
         entries.removeFirst();
     }
 
