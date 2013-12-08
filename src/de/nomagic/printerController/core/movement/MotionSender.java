@@ -241,9 +241,9 @@ public class MotionSender
         log.trace("speed = {}", speed);
         log.trace("end speed = {}", endSpeed);
 
-        int speedFactor = (int)((speed /MaxPossibleSpeed) * 256);
+        int speedFactor = (int)((speed /MaxPossibleSpeed) * 255);
         log.trace("speed factor = {}", speedFactor);
-        int endSpeedFactor = (int)((endSpeed /MaxPossibleSpeed) * 256);
+        int endSpeedFactor = (int)((endSpeed /MaxPossibleSpeed) * 255);
         log.trace("end speed factor = {}", endSpeedFactor);
         // Update start Speeds
         double speedPerStep = endSpeed/ Math.abs(sm.getStepsOnStepper(primaryAxis));
