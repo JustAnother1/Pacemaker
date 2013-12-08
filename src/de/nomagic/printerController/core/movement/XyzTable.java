@@ -918,11 +918,11 @@ public class XyzTable
     {
         if((in > 0) && (out > 0))
         {
-            return Math.abs(in -out);
+            return 1 - Math.abs(in -out);
         }
         if((in < 0) && ( out < 0))
         {
-            return Math.abs(in -out);
+            return 1 - Math.abs(in -out);
         }
         // else one is 0 or they point in opposing directions
         return 0.0;
