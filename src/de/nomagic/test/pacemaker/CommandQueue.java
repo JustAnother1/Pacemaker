@@ -109,7 +109,7 @@ public class CommandQueue
         int availableSlots = totalSlots - queue.size();
         res[0] = (byte)(0xff & (availableSlots /256));
         res[1] = (byte)(0xff & (availableSlots));
-        int usedSlots = queue.size();
+        int usedSlots =  0;//queue.size();
         res[2] = (byte)(0xff & (usedSlots /256));
         res[3] = (byte)(0xff & (usedSlots));
         res[4] = (byte)(0xff & (executedSlots /256));
