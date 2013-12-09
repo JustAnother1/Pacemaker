@@ -46,6 +46,10 @@
         <tstamp>
             <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
         </tstamp>
+        <exec executable = "git" output="${destDir}/commit-id">
+            <arg value = "rev-parse" />
+            <arg value = "HEAD" />
+        </exec>
 
         <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false" debug="true" debuglevel="lines,vars,source">
             <classpath refid="project.class.path"/>
@@ -54,6 +58,7 @@
         <jar destfile="${mainJar}" update="false">
             <fileset dir="${destDir}">
                 <include name="**/*.class" />
+                <include name="commit-id" />
             </fileset>
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.ControllerMain" />

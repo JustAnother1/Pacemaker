@@ -219,9 +219,25 @@ public class ControllerMain implements CloseApplication
         case 0: setLogLevel("info"); break;
         case 1: setLogLevel("debug");break;
         case 2:
-        default:setLogLevel("trace");break;
+        default:
+            setLogLevel("trace");
+            System.out.println("Build from " + getCommitID());
+            break;
         }
         return true;
+    }
+
+    public static String getCommitID()
+    {
+        try
+        {
+            InputStream s = ControllerMain.class.getResourceAsStream("/commit-id");
+            BufferedReader in = new BufferedReader(new InputStreamReader(s));
+            return in.readLine();
+        }catch( Exception e )
+        {
+            return e.toString();
+        }
     }
 
     public void sendGCodeFile()
