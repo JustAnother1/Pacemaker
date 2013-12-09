@@ -265,11 +265,22 @@ public class GCodeDecoder
         case 112: // Emergency Stop
             if(false == exe.doImmediateShutDown()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
+        case 115: // get Firmware Version and capabilities
+        {
+            final StringBuffer sb = new StringBuffer();
+            sb.append("FIRMWARE_NAME:Pacemaker");
+            sb.append(" FIRMWARE_VERSION:0.1");
+            sb.append(" FIRMWARE_URL:https://github.com/JustAnother1/Pacemaker");
+            ResultValue = sb.toString();
+        }
+            return RESULT_VALUE;
+
         case 116: // wait for Heaters
             if(false == exe.waitForEverythingInLimits()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 119: // interpreted status of end stop switches
-            StringBuffer sb = new StringBuffer();
+        {
+            final StringBuffer sb = new StringBuffer();
             sb.append("Reporting endstop status\r\n");
             // X min
             sb.append("x_min: ");
@@ -303,6 +314,7 @@ public class GCodeDecoder
             sb.append("\r\n");
             sb.append("ok\r\n");
             ResultValue = sb.toString();
+        }
             return RESULT_VALUE;
 
         case 140: // set Bed Temperature - no wait

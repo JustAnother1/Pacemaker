@@ -23,6 +23,7 @@ Implemented Codes:
 - M109
 - M110
 - M112
+- M115
 - M116
 - M119
 - M140
@@ -129,7 +130,6 @@ Missing features if compared to RepRapWiki(http://reprap.org/wiki/G-code):
 - M111
 - M113
 - M114
-- M115
 - M117
 - M118
 - M126
