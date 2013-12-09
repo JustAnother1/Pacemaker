@@ -100,7 +100,7 @@ public abstract class ClientConnection extends Thread
 
     public Reply sendRequest(final int Order, final int[] parameter, int offset, int length)
     {
-        byte[] para = new byte[length];
+        final byte[] para = new byte[length];
         for(int i = 0; i < length; i++)
         {
             para[i] = (byte)(0xff & parameter[offset + i]);
@@ -150,7 +150,7 @@ public abstract class ClientConnection extends Thread
         if(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR == r.getReplyCode())
         {
             // Do some logging
-            byte[] para = r.getParameter();
+            final byte[] para = r.getParameter();
             String type = "";
             switch(para[0])
             {
@@ -233,7 +233,7 @@ public abstract class ClientConnection extends Thread
                 // Reply codes as defined in Pacemaker Protocol
                 if(Protocol.RESPONSE_FRAME_RECEIPT_ERROR == r.getReplyCode())
                 {
-                    byte[] para = r.getParameter();
+                    final byte[] para = r.getParameter();
                     switch(para[0])
                     {
                     case Protocol.RESPONSE_BAD_FRAME:
@@ -286,7 +286,7 @@ public abstract class ClientConnection extends Thread
     }
 
     @SuppressWarnings("unused")
-    protected int getAByte() throws IOException, TimeoutException
+    protected int getAByte() throws IOException, TimeoutException, InterruptedException
     {
         if(false == useNonBlocking)
         {
@@ -302,7 +302,7 @@ public abstract class ClientConnection extends Thread
             if(null != readBuffer)
             {
                 // we have some Bytes already in the in Buffer.
-                int res = 0xff & readBuffer[readPos];
+                final int res = 0xff & readBuffer[readPos];
                 readPos++;
                 if(readPos > lastPos)
                 {
@@ -320,13 +320,7 @@ public abstract class ClientConnection extends Thread
                     int timeoutCounter = 0;
                     do
                     {
-                        try
-                        {
-                            Thread.sleep(1);
-                        }
-                        catch(InterruptedException e)
-                        {
-                        }
+                        Thread.sleep(1);
                         if(true == isSynced)
                         {
                             timeoutCounter++;
@@ -346,7 +340,7 @@ public abstract class ClientConnection extends Thread
                 {
                     throw new IOException("Channel closed");
                 }
-                int res = readBuffer[0];
+                final int res = readBuffer[0];
                 if(0 == lastPos)
                 {
                     // just a single Byte arrived
@@ -480,7 +474,7 @@ public abstract class ClientConnection extends Thread
                     continue;
                 }
 
-                byte expectedCRC = getCRCfor(buf, replyLength + 2);
+                final byte expectedCRC = getCRCfor(buf, replyLength + 2);
                 if(expectedCRC != buf[2 + replyLength])
                 {
                     log.error("Wrong CRC ! expected : " + String.format("%02X", expectedCRC)
@@ -516,7 +510,7 @@ public abstract class ClientConnection extends Thread
                     }
                 }
 
-                Reply curReply = new Reply(buf);
+                final Reply curReply = new Reply(buf);
                 log.trace(curReply.getDump());
                 log.trace(Protocol.parse(buf));
                 if(true == curReply.isDebugFrame())
