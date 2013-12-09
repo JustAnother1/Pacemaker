@@ -212,12 +212,11 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
             mapOutputs(di, pro, i);
             mapSwitches(di, pro, i);
             move.addConnection(di, cfg, pro, i, Switches);
-            readConfigurationFromClient(pro);
         }
         return true;
     }
 
-    private void readConfigurationFromClient(Protocol pro)
+    public void readConfigurationFromClient(Protocol pro)
     {
         Vector<String> settings = new Vector<String>();
         String curSetting = "";
