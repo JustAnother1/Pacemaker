@@ -106,6 +106,10 @@ public class MotionSender
     {
         // v1, v2 = steps per second
         // a = steps /second*second
+        // t = time in seconds
+        // v2 = v1 - a*t  -> t = (v2 - v1)/a
+        // s = v * t
+        // ->
         // S = (v1 + v2)/2 * abs(v1 - v2)/a
         return ((v1 + v2)/2) * (Math.abs(v1 - v2)/a);
     }
