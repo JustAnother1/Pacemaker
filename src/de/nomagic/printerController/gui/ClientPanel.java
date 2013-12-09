@@ -73,7 +73,12 @@ public class ClientPanel
 
     public void updateButtons()
     {
-        if(true == pp.isOperational())
+        if(null == pp)
+        {
+            connectButton.setEnabled(false);
+            disconnectButton.setEnabled(false);
+        }
+        else if(true == pp.isOperational())
         {
             connectButton.setEnabled(false);
             disconnectButton.setEnabled(true);
@@ -87,7 +92,14 @@ public class ClientPanel
 
     public void updateConnectionDefinition()
     {
-        desscriptionField.setText(cfg.getConnectionDefinitionOfClient(0));
+        if(null == cfg)
+        {
+            desscriptionField.setText("");
+        }
+        else
+        {
+            desscriptionField.setText(cfg.getConnectionDefinitionOfClient(0));
+        }
     }
 
     public Component getPanel()

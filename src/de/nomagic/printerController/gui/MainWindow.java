@@ -25,7 +25,7 @@ import de.nomagic.printerController.CloseApplication;
 import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.core.Executor;
 
-/**
+/** Main Window of GUI.
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
@@ -37,7 +37,11 @@ public class MainWindow extends JFrame
 
     public MainWindow(final Cfg cfg, final CoreStateMachine core, final CloseApplication Closer)
     {
-        final Executor exe = core.getExecutor();
+        Executor exe = null;
+        if(null != core)
+        {
+             exe = core.getExecutor();
+        }
         // set up the window
         this.setTitle("Pacemaker - printerController");
         this.setResizable(true);
@@ -56,9 +60,9 @@ public class MainWindow extends JFrame
         // Machine Control Panel
         machineControlPanel = new MachineControlPanel(core, cfg, printerStatusPanel);
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                                              machineControlPanel.getPanel(),
-                                              printerStatusPanel.getPanel());
+        final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                                                    machineControlPanel.getPanel(),
+                                                    printerStatusPanel.getPanel());
         this.add(splitPane);
         // End of Panels
         this.pack();

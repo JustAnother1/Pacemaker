@@ -87,13 +87,13 @@ public class ControllerMain implements CloseApplication
 
     private void setLogLevel(String LogLevel)
     {
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        final LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
         try
         {
-            JoranConfigurator configurator = new JoranConfigurator();
+            final JoranConfigurator configurator = new JoranConfigurator();
             configurator.setContext(context);
             context.reset();
-            String logCfg =
+            final String logCfg =
             "<configuration>" +
               "<appender name='STDOUT' class='ch.qos.logback.core.ConsoleAppender'>" +
                 "<encoder>" +
@@ -231,10 +231,11 @@ public class ControllerMain implements CloseApplication
     {
         try
         {
-            InputStream s = ControllerMain.class.getResourceAsStream("/commit-id");
-            BufferedReader in = new BufferedReader(new InputStreamReader(s));
+            final InputStream s = ControllerMain.class.getResourceAsStream("/commit-id");
+            final BufferedReader in = new BufferedReader(new InputStreamReader(s));
             return in.readLine();
-        }catch( Exception e )
+        }
+        catch( Exception e )
         {
             return e.toString();
         }
@@ -248,7 +249,7 @@ public class ControllerMain implements CloseApplication
             return;
         }
 
-        CoreStateMachine pp = new CoreStateMachine(cfg);
+        final CoreStateMachine pp = new CoreStateMachine(cfg);
         if(false == pp.isOperational())
         {
             System.err.println("Could not Connect to Pacemaker Client !");
@@ -266,7 +267,7 @@ public class ControllerMain implements CloseApplication
             {
                 System.out.print("\rNow sending Line " + linecount + "  ");
                 linecount ++;
-                String lineResult = pp.executeGCode(line);
+                final String lineResult = pp.executeGCode(line);
                 log.debug(lineResult);
                 if(true  == lineResult.startsWith("!!"))
                 {
@@ -287,7 +288,7 @@ public class ControllerMain implements CloseApplication
         {
             e.printStackTrace();
         }
-        Executor exe = pp.getExecutor();
+        final Executor exe = pp.getExecutor();
         exe.waitForClientQueueEmpty();
         pp.close();
     }
@@ -307,7 +308,14 @@ public class ControllerMain implements CloseApplication
     public void startInterfaces()
     {
         // set up the printer
-        core = new CoreStateMachine(cfg);
+        if(false == hasReadConfiguration)
+        {
+            core = null;
+        }
+        else
+        {
+            core = new CoreStateMachine(cfg);
+        }
         final CloseApplication Closer = this;
         // If we want the GUI then we want it even with non operational core!
         if(true == shallStartGui)
@@ -329,6 +337,11 @@ public class ControllerMain implements CloseApplication
                 }
             });
         }
+        if(false == hasReadConfiguration)
+        {
+            System.out.println("No Configuration File found ! Printing not possible !");
+            return;
+        }
         if(false == core.isOperational())
         {
             System.err.println("Could not Connect to Pacemaker Client !");
@@ -336,7 +349,7 @@ public class ControllerMain implements CloseApplication
         }
         if(true == shallStartTcp)
         {
-            TcpInterface tcp = new TcpInterface();
+            final TcpInterface tcp = new TcpInterface();
             tcp.addPacemakerCore(core);
             tcp.addCloser(Closer);
             tcp.start();
@@ -344,13 +357,13 @@ public class ControllerMain implements CloseApplication
         }
         if(true == schallStartUdp)
         {
-            UdpInterface udp = new UdpInterface();
+            final UdpInterface udp = new UdpInterface();
             udp.start();
             interfaces.add(udp);
         }
         if(true == schallStartStandardStreams)
         {
-            StandardStreamInterface stdStream = new StandardStreamInterface();
+            final StandardStreamInterface stdStream = new StandardStreamInterface();
             stdStream.start();
             interfaces.add(stdStream);
         }
@@ -378,13 +391,16 @@ public class ControllerMain implements CloseApplication
     @Override
     public void close()
     {
-        Iterator<InteractiveInterface> it = interfaces.iterator();
+        final Iterator<InteractiveInterface> it = interfaces.iterator();
         while(it.hasNext())
         {
-            InteractiveInterface cutInterface = it.next();
+            final InteractiveInterface cutInterface = it.next();
             cutInterface.close();
         }
-        core.close();
+        if(null != core)
+        {
+            core.close();
+        }
     }
 
 }
