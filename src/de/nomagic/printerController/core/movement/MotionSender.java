@@ -59,7 +59,7 @@ public class MotionSender
      */
     public void add(StepperMove sm)
     {
-        int steps = sm.getMaxSteps();
+        final int steps = sm.getMaxSteps();
         if(Protocol.MAX_STEPS_PER_MOVE > steps)
         {
             mq.add(sm);
@@ -67,7 +67,7 @@ public class MotionSender
         else
         {
             // we need to split that move into smaller moves
-            StepperMove[] moves = sm.splitInto(Protocol.MAX_STEPS_PER_MOVE);
+            final StepperMove[] moves = sm.splitInto(Protocol.MAX_STEPS_PER_MOVE);
             for(int i = 0; i < moves.length; i++)
             {
                 mq.add(moves[i]);
@@ -117,7 +117,7 @@ public class MotionSender
     private double getSpeedfor(Double startSpeed, int accellerationSteps, double maxAccelleration, boolean accelerate)
     {
         // V = sqr(2 * s* a
-        double change = Math.sqrt(2 * accellerationSteps * maxAccelleration);
+        final double change = Math.sqrt(2 * accellerationSteps * maxAccelleration);
         if(true == accelerate)
         {
             return startSpeed + change;
@@ -130,7 +130,7 @@ public class MotionSender
 
     private void sendMoveCommand()
     {
-        StepperMove sm = mq.getMove(0);
+        final StepperMove sm = mq.getMove(0);
         if(null == sm)
         {
             return;
@@ -146,7 +146,7 @@ public class MotionSender
                 log.trace("Send end Stop command");
             }
         }
-        Integer[] activeSteppers = sm.getAllActiveSteppers();
+        final Integer[] activeSteppers = sm.getAllActiveSteppers();
         if(1 > activeSteppers.length)
         {
             // this is an empty move as end of move marking,
@@ -155,9 +155,9 @@ public class MotionSender
             return;
         }
         // there is movement in this Move
-        boolean[] axisDirectionIsIncreasing = sm.getAxisDirectionIsIncreasing(activeSteppers);
+        final boolean[] axisDirectionIsIncreasing = sm.getAxisDirectionIsIncreasing(activeSteppers);
 
-        Integer[] steps = sm.getSteps(activeSteppers);
+        final Integer[] steps = sm.getSteps(activeSteppers);
         for(int i = 0; i < activeSteppers.length; i++)
         {
             log.trace("direction is increasing = {}", axisDirectionIsIncreasing[i]);
@@ -165,12 +165,11 @@ public class MotionSender
             log.trace("Steps on Axis = {}", steps[i]);
             if(0 > steps[i])
             {
-                axisDirectionIsIncreasing[i] = !axisDirectionIsIncreasing[i];
                 steps[i] = Math.abs(steps[i]);
             }
             log.trace("direction is increasing = {}", axisDirectionIsIncreasing[i]);
         }
-        int primaryAxis = sm.getStepperWithMostSteps();
+        final int primaryAxis = sm.getStepperWithMostSteps();
         log.trace("primary Axis = {}", primaryAxis);
 
         // Speed calculation
@@ -185,13 +184,13 @@ public class MotionSender
             startSpeed = 0.0;
         }
         log.trace("start Speed = {}", startSpeed);
-        double MaxEndSpeed = sm.getMaxEndSpeedStepsPerSecondFor(primaryAxis);
+        final double MaxEndSpeed = sm.getMaxEndSpeedStepsPerSecondFor(primaryAxis);
         log.trace("max end Speed = {}", MaxEndSpeed);
-        double MaxTravelSpeed = sm.getMaxSpeedStepsPerSecondFor(primaryAxis);
+        final double MaxTravelSpeed = sm.getMaxSpeedStepsPerSecondFor(primaryAxis);
         log.trace("max travel Speed = {}", MaxTravelSpeed);
-        double MaxAccelleration = sm.getMaxAccelerationStepsPerSecond2(primaryAxis);
+        final double MaxAccelleration = sm.getMaxAccelerationStepsPerSecond2(primaryAxis);
         log.trace("max Acceleration = {}", MaxAccelleration);
-        double MaxPossibleSpeed = sm.getMaxPossibleSpeedStepsPerSecond(primaryAxis);
+        final double MaxPossibleSpeed = sm.getMaxPossibleSpeedStepsPerSecond(primaryAxis);
         log.trace("max possible Speed = {}", MaxPossibleSpeed);
 
         if(startSpeed > MaxEndSpeed)
@@ -204,7 +203,7 @@ public class MotionSender
         else if(startSpeed < MaxEndSpeed)
         {
             // we _can_ try to accelerate to this speed
-            int neededSteps = (int)getBrakingDistance(startSpeed, MaxEndSpeed, MaxAccelleration);
+            final int neededSteps = (int)getBrakingDistance(startSpeed, MaxEndSpeed, MaxAccelleration);
             if(StepsOnAxis > neededSteps)
             {
                 // we have the steps so lets do it
@@ -224,9 +223,9 @@ public class MotionSender
             // the additional deceleration and therefore can go on with this speed.
             // if start is slower than max end speed then we already accounted for
             // the additional acceleration and therefore can also go on with the max end speed.
-            double adoptedSpeed = Math.max(startSpeed, MaxEndSpeed);
+            final double adoptedSpeed = Math.max(startSpeed, MaxEndSpeed);
             // we can now _try_ to accelerate to the max travel speed
-            int neededSteps = (int)getBrakingDistance(adoptedSpeed, MaxTravelSpeed, MaxAccelleration);
+            final int neededSteps = (int)getBrakingDistance(adoptedSpeed, MaxTravelSpeed, MaxAccelleration);
             if(StepsOnAxis > 2*neededSteps)
             {
                 // we have the steps so lets do it
@@ -243,22 +242,28 @@ public class MotionSender
 
         log.trace("accelleration Steps = {}", accellerationSteps);
         log.trace("decelleration Steps = {}", DecellerationSteps);
-        double speed = getSpeedfor(startSpeed, accellerationSteps, MaxAccelleration, true);
-        double endSpeed = getSpeedfor(speed, DecellerationSteps,MaxAccelleration, false);
+        final double speed = getSpeedfor(startSpeed, accellerationSteps, MaxAccelleration, true);
+        final double endSpeed = getSpeedfor(speed, DecellerationSteps,MaxAccelleration, false);
         log.trace("speed = {}", speed);
         log.trace("end speed = {}", endSpeed);
 
-        int speedFactor = (int)((speed /MaxPossibleSpeed) * 255);
+        final int speedFactor = (int)((speed /MaxPossibleSpeed) * 255);
         log.trace("speed factor = {}", speedFactor);
-        int endSpeedFactor = (int)((endSpeed /MaxPossibleSpeed) * 255);
+        final int endSpeedFactor = (int)((endSpeed /MaxPossibleSpeed) * 255);
         log.trace("end speed factor = {}", endSpeedFactor);
         // Update start Speeds
-        double speedPerStep = endSpeed/ Math.abs(sm.getStepsOnStepper(primaryAxis));
+        final double speedPerStep = endSpeed/ Math.abs(sm.getStepsOnStepper(primaryAxis));
         for(int i = 0; i < activeSteppers.length; i++)
         {
             startSpeeds.put(activeSteppers[i], steps[i] * speedPerStep);
         }
-        boolean res = pro.addBasicLinearMove(
+
+        for(int i = 0; i < axisDirectionIsIncreasing.length; i++)
+        {
+            log.trace("axisDirectionIsIncreasing[" + i + "] = " + axisDirectionIsIncreasing[i]);
+        }
+
+        final boolean res = pro.addBasicLinearMove(
                 activeSteppers,
                 sm.isHomingMove(),
                 speedFactor,

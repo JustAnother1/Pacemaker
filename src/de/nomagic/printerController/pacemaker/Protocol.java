@@ -1034,6 +1034,10 @@ public class Protocol
                     param[3] = (byte) 0x80;
                 }
                 // directions
+                for(int i = 0; i < axisDirectionIsIncreasing.length; i++)
+                {
+                    log.trace("axisDirectionIsIncreasing[" + i + "] = " + axisDirectionIsIncreasing[i]);
+                }
                 int DirectionMap = 0;
                 log.trace("Direction Map = {}", DirectionMap);
                 for(int i = 0; i < axisDirectionIsIncreasing.length; i++)
