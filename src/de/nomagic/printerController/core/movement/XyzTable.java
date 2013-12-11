@@ -462,7 +462,18 @@ public class XyzTable
                 }
             }
         }
+
         Vector<StepperMove> res = new Vector<StepperMove>();
+        if((false == XisHomed) || (false == YisHomed) || (false == ZisHomed))
+        {
+            if(0 < stopsOn.size())
+            {
+                StepperMove sm = new StepperMove();
+                sm.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
+                res.add(sm);
+                stopsOn.clear();
+            }
+        }
         if(0 < stopsOff.size())
         {
             StepperMove sm = new StepperMove();
