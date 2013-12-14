@@ -17,7 +17,6 @@ package de.nomagic.printerController.gui;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedReader;
 import java.io.File;
@@ -31,6 +30,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JPanel;
 
 import org.slf4j.Logger;
@@ -43,23 +43,26 @@ import de.nomagic.printerController.core.CoreStateMachine;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class MachineControlPanel implements ActionListener
+public class MachineControlPanel
 {
-    public static final String ACTION_LOAD_CONFIGURATION = "loadConfig";
-    public static final String ACTION_PRINT = "print";
-
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private final JPanel myPanel = new JPanel();
     private final ClientPanel clientPane;
     private final DirectControlPanel directControlPane;
+    private final SendPanel rawFramePane;
+    private final JPanel buttonPanel = new JPanel();
     private final JButton configurationButton = new JButton("load configuration");
     private final JButton printButton = new JButton("print");
     private final PrinterStatusPanel printerStatusPanel;
     private final JFileChooser fc = new JFileChooser();
-    private final CoreStateMachine pp;
+    private CoreStateMachine pp;
 
-    public MachineControlPanel(final CoreStateMachine pp, final Cfg cfg, PrinterStatusPanel printerStatusPanel)
+    public MachineControlPanel(final CoreStateMachine pp,
+                               final Cfg cfg,
+                               PrinterStatusPanel printerStatusPanel,
+                               ActionListener parent,
+                               JFrame ParentWindow)
     {
         this.pp = pp;
         this.printerStatusPanel = printerStatusPanel;
@@ -67,24 +70,27 @@ public class MachineControlPanel implements ActionListener
                 BorderFactory.createLineBorder(Color.black),
                 "Printer Control"));
         myPanel.setLayout(new BoxLayout(myPanel, BoxLayout.PAGE_AXIS));
-        JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout());
-        configurationButton.addActionListener(this);
-        configurationButton.setActionCommand(ACTION_LOAD_CONFIGURATION);
+        configurationButton.addActionListener(parent);
+        configurationButton.setActionCommand(MainWindow.ACTION_CFG_LOAD);
         buttonPanel.add(configurationButton);
-        printButton.addActionListener(this);
-        printButton.setActionCommand(ACTION_PRINT);
+        printButton.addActionListener(parent);
+        printButton.setActionCommand(MainWindow.ACTION_PRINT);
         printButton.setEnabled(false);
         buttonPanel.add(printButton);
         myPanel.add(buttonPanel);
 
         // move motors ,control heaters,...
-        directControlPane = new DirectControlPanel(pp);
+        directControlPane = new DirectControlPanel(pp, cfg);
         myPanel.add(directControlPane.getPanel());
 
         // connection to Client Panel (connect, disconnect,...)
-        clientPane = new ClientPanel(pp, cfg, this);
+        clientPane = new ClientPanel(pp, cfg, parent);
         myPanel.add(clientPane.getPanel());
+
+        // Send Raw Pacemaker Order Frames to Client
+        rawFramePane = new SendPanel(pp, directControlPane, ParentWindow);
+        myPanel.add(rawFramePane.getPanel());
     }
 
     public Component getPanel()
@@ -92,121 +98,140 @@ public class MachineControlPanel implements ActionListener
         return myPanel;
     }
 
-    @Override
-    public void actionPerformed(final ActionEvent e)
+    public void updateCore(CoreStateMachine core)
     {
-        log.info("Action performed : " + e.getActionCommand());
-        if(ClientPanel.ACTION_CLOSE_CLIENT_CONNECTION.equals(e.getActionCommand()))
+        pp = core;
+        directControlPane.updateCore(core);
+        clientPane.updateCore(core);
+        rawFramePane.updateCore(core);
+    }
+
+    public void handleActionCloseClient()
+    {
+        log.trace("User requests to close the connection to the client!");
+        pp.close();
+        clientPane.updateButtons();
+        printerStatusPanel.setToOffline();
+        directControlPane.setToOffline();
+        printButton.setEnabled(false);
+    }
+
+    public void handleActionOpenClient()
+    {
+        log.info("User requests to open the connection to the client!");
+        /* TODO
+        cfg.setClientDeviceString(clientPane.getConnectionDefinition());
+        pp.setCfg(cfg);
+        if(true == pp.connectToPacemaker())
         {
-            log.trace("User requests to close the connection to the client!");
-            pp.close();
+            log.trace("connection to client is now open !");
             clientPane.updateButtons();
-            printerStatusPanel.setToOffline();
-            directControlPane.setToOffline();
-            printButton.setEnabled(false);
+            printerStatusPanel.setToOnline();
+            directControlPane.setToOnline();
+            printButton.setEnabled(true);
         }
-        else if(ClientPanel.ACTION_OPEN_CLIENT_CONNECTION.equals(e.getActionCommand()))
+        else
         {
-            log.info("User requests to open the connection to the client!");
-            /* TODO
-            cfg.setClientDeviceString(clientPane.getConnectionDefinition());
-            pp.setCfg(cfg);
-            if(true == pp.connectToPacemaker())
-            {
-                log.trace("connection to client is now open !");
-                clientPane.updateButtons();
-                printerStatusPanel.setToOnline();
-                directControlPane.setToOnline();
-                printButton.setEnabled(true);
-            }
-            else
-            {
-                log.info("connection failed !");
-            }
-            */
+            log.info("connection failed !");
         }
-        else if(ACTION_LOAD_CONFIGURATION.equals(e.getActionCommand()))
+        */
+    }
+
+    public void handleActionPrint()
+    {
+        log.trace("User wants to print a G-Code file,..");
+        if(fc.showOpenDialog(myPanel) == JFileChooser.APPROVE_OPTION)
         {
-            log.trace("User wants to load a configuration from a file,..");
-            if(fc.showOpenDialog(myPanel) == JFileChooser.APPROVE_OPTION)
+            //TODO move to own task
+            final File file = fc.getSelectedFile();
+            BufferedReader br = null;
+            FileInputStream fin = null;
+            try
             {
-                File file = fc.getSelectedFile();
-                Cfg c = new Cfg();
-                try
+                fin = new FileInputStream(file);
+                br = new BufferedReader(new InputStreamReader(fin, Charset.forName("UTF-8")));
+                String curLine = br.readLine();
+                while(null != curLine)
                 {
-                    if(true == c.readFrom(new FileInputStream(file)))
+                    final String res = pp.executeGCode(curLine);
+                    if(true == res.startsWith("!!"))
                     {
-                        log.trace("using the newly read configuration !");
-                        // TODO pp.setCfg(c);
-                        clientPane.updateConnectionDefinition();
+                        return;
+                    }
+                    curLine = br.readLine();
+                }
+            }
+            catch (FileNotFoundException e1)
+            {
+                e1.printStackTrace();
+            }
+            catch (IOException e1)
+            {
+                e1.printStackTrace();
+            }
+            finally
+            {
+                if(null != br)
+                {
+                    try
+                    {
+                        br.close();
+                    }
+                    catch (IOException e1)
+                    {
+                        e1.printStackTrace();
                     }
                 }
-                catch (FileNotFoundException e1)
+                if(null != fin)
                 {
-                    e1.printStackTrace();
+                    try
+                    {
+                        fin.close();
+                    }
+                    catch (IOException e1)
+                    {
+                        e1.printStackTrace();
+                    }
                 }
             }
         }
-        else if(ACTION_PRINT.equals(e.getActionCommand()))
+    }
+
+    public void close()
+    {
+        directControlPane.close();
+        clientPane.close();
+    }
+
+    public void setViewMode(int mode)
+    {
+        switch(mode)
         {
-            log.trace("User wants to print a G-Code file,..");
-            if(fc.showOpenDialog(myPanel) == JFileChooser.APPROVE_OPTION)
-            {
-                //TODO move to own task
-                File file = fc.getSelectedFile();
-                BufferedReader br = null;
-                FileInputStream fin = null;
-                try
-                {
-                    fin = new FileInputStream(file);
-                    br = new BufferedReader(new InputStreamReader(fin, Charset.forName("UTF-8")));
-                    String curLine = br.readLine();
-                    while(null != curLine)
-                    {
-                        String res = pp.executeGCode(curLine);
-                        if(true == res.startsWith("!!"))
-                        {
-                            return;
-                        }
-                        curLine = br.readLine();
-                    }
-                }
-                catch (FileNotFoundException e1)
-                {
-                    e1.printStackTrace();
-                }
-                catch (IOException e1)
-                {
-                    e1.printStackTrace();
-                }
-                finally
-                {
-                    if(null != br)
-                    {
-                        try
-                        {
-                            br.close();
-                        }
-                        catch (IOException e1)
-                        {
-                            e1.printStackTrace();
-                        }
-                    }
-                    if(null != fin)
-                    {
-                        try
-                        {
-                            fin.close();
-                        }
-                        catch (IOException e1)
-                        {
-                            e1.printStackTrace();
-                        }
-                    }
-                }
-            }
+        case MainWindow.VIEW_MODE_EXPERT:
+            clientPane.setVisible(true);
+            rawFramePane.setVisible(false);
+            break;
+        case MainWindow.VIEW_MODE_DEVELOPER:
+            clientPane.setVisible(true);
+            rawFramePane.setVisible(true);
+            break;
+        case MainWindow.VIEW_MODE_STANDARD:
+        default:
+            clientPane.setVisible(false);
+            rawFramePane.setVisible(false);
+            break;
         }
-        // other action would go here
+    }
+
+    public ClientPanel getClientPanel()
+    {
+        return clientPane;
+    }
+
+    public void updateCfg(Cfg cfg)
+    {
+        directControlPane.updateCfg(cfg);
+        clientPane.updateCfg(cfg);
     }
 
 }

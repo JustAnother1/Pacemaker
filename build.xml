@@ -2,7 +2,6 @@
     <property name="mainJar" value="Pacemaker.jar" />
     <property name="SimulatorJar" value="PacemakerTest.jar" />
     <property name="WizzardJar" value="PacemakerWizard.jar" />
-    <property name="TerminalJar" value="PacemakerTerminal.jar" />
     <property name="destDir" value="bin" />
     <property name="srcDir" value="src" />
 
@@ -12,6 +11,7 @@
         <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
         <pathelement path="lib/jna-3.5.1.jar"/>
         <pathelement path="lib/purejavacomm.jar"/>
+        <pathelement path="lib/commons-codec-1.8.jar"/>
     </path>
 
     <path id="simulator.class.path">
@@ -29,10 +29,6 @@
     </manifestclasspath>
 
     <manifestclasspath property="wz.cp" jarfile="${WizzardJar}">
-       <classpath refid="project.class.path" />
-    </manifestclasspath>
-
-    <manifestclasspath property="tm.cp" jarfile="${TerminalJar}">
        <classpath refid="project.class.path" />
     </manifestclasspath>
 
@@ -87,18 +83,6 @@
             <manifest>
                 <attribute name="Main-Class" value="de.nomagic.printerController.printerConfigurationCreationWizard.WizardMain" />
                 <attribute name="Class-Path" value=". ${wz.cp}"/>
-                <attribute name="Built-By" value="${user.name}"/>
-                <attribute name="Built-Date" value="${TODAY}"/>
-            </manifest>
-        </jar>
-
-        <jar destfile="${TerminalJar}" update="false">
-            <fileset dir="${destDir}">
-                <include name="**/*.class" />
-            </fileset>
-            <manifest>
-                <attribute name="Main-Class" value="de.nomagic.printerController.terminal.TerminalMain" />
-                <attribute name="Class-Path" value=". ${tm.cp}"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>

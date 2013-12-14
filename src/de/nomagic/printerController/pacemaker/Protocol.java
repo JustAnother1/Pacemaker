@@ -1656,4 +1656,9 @@ public class Protocol
         }
     }
 
+    public Reply sendRawOrder(int order, int[] parameterBytes, int length)
+    {
+        return cc.sendRequest(order, parameterBytes, 0, length);
+    }
+
 }

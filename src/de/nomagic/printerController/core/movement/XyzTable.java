@@ -108,17 +108,17 @@ public class XyzTable
         autoEndStopDisable = cfg.getGeneralSetting(CFG_NAME_AUTO_END_STOP_DISABLE, true);
         endstopAllowance   = cfg.getGeneralSetting(CFG_NAME_END_STOP_ALLOWANCE,    0.5);
         xMin               = cfg.getGeneralSetting(CFG_NAME_X_MIN,                 0);
-        yMin               = cfg.getGeneralSetting(CFG_NAME_X_MIN,                 0);
-        zMin               = cfg.getGeneralSetting(CFG_NAME_X_MIN,                 0);
+        yMin               = cfg.getGeneralSetting(CFG_NAME_Y_MIN,                 0);
+        zMin               = cfg.getGeneralSetting(CFG_NAME_Z_MIN,                 0);
         xMax               = cfg.getGeneralSetting(CFG_NAME_X_MAX,                 200);
-        yMax               = cfg.getGeneralSetting(CFG_NAME_X_MAX,                 200);
-        zMax               = cfg.getGeneralSetting(CFG_NAME_X_MAX,                 200);
+        yMax               = cfg.getGeneralSetting(CFG_NAME_Y_MAX,                 200);
+        zMax               = cfg.getGeneralSetting(CFG_NAME_Z_MAX,                 200);
     }
 
     @Override
     public String toString()
     {
-        StringBuffer sb = new StringBuffer();
+        final StringBuffer sb = new StringBuffer();
         sb.append("Configured Steppers:\n");
         if(null != X0)
         {
@@ -162,34 +162,34 @@ public class XyzTable
 
     public void addEndStopSwitches(HashMap<Switch_enum, Switch> switches)
     {
-        Switch xmin = switches.get(Switch_enum.Xmin);
+        final Switch xmin = switches.get(Switch_enum.Xmin);
         if(null != xmin)
         {
             endStop_Xmin = xmin.getNumber();
         }
-        Switch xmax = switches.get(Switch_enum.Xmax);
+        final Switch xmax = switches.get(Switch_enum.Xmax);
         if(null != xmax)
         {
             endStop_Xmax = xmax.getNumber();
         }
 
-        Switch ymin = switches.get(Switch_enum.Ymin);
+        final Switch ymin = switches.get(Switch_enum.Ymin);
         if(null != ymin)
         {
             endStop_Ymin = ymin.getNumber();
         }
-        Switch ymax = switches.get(Switch_enum.Ymax);
+        final Switch ymax = switches.get(Switch_enum.Ymax);
         if(null != ymax)
         {
             endStop_Ymax = ymax.getNumber();
         }
 
-        Switch zmin = switches.get(Switch_enum.Zmin);
+        final Switch zmin = switches.get(Switch_enum.Zmin);
         if(null != zmin)
         {
             endStop_Zmin = zmin.getNumber();
         }
-        Switch zmax = switches.get(Switch_enum.Zmax);
+        final Switch zmax = switches.get(Switch_enum.Zmax);
         if(null != zmax)
         {
             endStop_Zmax = zmax.getNumber();
@@ -198,14 +198,14 @@ public class XyzTable
 
     private Vector<StepperMove> updateEndStopActivation(StepperMove move)
     {
-        Vector<Integer> stopsOn = new Vector<Integer>();
-        Vector<Integer> stopsOff = new Vector<Integer>();
+        final Vector<Integer> stopsOn = new Vector<Integer>();
+        final Vector<Integer> stopsOff = new Vector<Integer>();
         if(true == autoEndStopDisable)
         {
 // X
             if(true == XisHomed)
             {
-                double posOnAxis = curPosition[X];
+                final double posOnAxis = curPosition[X];
                 if((xMin <= posOnAxis) && ((xMin + endstopAllowance)>= posOnAxis))
                 {
                     // position close to min end stop -> min end stop off
@@ -274,7 +274,7 @@ public class XyzTable
 // Y
             if(true == YisHomed)
             {
-                double posOnAxis = curPosition[Y];
+                final double posOnAxis = curPosition[Y];
                 if((yMin <= posOnAxis) && ((yMin + endstopAllowance)>= posOnAxis))
                 {
                     // position close to min end stop -> min end stop off
@@ -343,7 +343,7 @@ public class XyzTable
 // Z
             if(true == ZisHomed)
             {
-                double posOnAxis = curPosition[Z];
+                final double posOnAxis = curPosition[Z];
                 if((zMin <= posOnAxis) && ((zMin + endstopAllowance)>= posOnAxis))
                 {
                     // position close to min end stop -> min end stop off
@@ -463,12 +463,12 @@ public class XyzTable
             }
         }
 
-        Vector<StepperMove> res = new Vector<StepperMove>();
+        final Vector<StepperMove> res = new Vector<StepperMove>();
         if((false == XisHomed) || (false == YisHomed) || (false == ZisHomed))
         {
             if(0 < stopsOn.size())
             {
-                StepperMove sm = new StepperMove();
+                final StepperMove sm = new StepperMove();
                 sm.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
                 res.add(sm);
                 stopsOn.clear();
@@ -476,7 +476,7 @@ public class XyzTable
         }
         if(0 < stopsOff.size())
         {
-            StepperMove sm = new StepperMove();
+            final StepperMove sm = new StepperMove();
             sm.addEndStopOnOffCommand(false, stopsOff.toArray(new Integer[0]));
             res.add(sm);
         }
@@ -486,7 +486,7 @@ public class XyzTable
         }
         if(0 < stopsOn.size())
         {
-            StepperMove sm = new StepperMove();
+            final StepperMove sm = new StepperMove();
             sm.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
             res.add(sm);
         }
@@ -651,7 +651,7 @@ public class XyzTable
            SpeedPerMm = MIN_MOVEMENT_SPEED_MM_SECOND;
        }
        log.trace("Speed Factor = {} mm/second", SpeedPerMm);
-       StepperMove res = new StepperMove();
+       final StepperMove res = new StepperMove();
        for(Axis_enum ax: Axis_enum.values())
        {
            if(true == relMov.has(ax))
@@ -661,14 +661,14 @@ public class XyzTable
                case X:
                    curPosition[X] = curPosition[X] + relMov.get(Axis_enum.X);
                    res.setMmX(relMov.get(Axis_enum.X));
-                   double XSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
+                   final double XSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
                    log.trace("XSpeed = {}", XSpeed);
                    if(null != X0)
                    {
                        X0.addMove(relMov.get(ax));
                        X0.setMaxSpeedMmPerSecond(XSpeed);
-                       int max = X0.getMaxPossibleSpeedStepsPerSecond();
-                       int speed = (int)X0.getMaxTravelSpeedStepsPerSecond();
+                       final int max = X0.getMaxPossibleSpeedStepsPerSecond();
+                       final int speed = (int)X0.getMaxTravelSpeedStepsPerSecond();
                        if(speed > max)
                        {
                            X0.setMaxSpeedStepsPerSecond(max);
@@ -679,8 +679,8 @@ public class XyzTable
                    {
                        X1.addMove(relMov.get(ax));
                        X1.setMaxSpeedMmPerSecond(XSpeed);
-                       int max = X1.getMaxPossibleSpeedStepsPerSecond();
-                       int speed = (int)X1.getMaxTravelSpeedStepsPerSecond();
+                       final int max = X1.getMaxPossibleSpeedStepsPerSecond();
+                       final int speed = (int)X1.getMaxTravelSpeedStepsPerSecond();
                        if(speed > max)
                        {
                            X1.setMaxSpeedStepsPerSecond(max);
@@ -692,14 +692,14 @@ public class XyzTable
                case Y:
                    curPosition[Y] = curPosition[Y] + relMov.get(Axis_enum.Y);
                    res.setMmY(relMov.get(Axis_enum.Y));
-                   double YSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
+                   final double YSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
                    log.trace("YSpeed = {}", YSpeed);
                    if(null != Y0)
                    {
                        Y0.addMove(relMov.get(ax));
                        Y0.setMaxSpeedMmPerSecond(YSpeed);
-                       int max = Y0.getMaxPossibleSpeedStepsPerSecond();
-                       int speed = (int)Y0.getMaxTravelSpeedStepsPerSecond();
+                       final int max = Y0.getMaxPossibleSpeedStepsPerSecond();
+                       final int speed = (int)Y0.getMaxTravelSpeedStepsPerSecond();
                        if(speed > max)
                        {
                            Y0.setMaxSpeedStepsPerSecond(max);
@@ -710,8 +710,8 @@ public class XyzTable
                    {
                        Y1.addMove(relMov.get(ax));
                        Y1.setMaxSpeedMmPerSecond(YSpeed);
-                       int max = Y1.getMaxPossibleSpeedStepsPerSecond();
-                       int speed = (int)Y1.getMaxTravelSpeedStepsPerSecond();
+                       final int max = Y1.getMaxPossibleSpeedStepsPerSecond();
+                       final int speed = (int)Y1.getMaxTravelSpeedStepsPerSecond();
                        if(speed > max)
                        {
                            Y1.setMaxSpeedStepsPerSecond(max);
@@ -723,14 +723,14 @@ public class XyzTable
                case Z:
                    curPosition[Z] = curPosition[Z] + relMov.get(Axis_enum.Z);
                    res.setMmZ(relMov.get(Axis_enum.Z));
-                   double ZSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
+                   final double ZSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
                    log.trace("ZSpeed = {}", ZSpeed);
                    if(null != Z0)
                    {
                        Z0.addMove(relMov.get(ax));
                        Z0.setMaxSpeedMmPerSecond(ZSpeed);
-                       int max = Z0.getMaxPossibleSpeedStepsPerSecond();
-                       int speed = (int)Z0.getMaxTravelSpeedStepsPerSecond();
+                       final int max = Z0.getMaxPossibleSpeedStepsPerSecond();
+                       final int speed = (int)Z0.getMaxTravelSpeedStepsPerSecond();
                        if(speed > max)
                        {
                            Z0.setMaxSpeedStepsPerSecond(max);
@@ -741,8 +741,8 @@ public class XyzTable
                    {
                        Z1.addMove(relMov.get(ax));
                        Z1.setMaxSpeedMmPerSecond(ZSpeed);
-                       int max = Z1.getMaxPossibleSpeedStepsPerSecond();
-                       int speed = (int)Z1.getMaxTravelSpeedStepsPerSecond();
+                       final int max = Z1.getMaxPossibleSpeedStepsPerSecond();
+                       final int speed = (int)Z1.getMaxTravelSpeedStepsPerSecond();
                        if(speed > max)
                        {
                            Z1.setMaxSpeedStepsPerSecond(max);
@@ -780,12 +780,12 @@ public class XyzTable
    {
        log.trace("homing Axis");
        // TODO Homing direction (inverted = - homingDistance)
-       StepperMove res = new StepperMove();
+       final StepperMove res = new StepperMove();
        res.setIsHoming(true);
        double homingDistance = 0.0;
        for(int i = 0; i < axis.length; i++)
        {
-           Axis_enum ax = axis[i];
+           final Axis_enum ax = axis[i];
            switch(ax)
            {
            case X:
@@ -853,7 +853,7 @@ public class XyzTable
        if(null != aMove)
        {
            log.trace("preparing the move : {}", aMove);
-           Vector<StepperMove> moves = updateEndStopActivation(aMove);
+           final Vector<StepperMove> moves = updateEndStopActivation(aMove);
            for(int i = 0; i < moves.size(); i++)
            {
                PlannerQueue.add(moves.get(i));
@@ -863,23 +863,34 @@ public class XyzTable
        sendAllPossibleMoves(isLastMove);
        if(true == isLastMove)
        {
-           log.trace("flushing Queue to Client");
-           sender.flushQueueToClient();
+           if(null != sender)
+           {
+               log.trace("flushing Queue to Client");
+               sender.flushQueueToClient();
+           }
+           // else no sender - no movement to flush
        }
    }
 
    private void sendOneMove(StepperMove aMove, double endSpeedFactor)
    {
        log.trace("endSpeedFactor = {}", endSpeedFactor);
-       Integer[] steppers = aMove.getAllActiveSteppers();
+       final Integer[] steppers = aMove.getAllActiveSteppers();
        for(int j = 0; j < steppers.length; j++)
        {
            log.trace("Stepper {}:", steppers[j]);
-           double maxSpeed = aMove.getMaxSpeedMmPerSecondFor(steppers[j]);
+           final double maxSpeed = aMove.getMaxSpeedMmPerSecondFor(steppers[j]);
            log.trace("maxSpeed = {}", maxSpeed);
            aMove.setMaxEndSpeedMmPerSecondFor(steppers[j], maxSpeed * endSpeedFactor);
        }
-       sender.add(aMove);
+       if(null != sender)
+       {
+           sender.add(aMove);
+       }
+       else
+       {
+           log.error("Could not send Move - no sender available !");
+       }
        PlannerQueue.finishedOneMove();
    }
 
@@ -890,14 +901,14 @@ public class XyzTable
            // we need at least two moves
            return false;
        }
-       StepperMove firstMove = PlannerQueue.getMove(0);
-       double[] firstVector =new double[3];
+       final StepperMove firstMove = PlannerQueue.getMove(0);
+       final double[] firstVector =new double[3];
        firstVector[X] = firstMove.getMmX();
        firstVector[Y] = firstMove.getMmY();
        firstVector[Z] = firstMove.getMmZ();
        log.trace("getting the move [{},{},z]", firstVector[X], firstVector[Y]);
 
-       Integer[] steppers = firstMove.getAllActiveSteppers();
+       final Integer[] steppers = firstMove.getAllActiveSteppers();
        for(int j = 0; j < steppers.length; j++)
        {
            log.trace("Stepper {}:", steppers[j]);
@@ -909,7 +920,7 @@ public class XyzTable
        double[] secondVector;
        do
        {
-           StepperMove curMove = PlannerQueue.getMove(i);
+           final StepperMove curMove = PlannerQueue.getMove(i);
            secondVector = new double[3];
            secondVector[X] = curMove.getMmX();
            secondVector[Y] = curMove.getMmY();
@@ -927,7 +938,7 @@ public class XyzTable
        {
            // we have two moves so send the first
            // set end Speed
-           double endSpeedFactor = getMaxEndSpeedFactorFor(firstVector, secondVector);
+           final double endSpeedFactor = getMaxEndSpeedFactorFor(firstVector, secondVector);
            // send first move
            log.trace("sending {}", firstMove);
            sendOneMove(firstMove, endSpeedFactor);
@@ -942,7 +953,7 @@ public class XyzTable
 
    private void sendLastMove()
    {
-       StepperMove curMove = PlannerQueue.getMove(0);
+       final StepperMove curMove = PlannerQueue.getMove(0);
        log.trace("sending last move");
        sendOneMove(curMove, 0.0);
    }
@@ -972,14 +983,21 @@ public class XyzTable
     {
         while(0 < PlannerQueue.size())
         {
-            StepperMove curMove = PlannerQueue.getMove(0);
+            final StepperMove curMove = PlannerQueue.getMove(0);
             if(true == curMove.hasCommand())
             {
                 // This move can be send
-                log.trace("sending command");
-                sender.add(curMove);
+                if(null != sender)
+                {
+                    log.trace("sending command");
+                    sender.add(curMove);
+                }
+                else
+                {
+                    log.error("Could not send Command - no sender available !");
+                }
             }
-            double[] curVector = new double[3];
+            final double[] curVector = new double[3];
             curVector[X] = curMove.getMmX();
             curVector[Y] = curMove.getMmY();
             curVector[Z] = curMove.getMmZ();

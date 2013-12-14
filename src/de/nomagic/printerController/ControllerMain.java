@@ -29,11 +29,13 @@ import java.util.Vector;
 
 import javax.swing.SwingUtilities;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
 import de.nomagic.printerController.Interface.InteractiveInterface;
@@ -51,7 +53,7 @@ import de.nomagic.printerController.gui.MainWindow;
 public class ControllerMain implements CloseApplication
 {
     public static final String DEFAULT_CONFIGURATION_FILE_NAME = "pacemaker.cfg";
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private final Logger log = (Logger) LoggerFactory.getLogger(this.getClass().getName());
     private final Cfg cfg = new Cfg();
     private String fileToPrint = null;
     private boolean hasReadConfiguration = false;
@@ -122,6 +124,16 @@ public class ControllerMain implements CloseApplication
           // StatusPrinter will handle this
         }
         StatusPrinter.printInCaseOfErrorsOrWarnings(context);
+    }
+
+    private void configureGuiLogging()
+    {
+        final Logger rootLogger = (Logger) LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        final LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        final Appender<ILoggingEvent> appender = new GuiAppender();
+        appender.setContext(loggerContext);
+        appender.start();
+        rootLogger.addAppender(appender);
     }
 
     public boolean parseCommandLineParameters(final String[] args)
@@ -320,6 +332,7 @@ public class ControllerMain implements CloseApplication
         // If we want the GUI then we want it even with non operational core!
         if(true == shallStartGui)
         {
+            configureGuiLogging();
             SwingUtilities.invokeLater(new Runnable()
             {
                 @Override

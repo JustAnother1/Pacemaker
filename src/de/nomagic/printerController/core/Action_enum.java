@@ -26,5 +26,5 @@ public enum Action_enum
     pauseMovement, relativeMove, endOfMove, homeAxis, getIsHoming, enableMotor, disableMotor,
     setStepsPerMilimeter,
     setFanSpeed, setHeaterTemperature, getTemperature, getStateOfSwitch,
-    getUsedSlotsClientQueue
+    getUsedSlotsClientQueue, sendRawOrderFrame
 }

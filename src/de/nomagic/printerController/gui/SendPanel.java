@@ -12,7 +12,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>
  *
  */
-package de.nomagic.printerController.terminal;
+package de.nomagic.printerController.gui;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -31,6 +31,10 @@ import javax.swing.JTextField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.core.CoreStateMachine;
+import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.pacemaker.Reply;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -43,16 +47,19 @@ public class SendPanel implements ActionListener
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private JPanel pane;
-    private ClientChannel client;
+    private Executor exe;
     private JTextField Order;
     private JTextField ParaLength;
     private JTextField[] parameterData;
-    private MacroPanel MacroPanel;
+    private DirectControlPanel MacroPanel;
     private JFrame terminalWindow;
 
-    public SendPanel(ClientChannel client, MacroPanel macroPanel, JFrame terminalWindow)
+    public SendPanel(CoreStateMachine core, DirectControlPanel macroPanel, JFrame terminalWindow)
     {
-        this.client = client;
+        if(null != core)
+        {
+            exe = core.getExecutor();
+        }
         this.MacroPanel = macroPanel;
         this.terminalWindow = terminalWindow;
         pane = new JPanel();
@@ -61,27 +68,27 @@ public class SendPanel implements ActionListener
                        "Send to Client"));
         pane.setLayout(new BoxLayout(pane, BoxLayout.PAGE_AXIS));
 
-        JPanel frame = new JPanel();
-        JLabel OrderLabel = new JLabel("Order: ");
+        final JPanel frame = new JPanel();
+        final JLabel OrderLabel = new JLabel("Order: ");
         frame.add(OrderLabel);
         Order = new JTextField(2);
         frame.add(Order);
-        JLabel ParaLengthLabel = new JLabel(" Length of Parameter: ");
+        final JLabel ParaLengthLabel = new JLabel(" Length of Parameter: ");
         frame.add(ParaLengthLabel);
         ParaLength = new JTextField(2);
         ParaLength.setText("0");
         frame.add(ParaLength);
 
-        JPanel parameterPane = new JPanel();
+        final JPanel parameterPane = new JPanel();
         parameterPane.setLayout(new BoxLayout(parameterPane, BoxLayout.PAGE_AXIS));
         parameterData = new JTextField[256];
         int pos = 0;
         for(int i = 0; i < 16; i++)
         {
-            JPanel curP = new JPanel();
+            final JPanel curP = new JPanel();
             for(int j = 0; j < 16; j++)
             {
-                JTextField Data = new JTextField(2);
+                final JTextField Data = new JTextField(2);
                 parameterData[pos] = Data;
                 if(255 == pos)
                 {
@@ -94,12 +101,12 @@ public class SendPanel implements ActionListener
             parameterPane.add(curP);
         }
 
-        JPanel ButtonPane = new JPanel();
-        JButton MacroButton = new JButton("save as Macro");
+        final JPanel ButtonPane = new JPanel();
+        final JButton MacroButton = new JButton("save as Macro");
         MacroButton.setActionCommand(COMMAND_SAVE_AS_MACRO);
         MacroButton.addActionListener(this);
         ButtonPane.add(MacroButton);
-        JButton SendButton = new JButton("send");
+        final JButton SendButton = new JButton("send");
         SendButton.setActionCommand(COMMAND_SEND);
         SendButton.addActionListener(this);
         ButtonPane.add(SendButton);
@@ -107,6 +114,14 @@ public class SendPanel implements ActionListener
         pane.add(frame);
         pane.add(parameterPane);
         pane.add(ButtonPane);
+    }
+
+    public void updateCore(CoreStateMachine core)
+    {
+        if(null != core)
+        {
+            exe = core.getExecutor();
+        }
     }
 
     public Component getPanel()
@@ -120,33 +135,33 @@ public class SendPanel implements ActionListener
         if(true == COMMAND_SAVE_AS_MACRO.equals(e.getActionCommand()))
         {
             // save as macro
-            String s = (String)JOptionPane.showInputDialog(
+            final String s = (String)JOptionPane.showInputDialog(
                     terminalWindow,
                     "Under what name should this be stored ?",
                     "save as Macro",
                     JOptionPane.PLAIN_MESSAGE);
             if((s != null) && (s.length() > 0))
             {
-                Macro m = new Macro();
+                final OrderFrameMacro m = new OrderFrameMacro();
                 m.setName(s);
-                String orderS = Order.getText();
+                final String orderS = Order.getText();
                 int orderI = 0;
                 if(0 < orderS.length())
                 {
                     orderI = Integer.parseInt(orderS);
                 }
                 m.setOrder(orderI);
-                String paraLengthS = ParaLength.getText();
+                final String paraLengthS = ParaLength.getText();
                 int paraLengthI = 0;
                 if(0 < paraLengthS.length())
                 {
                     paraLengthI = Integer.parseInt(paraLengthS);
                 }
                 m.setParameterLength(paraLengthI);
-                int[] data = new int[255];
+                final int[] data = new int[255];
                 for(int i = 0; i < 255; i++)
                 {
-                    String help = parameterData[i].getText();
+                    final String help = parameterData[i].getText();
                     if(0 < help.length())
                     {
                         data[i] = Integer.parseInt(help);
@@ -162,10 +177,10 @@ public class SendPanel implements ActionListener
         }
         else if(true == COMMAND_SEND.equals(e.getActionCommand()))
         {
-            int[] data = new int[255];
+            final int[] data = new int[255];
             for(int i = 0; i < 255; i++)
             {
-                String help = parameterData[i].getText();
+                final String help = parameterData[i].getText();
                 if(0 < help.length())
                 {
                     data[i] = Integer.parseInt(help);
@@ -175,22 +190,35 @@ public class SendPanel implements ActionListener
                     data[i] = 0;
                 }
             }
-            String orderS = Order.getText();
+            final String orderS = Order.getText();
             int orderI = 0;
             if(0 < orderS.length())
             {
                 orderI = Integer.parseInt(orderS);
             }
 
-            String paraLengthS = ParaLength.getText();
+            final String paraLengthS = ParaLength.getText();
             int paraLengthI = 0;
             if(0 < paraLengthS.length())
             {
                 paraLengthI = Integer.parseInt(paraLengthS);
             }
-            log.info(client.sendFrame(orderI, paraLengthI, data));
+            if(null != exe)
+            {
+                final Reply r = exe.sendRawOrderFrame(0, orderI, data, paraLengthI);
+                log.info(r.toString());
+            }
+            else
+            {
+                log.warn("No Executor available !");
+            }
         }
         // else ignore command
+    }
+
+    public void setVisible(boolean b)
+    {
+        pane.setVisible(b);
     }
 
 }

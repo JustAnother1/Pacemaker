@@ -39,6 +39,7 @@ import de.nomagic.printerController.core.devices.Switch;
 import de.nomagic.printerController.core.devices.TemperatureSensor;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
 import de.nomagic.printerController.pacemaker.Protocol;
+import de.nomagic.printerController.pacemaker.Reply;
 
 /**
  * @author Lars P&ouml;tter
@@ -106,8 +107,8 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     @Override
     public String toString()
     {
-        StringBuffer sb = new StringBuffer();
-        int numClients = cfg.getNumberOfClients();
+        final StringBuffer sb = new StringBuffer();
+        final int numClients = cfg.getNumberOfClients();
         for(int i = 0; i < numClients; i++)
         {
             sb.append("Connection " + i + " : " + print.get(i).toString() + "\n");
@@ -115,7 +116,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         sb.append("Configured Fans:\n");
         for (Fan_enum fe : Fan_enum.values())
         {
-            Fan f = fans.get(fe.getValue());
+            final Fan f = fans.get(fe.getValue());
             if(null != f)
             {
                 sb.append(fe.toString() + " : " +  f.toString() + "\n");
@@ -124,7 +125,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         sb.append("Configured Heaters:\n");
         for (Heater_enum he : Heater_enum.values())
         {
-            Heater h = heaters.get(he);
+            final Heater h = heaters.get(he);
             if(null != h)
             {
                 sb.append(he.toString() + " : " +  h.toString() + "\n");
@@ -133,7 +134,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         sb.append("Configured Temperature Sensors:\n");
         for (Heater_enum he : Heater_enum.values())
         {
-            TemperatureSensor h = TempSensors.get(he);
+            final TemperatureSensor h = TempSensors.get(he);
             if(null != h)
             {
                 sb.append(he.toString() + " : " +  h.toString() + "\n");
@@ -143,7 +144,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         sb.append("Configured Switches:\n");
         for (Switch_enum swe : Switch_enum.values())
         {
-            Switch sw = Switches.get(swe);
+            final Switch sw = Switches.get(swe);
             if(null != sw)
             {
                 sb.append(swe.toString() + " : " +  sw.toString() + "\n");
@@ -168,11 +169,11 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private boolean connectToPrinter()
     {
-        int numClients = cfg.getNumberOfClients();
+        final int numClients = cfg.getNumberOfClients();
         log.info("Connecting to {} Client(s).", numClients);
         for(int i = 0; i < numClients; i++)
         {
-            String clientDefinition = cfg.getConnectionDefinitionOfClient(i);
+            final String clientDefinition = cfg.getConnectionDefinitionOfClient(i);
             if(null == clientDefinition)
             {
                 log.error("Client Definition for Client {} is null !", i);
@@ -182,7 +183,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
             {
                 log.info("Client Definition: " + clientDefinition);
             }
-            Protocol pro = new Protocol(clientDefinition);
+            final Protocol pro = new Protocol(clientDefinition);
             if(false == pro.isOperational())
             {
                 log.error("Client connection failed ! " + clientDefinition);
@@ -195,7 +196,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
             {
                 return false;
             }
-            DeviceInformation di = pro.getDeviceInformation();
+            final DeviceInformation di = pro.getDeviceInformation();
             // get available Devices
             // check for all devices if they are configured
             // if yet then create the instances for them
@@ -218,7 +219,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     public void readConfigurationFromClient(Protocol pro)
     {
-        Vector<String> settings = new Vector<String>();
+        final Vector<String> settings = new Vector<String>();
         String curSetting = "";
         // get all the settings
         do
@@ -233,8 +234,8 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         log.info("Firmware Specific Settings:");
         for(int i = 0; i < settings.size(); i++)
         {
-            String allInfo = pro.getCompleteDescriptionForSetting(settings.get(i));
-            String Value = pro.readFirmwareConfigurationValue(settings.get(i));
+            final String allInfo = pro.getCompleteDescriptionForSetting(settings.get(i));
+            final String Value = pro.readFirmwareConfigurationValue(settings.get(i));
             log.info("" + i + " : " + allInfo + " = " + Value + " !");
         }
         log.info("end of List");
@@ -242,7 +243,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private boolean applyConfiguration(Protocol pro, int connectionNumber)
     {
-        Vector<Setting> settings = cfg.getAllFirmwareSettingsFor(connectionNumber);
+        final Vector<Setting> settings = cfg.getAllFirmwareSettingsFor(connectionNumber);
         if(null == settings)
         {
             // nothing to configure for this client -> successful
@@ -252,9 +253,9 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         {
             for(int i = 0; i < settings.size(); i++)
             {
-                Setting curSetting = settings.get(i);
-                String setting = curSetting.getName();
-                String value = curSetting.getValue();
+                final Setting curSetting = settings.get(i);
+                final String setting = curSetting.getName();
+                final String value = curSetting.getValue();
                 log.debug("Writing to Client : -{}- = -{}- !", setting, value);
                 if(false == pro.writeFirmwareConfigurationValue(setting, value))
                 {
@@ -270,11 +271,11 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     {
         for(int i = 0; i < di.getNumberPwmSwitchedOutputs(); i++)
         {
-            Fan_enum func = cfg.getFunctionOfFan(connectionNumber, i);
+            final Fan_enum func = cfg.getFunctionOfFan(connectionNumber, i);
             if(null != func)
             {
                 // this Fan is used
-                Fan f = new Fan(pro, i);
+                final Fan f = new Fan(pro, i);
                 fans.put(func.getValue(), f);
             }
         }
@@ -284,11 +285,11 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     {
         for(int i = 0; i < di.getNumberSwitches(); i++)
         {
-            Switch_enum func = cfg.getFunctionOfSwitch(connectionNumber, i);
+            final Switch_enum func = cfg.getFunctionOfSwitch(connectionNumber, i);
             if(null != func)
             {
                 // this Switch is used
-                Switch sw = new Switch(pro, i);
+                final Switch sw = new Switch(pro, i);
                 Switches.put(func, sw);
             }
         }
@@ -298,7 +299,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     {
         for(int i = 0; i < di.getNumberOutputSignals(); i++)
         {
-            Output_enum func = cfg.getFunctionOfOutput(connectionNumber, i);
+            final Output_enum func = cfg.getFunctionOfOutput(connectionNumber, i);
             if(null != func)
             {
                 Fan_enum fanFunc = null;
@@ -322,7 +323,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                 if(null != fanFunc)
                 {
                     // this Output is a Fan
-                    Fan f = new Fan(pro, i, false);
+                    final Fan f = new Fan(pro, i, false);
                     fans.put(fanFunc.getValue(), f);
                 }
             }
@@ -333,14 +334,14 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     {
         for(int i = 0; i < di.getNumberTemperatureSensors(); i++)
         {
-            Heater_enum func = cfg.getFunctionOfTemperatureSensor(connectionNumber, i);
+            final Heater_enum func = cfg.getFunctionOfTemperatureSensor(connectionNumber, i);
             if(null != func)
             {
                 // this Temperature Sensor is used
-                TemperatureSensor s = new TemperatureSensor(pro, i);
+                final TemperatureSensor s = new TemperatureSensor(pro, i);
                 TempSensors.put(func, s);
 
-                Heater h = heaters.get(func);
+                final Heater h = heaters.get(func);
                 if(null == h)
                 {
                     // No heater :-(
@@ -358,7 +359,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     {
         for(int i = 0; i < di.getNumberHeaters(); i++)
         {
-            Heater_enum func = cfg.getFunctionOfHeater(connectionNumber, i);
+            final Heater_enum func = cfg.getFunctionOfHeater(connectionNumber, i);
             if(null != func)
             {
                 // this heater is used
@@ -376,11 +377,11 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     private void handleShutDown(Event e)
     {
         boolean success = true;
-        Set<Integer> ks = print.keySet();
-        Iterator<Integer> it = ks.iterator();
+        final Set<Integer> ks = print.keySet();
+        final Iterator<Integer> it = ks.iterator();
         while(it.hasNext())
         {
-            Printer curP =print.get(it.next());
+            final Printer curP =print.get(it.next());
             if(false == curP.doShutDown())
             {
                 success = false;
@@ -400,11 +401,11 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     private void handleImmediateShutDown(Event e)
     {
         boolean success = true;
-        Set<Integer> ks = print.keySet();
-        Iterator<Integer> it = ks.iterator();
+        final Set<Integer> ks = print.keySet();
+        final Iterator<Integer> it = ks.iterator();
         while(it.hasNext())
         {
-            Printer curP =print.get(it.next());
+            final Printer curP =print.get(it.next());
             if(false == curP.doImmediateShutDown())
             {
                 success = false;
@@ -418,6 +419,34 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         else
         {
             reportSuccess(e);
+        }
+    }
+
+    private void handleSendRawOrderFrame(Event e)
+    {
+        final Printer thePrinter = print.get((Integer)e.getParameter());
+        if(null == thePrinter)
+        {
+            reportFailed(e);
+        }
+        else
+        {
+            final Reply r = thePrinter.sendRawOrderFrame((Integer)e.getParameter2(),
+                                                         (int[])e.getParameter3(),
+                                                         (Integer)e.getParameter4());
+            if(null == r)
+            {
+                reportFailed(e);
+            }
+            else
+            {
+                final EventSource src = e.getSrc();
+                if(null != src)
+                {
+                    src.reportEventStatus(new ActionResponse((Object)r));
+                }
+                // else nobody cares
+            }
         }
     }
 
@@ -514,8 +543,8 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void handleSetFanSpeed(Event e)
     {
-        int FanIdx = (Integer)e.getParameter();
-        Fan theFan = fans.get(FanIdx);
+        final int FanIdx = (Integer)e.getParameter();
+        final Fan theFan = fans.get(FanIdx);
         if(null == theFan)
         {
             log.warn("Tried to set Fan Speed for invalid({}) Fan!", FanIdx);
@@ -537,7 +566,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void handleSetHeaterTemperature(Event e)
     {
-        Heater theHeater = heaters.get((Heater_enum)e.getParameter2());
+        final Heater theHeater = heaters.get((Heater_enum)e.getParameter2());
         if(null == theHeater)
         {
             lastErrorReason = "Tried to set Heater temperature for invalid Heater!";
@@ -559,8 +588,8 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void handleGetTemperature(Event e)
     {
-        Heater_enum location = (Heater_enum)e.getParameter();
-        TemperatureSensor sensor = TempSensors.get(location);
+        final Heater_enum location = (Heater_enum)e.getParameter();
+        final TemperatureSensor sensor = TempSensors.get(location);
         if(null == sensor)
         {
             log.trace("Tried to get Heater temperature from invalid Temperature Sensor!");
@@ -568,7 +597,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         }
         else
         {
-            Double curTemp = sensor.getTemperature();
+            final Double curTemp = sensor.getTemperature();
             Fan theFan = null;
             switch(location)
             {
@@ -603,10 +632,10 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         }
     }
 
-    private void handleGeStateOfSwitcht(Event e)
+    private void handleGeStateOfSwitch(Event e)
     {
-        Switch_enum theSwitch = (Switch_enum) e.getParameter();
-        Switch sw = Switches.get(theSwitch);
+        final Switch_enum theSwitch = (Switch_enum) e.getParameter();
+        final Switch sw = Switches.get(theSwitch);
         if(null == sw)
         {
             log.trace("Tried to get State from invalid Switch !");
@@ -644,7 +673,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                 }
                 if(true == shouldClose)
                 {
-                    int size = eventQueue.size();
+                    final int size = eventQueue.size();
                     log.trace("Shuting down: remeining Evnets: {} !", size);
                     if(0 == size)
                     {
@@ -683,7 +712,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                         break;
 
                     case getIsHoming:
-                        boolean res = move.isHoming();
+                        final boolean res = move.isHoming();
                         reportBooleanResult(e, res);
                         break;
 
@@ -712,11 +741,15 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                         break;
 
                     case getStateOfSwitch:
-                        handleGeStateOfSwitcht(e);
+                        handleGeStateOfSwitch(e);
                         break;
 
                     case getUsedSlotsClientQueue:
                         handleUsedSlotsClientQueue(e);
+                        break;
+
+                    case sendRawOrderFrame:
+                        handleSendRawOrderFrame(e);
                         break;
 
                     default:
@@ -736,12 +769,12 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
             }
         }
         log.trace("close all connections");
-        Set<Integer> conSet = print.keySet();
-        Iterator<Integer> conIt = conSet.iterator();
+        final Set<Integer> conSet = print.keySet();
+        final Iterator<Integer> conIt = conSet.iterator();
         while(conIt.hasNext())
         {
-            Integer curConn = conIt.next();
-            Printer curPrinter = print.get(curConn);
+            final Integer curConn = conIt.next();
+            final Printer curPrinter = print.get(curConn);
             curPrinter.closeConnection();
         }
         isRunning = false;
@@ -833,7 +866,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void reportIntResult(Event e, int value)
     {
-        EventSource src = e.getSrc();
+        final EventSource src = e.getSrc();
         if(null != src)
         {
             src.reportEventStatus(new ActionResponse(true, value));
@@ -843,7 +876,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void reportDoubleResult(Event e, Double value)
     {
-        EventSource src = e.getSrc();
+        final EventSource src = e.getSrc();
         if(null != src)
         {
             src.reportEventStatus(new ActionResponse(true, value));
@@ -853,7 +886,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void reportBooleanResult(Event e, boolean value)
     {
-        EventSource src = e.getSrc();
+        final EventSource src = e.getSrc();
         if(null != src)
         {
             src.reportEventStatus(new ActionResponse(true, value));
@@ -863,7 +896,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void reportFailed(Event e)
     {
-        EventSource src = e.getSrc();
+        final EventSource src = e.getSrc();
         if(null != src)
         {
             src.reportEventStatus(new ActionResponse(false));
@@ -873,7 +906,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private void reportSuccess(Event e)
     {
-        EventSource src = e.getSrc();
+        final EventSource src = e.getSrc();
         if(null != src)
         {
             src.reportEventStatus(new ActionResponse(true));
@@ -981,6 +1014,23 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         }
     }
 
+    public ActionResponse getValue(Action_enum theAction,
+                                   Object param, Object param2, Object param3, Object param4)
+    {
+        Event e;
+        switch(theAction)
+        {
+        case sendRawOrderFrame:
+            e = new Event(theAction, param, param2, param3, param4, this);
+            eventQueue.add(e);
+            return getResponse();
+
+        default:
+            lastErrorReason = "Action " + theAction + " not implemented !";
+            return null;
+        }
+    }
+
     public String getLastErrorReason()
     {
         return lastErrorReason;
@@ -1018,7 +1068,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
 
     private boolean getResult()
     {
-        ActionResponse response = getResponse();
+        final ActionResponse response = getResponse();
         if(null != response)
         {
             if(response.wasSuccessful())

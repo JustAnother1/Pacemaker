@@ -24,6 +24,8 @@ public class Event
     private final Action_enum type;
     private final Object Parameter;
     private final Object Parameter2;
+    private final Object Parameter3;
+    private final Object Parameter4;
     private final EventSource src;
 
     public Event(Action_enum type, Object parameter, EventSource src)
@@ -31,6 +33,8 @@ public class Event
         this.type = type;
         this.Parameter = parameter;
         this.Parameter2 = null;
+        this.Parameter3 = null;
+        this.Parameter4 = null;
         this.src = src;
     }
 
@@ -39,6 +43,23 @@ public class Event
         this.type = type;
         this.Parameter = parameter;
         this.Parameter2 = parameter2;
+        this.Parameter3 = null;
+        this.Parameter4 = null;
+        this.src = src;
+    }
+
+    public Event(Action_enum type,
+                 Object parameter,
+                 Object parameter2,
+                 Object parameter3,
+                 Object parameter4,
+                 EventSource src)
+    {
+        this.type = type;
+        this.Parameter = parameter;
+        this.Parameter2 = parameter2;
+        this.Parameter3 = parameter3;
+        this.Parameter4 = parameter4;
         this.src = src;
     }
 
@@ -55,6 +76,16 @@ public class Event
     public Object getParameter2()
     {
         return Parameter2;
+    }
+
+    public Object getParameter3()
+    {
+        return Parameter3;
+    }
+
+    public Object getParameter4()
+    {
+        return Parameter4;
     }
 
     public EventSource getSrc()

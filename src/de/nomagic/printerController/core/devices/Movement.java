@@ -59,14 +59,21 @@ public class Movement
     {
         this.to = to;
         table = new XyzTable(cfg);
-        Event e = new Event(Action_enum.endOfMove, null, null);
+        final Event e = new Event(Action_enum.endOfMove, null, null);
         TimeoutId = to.createTimeout(e, MOVE_TIMEOUT_MS);
     }
 
     @Override
     public String toString()
     {
-        return "table : " + table.toString() + " sender : " + sender.toString();
+        if(null == sender)
+        {
+            return "table : " + table.toString() + " sender : null";
+        }
+        else
+        {
+            return "table : " + table.toString() + " sender : " + sender.toString();
+        }
     }
 
     public String getLastErrorReason()
@@ -91,7 +98,7 @@ public class Movement
                 int thisProtocolIdx = -1; // -1 is invalid
                 for(int i = 0; i < di.getNumberSteppers(); i++)
                 {
-                    Axis_enum ae = cfg.getFunctionOfAxis(ClientNumber, i);
+                    final Axis_enum ae = cfg.getFunctionOfAxis(ClientNumber, i);
                     if(null != ae)
                     {
                         switch(ae)
@@ -114,9 +121,9 @@ public class Movement
                             }
                             // else protocol already added
                             log.trace("Using stepper number {} for axis {} !", i, ae);
-                            double maxAccelerationOfThisStepper = cfg.getMaxAccelerationFor(ClientNumber, i);
-                            int maxStepsPerSecond = cfg.getMaxSpeedFor(ClientNumber, i);
-                            Stepper motor = new Stepper(i,
+                            final double maxAccelerationOfThisStepper = cfg.getMaxAccelerationFor(ClientNumber, i);
+                            final int maxStepsPerSecond = cfg.getMaxSpeedFor(ClientNumber, i);
+                            final Stepper motor = new Stepper(i,
                                              maxAccelerationOfThisStepper,
                                              maxStepsPerSecond,
                                              cfg.isMovementDirectionInverted(ClientNumber, i),
@@ -155,9 +162,9 @@ public class Movement
 
     private void configureUnderRunAvoidance(Stepper motor, Protocol pro)
     {
-        boolean res = pro.configureUnderRunAvoidance(motor.getStepperNumber(),
-                                                     motor.getMaxPossibleSpeedStepsPerSecond(),
-                                                     (int)motor.getMaxAccelerationStepsPerSecond());
+        final boolean res = pro.configureUnderRunAvoidance(motor.getStepperNumber(),
+                                                           motor.getMaxPossibleSpeedStepsPerSecond(),
+                                                           (int)motor.getMaxAccelerationStepsPerSecond());
         if(false == res)
         {
             log.error("Could not configure the under run avoidance !");
@@ -166,8 +173,8 @@ public class Movement
 
     private void configureStepperMaxSpeed(Stepper motor, Protocol pro)
     {
-        boolean res = pro.configureStepperMovementRate(motor.getStepperNumber(),
-                                                       motor.getMaxPossibleSpeedStepsPerSecond());
+        final boolean res = pro.configureStepperMovementRate(motor.getStepperNumber(),
+                                                             motor.getMaxPossibleSpeedStepsPerSecond());
         if(false == res)
         {
             log.error("Could not configure the Maximum Speed  of {} for the Stepper {} !",
@@ -229,7 +236,7 @@ public class Movement
             }
             for(int i = 0; i < protocols.size(); i++)
             {
-                Protocol pro = protocols.get(i);
+                final Protocol pro = protocols.get(i);
                 if(false == pro.addPauseToQueue(pauseLength))
                 {
                     return false;
@@ -277,7 +284,7 @@ public class Movement
     public boolean isHoming()
     {
         // TODO check if homing is finished - all end stops triggered,...
-        boolean isFinished = sender.hasAllMovementFinished();
+        final boolean isFinished = sender.hasAllMovementFinished();
         if(false == isFinished)
         {
             return true;
@@ -291,12 +298,12 @@ public class Movement
 
     public boolean enableAllMotors()
     {
-        Collection<Protocol> col = protocols.values();
-        Iterator<Protocol> it = col.iterator();
+        final Collection<Protocol> col = protocols.values();
+        final Iterator<Protocol> it = col.iterator();
         boolean success = true;
         while(true == it.hasNext())
         {
-            Protocol pro = it.next();
+            final Protocol pro = it.next();
             if(false == pro.enableAllStepperMotors())
             {
                 success = false;
@@ -307,12 +314,12 @@ public class Movement
 
     public boolean disableAllMotors()
     {
-        Collection<Protocol> col = protocols.values();
-        Iterator<Protocol> it = col.iterator();
+        final Collection<Protocol> col = protocols.values();
+        final Iterator<Protocol> it = col.iterator();
         boolean success = true;
         while(true == it.hasNext())
         {
-            Protocol pro = it.next();
+            final Protocol pro = it.next();
             if(false == pro.disableAllStepperMotors())
             {
                 success = false;

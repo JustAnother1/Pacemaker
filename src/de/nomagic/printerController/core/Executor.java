@@ -21,6 +21,7 @@ import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
 import de.nomagic.printerController.pacemaker.Protocol;
+import de.nomagic.printerController.pacemaker.Reply;
 
 /**
  * @author Lars P&ouml;tter
@@ -159,7 +160,7 @@ public class Executor
             catch(InterruptedException e)
             {
             }
-            ActionResponse response = handler.getValue(Action_enum.getIsHoming);
+            final ActionResponse response = handler.getValue(Action_enum.getIsHoming);
             if(null == response)
             {
                 return false;
@@ -337,7 +338,7 @@ public class Executor
             catch(InterruptedException e)
             {
             }
-            ActionResponse response = handler.getValue(Action_enum.getTemperature, heater);
+            final ActionResponse response = handler.getValue(Action_enum.getTemperature, heater);
             if(null == response)
             {
                 return false;
@@ -395,7 +396,7 @@ public class Executor
         case 2: h = Heater_enum.Extruder_2; break;
         default: h = Heater_enum.Extruder_0; break;
         }
-        ActionResponse response = handler.getValue(Action_enum.getTemperature, h);
+        final ActionResponse response = handler.getValue(Action_enum.getTemperature, h);
         if(null == response)
         {
             log.error("Did not get a response to get Heater Temperature Action !");
@@ -418,7 +419,7 @@ public class Executor
     public String getHeatedBedTemperature()
     {
         double curTemperature = 0.0;
-        ActionResponse response = handler.getValue(Action_enum.getTemperature, Heater_enum.Print_Bed);
+        final ActionResponse response = handler.getValue(Action_enum.getTemperature, Heater_enum.Print_Bed);
         if(null == response)
         {
             log.error("Did not get a response to get Heater Temperature Action !");
@@ -441,7 +442,7 @@ public class Executor
     public int getStateOfSwitch(Switch_enum theSwitch)
     {
         int curState = SWITCH_STATE_NOT_AVAILABLE;
-        ActionResponse response = handler.getValue(Action_enum.getStateOfSwitch, theSwitch);
+        final ActionResponse response = handler.getValue(Action_enum.getStateOfSwitch, theSwitch);
         if(null == response)
         {
             log.error("Did not get a response to get State of Switch Action !");
@@ -473,6 +474,30 @@ public class Executor
          */
         // TODO parking position
         return false;
+    }
+
+    public Reply sendRawOrderFrame(int ClientNumber, int order, int[] parameterBytes, int length)
+    {
+        final ActionResponse response = handler.getValue(Action_enum.sendRawOrderFrame,
+                                                         ClientNumber, order, parameterBytes, length);
+        if(null == response)
+        {
+            log.error("Did not get a response to send Raw Order Frame Action !");
+            return null;
+        }
+        else
+        {
+            if(false == response.wasSuccessful())
+            {
+                lastErrorReason = handler.getLastErrorReason();
+                log.error(lastErrorReason);
+                return null;
+            }
+            else
+            {
+                return (Reply)response.getObject();
+            }
+        }
     }
 
     public void waitForClientQueueEmpty()

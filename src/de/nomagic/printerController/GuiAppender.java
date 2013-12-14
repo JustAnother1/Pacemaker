@@ -12,7 +12,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>
  *
  */
-package de.nomagic.printerController.terminal;
+package de.nomagic.printerController;
 
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
@@ -21,23 +21,22 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 
-/**
+/** prints Log Messages into a JTextArea.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
- * @param <E>
- *
  */
 public class GuiAppender extends AppenderBase<ILoggingEvent>
 {
     private static JTextArea out = null;
 
+    public GuiAppender()
+    {
+    }
+
     public static void setTextArea(JTextArea jTextArea)
     {
         out = jTextArea;
-    }
-
-    public GuiAppender()
-    {
     }
 
     @Override
@@ -48,9 +47,9 @@ public class GuiAppender extends AppenderBase<ILoggingEvent>
         {
             return;
         }
-        Level l = e.getLevel();
-        long startTime = e.getLoggerContextVO().getBirthTime();
-        long eventTime = e.getTimeStamp() - startTime;
+        final Level l = e.getLevel();
+        final long startTime = e.getLoggerContextVO().getBirthTime();
+        final long eventTime = e.getTimeStamp() - startTime;
         if(Level.ERROR == l)
         {
             message = "" + eventTime + ": ERROR : " + e.getFormattedMessage() + "\n";
@@ -70,6 +69,5 @@ public class GuiAppender extends AppenderBase<ILoggingEvent>
             }
        });
     }
-
 
 }

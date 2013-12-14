@@ -20,12 +20,19 @@ import java.awt.Component;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Vector;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.core.CoreStateMachine;
+import de.nomagic.printerController.core.RelativeMove;
 
 
 /**
@@ -34,165 +41,267 @@ import de.nomagic.printerController.core.CoreStateMachine;
  */
 public class DirectControlPanel implements ActionListener
 {
-    private static final String ACTION_COMMAND_X_PLUS = "xplus";
-    private static final String ACTION_COMMAND_X_MINUS = "xminus";
-    private static final String ACTION_COMMAND_Y_PLUS = "yplus";
-    private static final String ACTION_COMMAND_Y_MINUS = "yminus";
-    private static final String ACTION_COMMAND_Z_PLUS = "zplus";
-    private static final String ACTION_COMMAND_Z_MINUS = "zminus";
-    private static final String ACTION_COMMAND_E_PLUS = "eplus";
-    private static final String ACTION_COMMAND_E_MINUS = "eminus";
-    private static final String ACTION_COMMAND_MOTORS_OFF = "motoroff";
-    private static final String ACTION_COMMAND_STOP_PRINT = "stop";
-    private static final String ACTION_COMMAND_EMERGENCY_STOP = "emergency";
-    private static final String ACTION_COMMAND_HOME = "home";
+    public static final String ACTION_COMMAND_PREFIX = "Macro";
+    public static final String ACTION_COMMAND_REMOVE = "remove";
 
     private final JPanel myPanel = new JPanel();
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private final JButton XPlusButton = new JButton("Xplus");
-    private final JButton XMinusButton = new JButton("Xminus");
-    private final JButton YPlusButton = new JButton("Yplus");
-    private final JButton YMinusButton = new JButton("Yminus");
-    private final JButton ZPlusButton = new JButton("Zplus");
-    private final JButton ZMinusButton = new JButton("Zminus");
-    private final JButton EPlusButton = new JButton("Eplus");
-    private final JButton EMinusButton = new JButton("Eminus");
-    private final JButton MotorsOffButton = new JButton("Motors off");
-    private final JButton StopPrintButton = new JButton("Stop Print");
-    private final JButton EmergencyStopButton = new JButton("Emergency Stop");
-    private final JButton HomeButton = new JButton("Home");
+    private CoreStateMachine pp;
+    private Vector<Macro> macros = new Vector<Macro>();
+    private Vector<JButton> buttons = new Vector<JButton>();
+    private Cfg cfg;
 
-    private final CoreStateMachine pp;
-
-    public DirectControlPanel(CoreStateMachine pp)
+    public DirectControlPanel(CoreStateMachine pp, Cfg cfg)
     {
         this.pp = pp;
+        this.cfg = cfg;
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Direct Control"));
         myPanel.setLayout(new GridLayout(0,2));
-        addButton(XPlusButton, ACTION_COMMAND_X_PLUS);
-        addButton(XMinusButton, ACTION_COMMAND_X_MINUS);
-        addButton(YPlusButton, ACTION_COMMAND_Y_PLUS);
-        addButton(YMinusButton, ACTION_COMMAND_Y_MINUS);
-        addButton(ZPlusButton, ACTION_COMMAND_Z_PLUS);
-        addButton(ZMinusButton, ACTION_COMMAND_Z_MINUS);
-        addButton(EPlusButton, ACTION_COMMAND_E_PLUS);
-        addButton(EMinusButton, ACTION_COMMAND_E_MINUS);
-        addButton(MotorsOffButton, ACTION_COMMAND_MOTORS_OFF);
-        addButton(StopPrintButton, ACTION_COMMAND_STOP_PRINT);
-        addButton(EmergencyStopButton, ACTION_COMMAND_EMERGENCY_STOP);
-        addButton(HomeButton, ACTION_COMMAND_HOME);
-        // TODO change Temperatures (preheat/ change during printing)
-        // TODO control Fans
+        final Vector<Macro> cfgMacros = cfg.getMacros();
+        if(1 > cfgMacros.size())
+        {
+            // default Buttons
+            addDefaultMacros();
+        }
+        else
+        {
+            macros = cfgMacros;
+            updateCore(pp);
+        }
+        updateButtons();
+        if(null != pp)
+        {
+            if(true == pp.isOperational())
+            {
+                setToOnline();
+            }
+        }
     }
 
-    public void setToOnline()
+
+    public void updateCfg(Cfg cfg)
     {
-        XPlusButton.setEnabled(true);
-        XMinusButton.setEnabled(true);
-        YPlusButton.setEnabled(true);
-        YMinusButton.setEnabled(true);
-        ZPlusButton.setEnabled(true);
-        ZMinusButton.setEnabled(true);
-        EPlusButton.setEnabled(true);
-        EMinusButton.setEnabled(true);
-        MotorsOffButton.setEnabled(true);
-        StopPrintButton.setEnabled(false);
-        EmergencyStopButton.setEnabled(false);
-        HomeButton.setEnabled(false);
+        this.cfg = cfg;
+        final Vector<Macro> cfgMacros = cfg.getMacros();
+        if(1 > cfgMacros.size())
+        {
+            // No Macros defined in the configuration so, ...
+            // lets leave the Macros as they are.
+        }
+        else
+        {
+            macros = cfgMacros;
+            updateCore(pp);
+        }
+        updateButtons();
     }
 
-    public void setToOffline()
+    public void addMacro(Macro m)
     {
-        XPlusButton.setEnabled(false);
-        XMinusButton.setEnabled(false);
-        YPlusButton.setEnabled(false);
-        YMinusButton.setEnabled(false);
-        ZPlusButton.setEnabled(false);
-        ZMinusButton.setEnabled(false);
-        EPlusButton.setEnabled(false);
-        EMinusButton.setEnabled(false);
-        MotorsOffButton.setEnabled(false);
-        StopPrintButton.setEnabled(false);
-        EmergencyStopButton.setEnabled(false);
-        HomeButton.setEnabled(false);
+        m.updateCore(pp);
+        macros.add(m);
+        updateButtons();
     }
 
-    private void addButton(JButton button, String actionCommand)
+    private void addDefaultMacros()
     {
+        RelativeMove rm = new RelativeMove();
+        rm.setX(1.0);
+        rm.setF(9000.0);
+        ExecutorMacro em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
+        em.setName("X+");
+        em.updateCore(pp);
+        macros.add(em);
+
+        rm = new RelativeMove();
+        rm.setX(-1.0);
+        rm.setF(9000.0);
+        em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
+        em.setName("X-");
+        em.updateCore(pp);
+        macros.add(em);
+
+        rm = new RelativeMove();
+        rm.setY(1.0);
+        rm.setF(9000.0);
+        em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
+        em.setName("Y+");
+        em.updateCore(pp);
+        macros.add(em);
+
+        rm = new RelativeMove();
+        rm.setY(-1.0);
+        rm.setF(9000.0);
+        em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
+        em.setName("Y-");
+        em.updateCore(pp);
+        macros.add(em);
+
+        rm = new RelativeMove();
+        rm.setZ(1.0);
+        rm.setF(9000.0);
+        em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
+        em.setName("Z+");
+        em.updateCore(pp);
+        macros.add(em);
+
+        rm = new RelativeMove();
+        rm.setZ(-1.0);
+        rm.setF(9000.0);
+        em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
+        em.setName("Z-");
+        em.updateCore(pp);
+        macros.add(em);
+
+        rm = new RelativeMove();
+        rm.setE(1.0);
+        rm.setF(9000.0);
+        em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
+        em.setName("E+");
+        em.updateCore(pp);
+        macros.add(em);
+
+        rm = new RelativeMove();
+        rm.setE(-1.0);
+        rm.setF(9000.0);
+        em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
+        em.setName("E-");
+        em.updateCore(pp);
+        macros.add(em);
+
+        GCodeMacro gm = new GCodeMacro("M18");
+        gm.setName("Motors off");
+        gm.updateCore(pp);
+        macros.add(gm);
+
+        gm = new GCodeMacro("M0");
+        gm.setName("Stop Print");
+        gm.updateCore(pp);
+        macros.add(gm);
+
+        gm = new GCodeMacro("M112");
+        gm.setName("Emergency Stop");
+        gm.updateCore(pp);
+        macros.add(gm);
+
+        gm = new GCodeMacro("G28");
+        gm.setName("Home");
+        gm.updateCore(pp);
+        macros.add(gm);
+    }
+
+    private void updateButtons()
+    {
+        myPanel.removeAll();
+        buttons.clear();
+        for(int i = 0; i < macros.size(); i++)
+        {
+            addButton(macros.get(i), ACTION_COMMAND_PREFIX + i);
+        }
+    }
+
+    private void addButton(Macro m, String actionCommand)
+    {
+        final JButton button = new JButton(m.getName());
         button.addActionListener(this);
         button.setActionCommand(actionCommand);
         button.setEnabled(false);
         myPanel.add(button, BorderLayout.NORTH);
+        buttons.add(button);
+    }
+
+    public void updateCore(CoreStateMachine core)
+    {
+        log.trace("updating core");
+        pp = core;
+        for(int i = 0; i < macros.size(); i++)
+        {
+            final Macro m = macros.get(i);
+            m.updateCore(pp);
+            macros.set(i, m);
+        }
+        if(true == core.isOperational())
+        {
+            setToOnline();
+        }
+        else
+        {
+            setToOffline();
+        }
+    }
+
+    public void setToOnline()
+    {
+        log.trace("Setting {} Buttons to Online !", buttons.size());
+        for(int i = 0; i < buttons.size(); i++)
+        {
+            buttons.get(i).setEnabled(true);
+        }
+    }
+
+    public void setToOffline()
+    {
+        log.trace("Setting Buttons to Offline !");
+        for(int i = 0; i < buttons.size(); i++)
+        {
+            buttons.get(i).setEnabled(false);
+        }
     }
 
     @Override
     public void actionPerformed(ActionEvent e)
     {
-        String cmd = e.getActionCommand();
-        if(true == ACTION_COMMAND_EMERGENCY_STOP.equals(cmd))
+        final String command = e.getActionCommand();
+        if(true == command.startsWith(ACTION_COMMAND_PREFIX))
         {
-            pp.executeGCode("M112");
+            final int i = Integer.parseInt((command.substring(ACTION_COMMAND_PREFIX.length())));
+            final Macro m = macros.get(i);
+            m.execute();
         }
-        else if(true == ACTION_COMMAND_STOP_PRINT.equals(cmd))
+        else if(true == ACTION_COMMAND_REMOVE.equals(command))
         {
-            pp.executeGCode("M0");
+            //remove a Macro
+            final Vector<String> options = new Vector<String>();
+            for(int i = 0; i < macros.size(); i++)
+            {
+                final Macro m = macros.get(i);
+                final String res = "" + i + " : " + m.getName();
+                options.add(res);
+            }
+            final Object[] possibilities = options.toArray();
+            //TODO remove the ham and eggs
+            final String s = (String)JOptionPane.showInputDialog(
+                                myPanel,
+                                "Complete the sentence:\n"
+                                + "\"Green eggs and...\"",
+                                "Customized Dialog",
+                                JOptionPane.PLAIN_MESSAGE,
+                                null,
+                                possibilities,
+                                "ham");
+            if ((s != null) && (s.length() > 0))
+            {
+                final String num = s.substring(0, s.indexOf(':'));
+                final int opt = Integer.parseInt(num.trim());
+                macros.remove(opt);
+                cfg.setMacros(macros);
+                updateButtons();
+            }
         }
-        else if(true == ACTION_COMMAND_X_PLUS.equals(cmd))
-        {
-            pp.executeGCode("G91"); // relative Positioning
-            pp.executeGCode("G1 X1");
-        }
-        else if(true == ACTION_COMMAND_X_MINUS.equals(cmd))
-        {
-            pp.executeGCode("G91"); // relative Positioning
-            pp.executeGCode("G1 X-1");
-        }
-        else if(true == ACTION_COMMAND_Y_PLUS.equals(cmd))
-        {
-            pp.executeGCode("G91"); // relative Positioning
-            pp.executeGCode("G1 Y1");
-        }
-        else if(true == ACTION_COMMAND_Y_MINUS.equals(cmd))
-        {
-            pp.executeGCode("G91"); // relative Positioning
-            pp.executeGCode("G1 Y-1");
-        }
-        else if(true == ACTION_COMMAND_Z_PLUS.equals(cmd))
-        {
-            pp.executeGCode("G91"); // relative Positioning
-            pp.executeGCode("G1 Z1");
-        }
-        else if(true == ACTION_COMMAND_Z_MINUS.equals(cmd))
-        {
-            pp.executeGCode("G91"); // relative Positioning
-            pp.executeGCode("G1 Z-1");
-        }
-        else if(true == ACTION_COMMAND_E_PLUS.equals(cmd))
-        {
-            pp.executeGCode("M83"); // relative Positioning
-            pp.executeGCode("G1 E1");
-        }
-        else if(true == ACTION_COMMAND_E_MINUS.equals(cmd))
-        {
-            pp.executeGCode("M83"); // relative Positioning
-            pp.executeGCode("G1 E-1");
-        }
-        else if(true == ACTION_COMMAND_MOTORS_OFF.equals(cmd))
-        {
-            pp.executeGCode("M18");
-        }
-        else if(true == ACTION_COMMAND_HOME.equals(cmd))
-        {
-            pp.executeGCode("G28");
-        }
-        // else unknown action -> ignore
+        // else ignore action
     }
 
     public Component getPanel()
     {
         return myPanel;
+    }
+
+    public void close()
+    {
+        cfg.setMacros(macros);
     }
 
 }

@@ -15,6 +15,7 @@
 package de.nomagic.printerController.core.devices;
 
 import de.nomagic.printerController.pacemaker.Protocol;
+import de.nomagic.printerController.pacemaker.Reply;
 
 /**
  * @author Lars P&ouml;tter
@@ -47,58 +48,19 @@ public class Printer
         return "Ptotocol=" + pro.toString();
     }
 
+    public Reply sendRawOrderFrame(int Order, int[] parameterBytes, int length)
+    {
+        return pro.sendRawOrder(Order, parameterBytes, length);
+    }
+
     public boolean doShutDown()
     {
-        // TODO Auto-generated method stub
-        /*
-        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
-        {
-            activeHeaters[i] = false;
-            heatersTargetTemperatures[i] = 0;
-        }
-        for(int i = 0; i < Cfg.NUMBER_OF_AXIS; i++)
-        {
-            homingAxis[i] = false;
-        }
-        if(false == proto.doStopPrint())
-        {
-            log.error("Falied to Stop the Print !");
-            disableAllStepperMotors();
-            return false;
-        }
-        else
-        {
-            return disableAllStepperMotors();
-        }
-        */
-        return false;
+        return pro.doStopPrint();
     }
 
     public boolean doImmediateShutDown()
     {
-        // TODO Auto-generated method stub
-        /*
-        for(int i = 0; i < Cfg.NUMBER_OF_HEATER_FUNCTIONS; i++)
-        {
-            activeHeaters[i] = false;
-            heatersTargetTemperatures[i] = 0;
-        }
-        for(int i = 0; i < Cfg.NUMBER_OF_AXIS; i++)
-        {
-            homingAxis[i] = false;
-        }
-        if(false == proto.doEmergencyStopPrint())
-        {
-            log.error("Falied to Stop the Print !");
-            disableAllStepperMotors();
-            return false;
-        }
-        else
-        {
-            return disableAllStepperMotors();
-        }
-        */
-        return false;
+        return pro.doEmergencyStopPrint();
     }
 
 }

@@ -12,7 +12,7 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>
  *
  */
-package de.nomagic.printerController.terminal;
+package de.nomagic.printerController.gui;
 
 import java.awt.BorderLayout;
 import java.awt.Frame;
@@ -46,15 +46,16 @@ public class ConnectionDescriptionDialog extends JDialog implements ActionListen
 {
     private static final Logger log = LoggerFactory.getLogger("ClientConnection");
     private static final long serialVersionUID = 1L;
+    private static final String TAB_TCP = "TCP";
+    private static final String TAB_UART = "Serial";
     private String answer = "";
     private JPanel myPanel = null;
     private JButton OkButton = null;
     private JButton CancelButton = null;
-    private JTextField connectionDescription;
+    private ClientPanel connectionDescription;
+    private ActionListener Listener;
 
     private JTabbedPane tabbedPane;
-    private static final String TAB_TCP = "TCP";
-    private static final String TAB_UART = "Serial";
     // TCP
     private JTextField tcpHost;
     private JTextField tcpPort;
@@ -74,50 +75,51 @@ public class ConnectionDescriptionDialog extends JDialog implements ActionListen
     private JCheckBox xon_xoff_in = new JCheckBox("Xon/Xoff IN");
     private JCheckBox xon_xoff_out = new JCheckBox("Xon/Xoff OUT");
 
-    public ConnectionDescriptionDialog(Frame owner, String title, boolean modal, JTextField connectionDescription)
+    public ConnectionDescriptionDialog(Frame owner, ClientPanel connectionDescription, ActionListener Listener)
     {
-        super(owner, title, modal);
+        super(owner, "Connect to...", false);
         this.connectionDescription = connectionDescription;
+        this.Listener = Listener;
         myPanel = new JPanel();
         tabbedPane = new JTabbedPane();
-        JPanel TcpPanel = new JPanel();
+        final JPanel TcpPanel = new JPanel();
         TcpPanel.setLayout(new GridLayout(0,2));
-        JLabel tcpHostLabel = new JLabel("Host");
+        final JLabel tcpHostLabel = new JLabel("Host");
         tcpHost = new JTextField(30);
         TcpPanel.add(tcpHostLabel, BorderLayout.WEST);
         TcpPanel.add(tcpHost, BorderLayout.EAST);
-        JLabel tcpPortLabel = new JLabel("Port");
+        final JLabel tcpPortLabel = new JLabel("Port");
         tcpPort = new JTextField(5);
         TcpPanel.add(tcpPortLabel, BorderLayout.WEST);
         TcpPanel.add(tcpPort, BorderLayout.EAST);
         tabbedPane.add(TAB_TCP, TcpPanel);
-        JPanel UartPanel = new JPanel();
+        final JPanel UartPanel = new JPanel();
         UartPanel.setLayout(new GridLayout(0,2));
         // Port
-        JLabel portLabel = new JLabel("Port");
+        final JLabel portLabel = new JLabel("Port");
         portName = new JTextField(30);
         UartPanel.add(portLabel, BorderLayout.WEST);
         UartPanel.add(portName, BorderLayout.EAST);
         // Baudrate
-        JLabel baudLabel = new JLabel("Baudrate");
+        final JLabel baudLabel = new JLabel("Baudrate");
         UartPanel.add(baudLabel, BorderLayout.WEST);
         UartPanel.add(baudInput, BorderLayout.EAST);
         // databits
-        JLabel bitLabel = new JLabel("Data Bits");
+        final JLabel bitLabel = new JLabel("Data Bits");
         dataBitsUsed.setSelectedIndex(3); // 8 bits
         UartPanel.add(bitLabel, BorderLayout.WEST);
         UartPanel.add(dataBitsUsed, BorderLayout.EAST);
         // parity
-        JLabel parityLabel = new JLabel("Parity");
+        final JLabel parityLabel = new JLabel("Parity");
         UartPanel.add(parityLabel, BorderLayout.WEST);
         UartPanel.add(parityUsed, BorderLayout.EAST);
         // stopbit
-        JLabel stopLabel = new JLabel("Stop Bits");
+        final JLabel stopLabel = new JLabel("Stop Bits");
         UartPanel.add(stopLabel, BorderLayout.WEST);
         UartPanel.add(stopBits, BorderLayout.EAST);
         // Flowcontrol
-        JLabel flowLabel = new JLabel("FlowControl");
-        JPanel buttonPane = new JPanel();
+        final JLabel flowLabel = new JLabel("FlowControl");
+        final JPanel buttonPane = new JPanel();
         buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.PAGE_AXIS));
         buttonPane.add(rts_cts_in);
         buttonPane.add(rts_cts_out);
@@ -127,7 +129,7 @@ public class ConnectionDescriptionDialog extends JDialog implements ActionListen
         UartPanel.add(buttonPane, BorderLayout.EAST);
         tabbedPane.add(TAB_UART, UartPanel);
         myPanel.add(tabbedPane);
-        JPanel ButtonPanel = new JPanel();
+        final JPanel ButtonPanel = new JPanel();
         OkButton = new JButton("OK");
         OkButton.addActionListener(this);
         ButtonPanel.add(OkButton);
@@ -166,8 +168,8 @@ public class ConnectionDescriptionDialog extends JDialog implements ActionListen
                     @Override
                     public void run()
                     {
-                        connectionDescription.setText(answer);
-                        connectionDescription.validate();
+                        connectionDescription.updateConnectionDefinition(answer);
+                        Listener.actionPerformed(new ActionEvent(null, 0, MainWindow.ACTION_CLIENT_CONNECT));
                     }
                 });
             }
@@ -180,8 +182,8 @@ public class ConnectionDescriptionDialog extends JDialog implements ActionListen
                     @Override
                     public void run()
                     {
-                        connectionDescription.setText(answer);
-                        connectionDescription.validate();
+                        connectionDescription.updateConnectionDefinition(answer);
+                        Listener.actionPerformed(new ActionEvent(null, 0, MainWindow.ACTION_CLIENT_CONNECT));
                     }
                 });
             }

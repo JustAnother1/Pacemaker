@@ -14,6 +14,8 @@
  */
 package de.nomagic.printerController.core;
 
+import java.io.Serializable;
+
 import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.core.movement.XyzTable;
 
@@ -22,9 +24,9 @@ import de.nomagic.printerController.core.movement.XyzTable;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class RelativeMove
+public class RelativeMove implements Serializable
 {
-
+    private static final long serialVersionUID = 1L;
     private double x;
     private boolean hasX = false;
     private double y;

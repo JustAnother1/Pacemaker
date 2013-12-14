@@ -15,20 +15,28 @@
 package de.nomagic.printerController;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
+import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import de.nomagic.printerController.gui.Macro;
 
 /** host configuration settings.
  *
@@ -61,6 +69,7 @@ public class Cfg
     public static final String STEPPER_SECTION = "[steppers]";
     public static final String STEPPER_SECTION_OPEN = "[stepper";
     public static final String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
+    public static final String MACROS_SETTING_NAME = "Macros";
 
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
@@ -109,7 +118,7 @@ public class Cfg
 
     public String getGeneralSetting(String Name, String Default)
     {
-        String value = GeneralSettings.get(Name);
+        final String value = GeneralSettings.get(Name);
         if(null == value)
         {
             GeneralSettings.put(Name, Default);
@@ -123,7 +132,7 @@ public class Cfg
 
     public boolean getGeneralSetting(String Name, boolean Default)
     {
-        String value = GeneralSettings.get(Name);
+        final String value = GeneralSettings.get(Name);
         if(null == value)
         {
             GeneralSettings.put(Name, "" + Default);
@@ -131,14 +140,14 @@ public class Cfg
         }
         else
         {
-            boolean res = Boolean.parseBoolean(value);
+            final boolean res = Boolean.parseBoolean(value);
             return res;
         }
     }
 
     public int getGeneralSetting(String Name, int Default)
     {
-        String value = GeneralSettings.get(Name);
+        final String value = GeneralSettings.get(Name);
         if(null == value)
         {
             GeneralSettings.put(Name, "" + Default);
@@ -146,14 +155,14 @@ public class Cfg
         }
         else
         {
-            Integer res = Integer.parseInt(value);
+            final Integer res = Integer.parseInt(value);
             return res;
         }
     }
 
     public double getGeneralSetting(String Name, double Default)
     {
-        String value = GeneralSettings.get(Name);
+        final String value = GeneralSettings.get(Name);
         if(null == value)
         {
             GeneralSettings.put(Name, "" + Default);
@@ -161,7 +170,7 @@ public class Cfg
         }
         else
         {
-            double res = Double.parseDouble(value);
+            final double res = Double.parseDouble(value);
             return res;
         }
     }
@@ -179,7 +188,7 @@ public class Cfg
 
     public String getConnectionDefinitionOfClient(Integer clientNumber)
     {
-        String ClientDeviceString = ConnectionDefinition.get(clientNumber);
+        final String ClientDeviceString = ConnectionDefinition.get(clientNumber);
         if(null == ClientDeviceString)
         {
             return "";
@@ -204,7 +213,7 @@ public class Cfg
 
     public Heater_enum getFunctionOfTemperatureSensor(Integer ClientNumber, Integer SensorNumber)
     {
-        HashMap<Integer,Heater_enum> TempSensors = TemperatureSensors.get(ClientNumber);
+        final HashMap<Integer,Heater_enum> TempSensors = TemperatureSensors.get(ClientNumber);
         if(null == TempSensors)
         {
             return null;
@@ -229,7 +238,7 @@ public class Cfg
 
     public Heater_enum getFunctionOfHeater(Integer ClientNumber, Integer HeaterNumber)
     {
-        HashMap<Integer,Heater_enum> Heat = Heaters.get(ClientNumber);
+        final HashMap<Integer,Heater_enum> Heat = Heaters.get(ClientNumber);
         if(null == Heat)
         {
             return null;
@@ -254,7 +263,7 @@ public class Cfg
 
     public Fan_enum getFunctionOfFan(Integer ClientNumber, Integer FanNumber)
     {
-        HashMap<Integer,Fan_enum> fan = Fans.get(ClientNumber);
+        final HashMap<Integer,Fan_enum> fan = Fans.get(ClientNumber);
         if(null == fan)
         {
             return null;
@@ -279,7 +288,7 @@ public class Cfg
 
     public Output_enum getFunctionOfOutput(Integer ClientNumber, Integer OutputNumber)
     {
-        HashMap<Integer,Output_enum> sw = Outputs.get(ClientNumber);
+        final HashMap<Integer,Output_enum> sw = Outputs.get(ClientNumber);
         if(null == sw)
         {
             return null;
@@ -304,7 +313,7 @@ public class Cfg
 
     public Switch_enum getFunctionOfSwitch(Integer ClientNumber, Integer SwitchNumber)
     {
-        HashMap<Integer,Switch_enum> sw = Switches.get(ClientNumber);
+        final HashMap<Integer,Switch_enum> sw = Switches.get(ClientNumber);
         if(null == sw)
         {
             return null;
@@ -324,7 +333,7 @@ public class Cfg
 
     public boolean shouldUseSteppers(int clientNumber)
     {
-        Boolean res = useSteppers.get(clientNumber);
+        final Boolean res = useSteppers.get(clientNumber);
         if(null == res)
         {
             // There was no configuration for this client in the config file
@@ -338,7 +347,7 @@ public class Cfg
 
     public Boolean isMovementDirectionInverted(Integer ClientNumber, Integer stepper)
     {
-        HashMap<Integer, Boolean> axInv = movementDirectionInverted.get(ClientNumber);
+        final HashMap<Integer, Boolean> axInv = movementDirectionInverted.get(ClientNumber);
         if(null == axInv)
         {
             return false;
@@ -373,7 +382,7 @@ public class Cfg
 
     public Axis_enum getFunctionOfAxis(Integer ClientNumber, Integer StepperNumber)
     {
-        HashMap<Integer,Axis_enum> step = Steppers.get(ClientNumber);
+        final HashMap<Integer,Axis_enum> step = Steppers.get(ClientNumber);
         if(null == step)
         {
             return null;
@@ -386,7 +395,7 @@ public class Cfg
 
     public int getMaxSpeedFor(int clientNumber, int stepperNumber)
     {
-        HashMap<Integer,Integer> speed = StepperMaxSpeed.get(clientNumber);
+        final HashMap<Integer,Integer> speed = StepperMaxSpeed.get(clientNumber);
         if(null == speed)
         {
             return 0;
@@ -421,7 +430,7 @@ public class Cfg
 
     public double getMaxAccelerationFor(int clientNumber, int stepperNumber)
     {
-        HashMap<Integer,Double> accel = StepperMaxAcceleration.get(clientNumber);
+        final HashMap<Integer,Double> accel = StepperMaxAcceleration.get(clientNumber);
         if(null == accel)
         {
             return 0;
@@ -445,7 +454,7 @@ public class Cfg
 
     public double getStepsPerMillimeterFor(int clientNumber, int stepperNumber)
     {
-        HashMap<Integer,Double> steps = StepperStepsPerMillimeter.get(clientNumber);
+        final HashMap<Integer,Double> steps = StepperStepsPerMillimeter.get(clientNumber);
         if(null == steps)
         {
             return 0.0;
@@ -464,7 +473,7 @@ public class Cfg
         {
             fwSettings = new Vector<Setting>();
         }
-        Setting theSetting = new Setting(Setting, Value);
+        final Setting theSetting = new Setting(Setting, Value);
         fwSettings.add(theSetting);
         firmwareCfg.put(ClientNumber, fwSettings);
     }
@@ -478,24 +487,25 @@ public class Cfg
     // Save and Load
     public boolean saveTo(final OutputStream out)
     {
+        log.trace("Writing Configuration");
         final OutputStreamWriter ow = new OutputStreamWriter(out, Charset.forName("UTF-8"));
         try
         {
             ow.write(GENERAL_SECTION + "\n");
-            Set<String> names = GeneralSettings.keySet();
-            Iterator<String> it = names.iterator();
+            final Set<String> names = GeneralSettings.keySet();
+            final Iterator<String> it = names.iterator();
             while(it.hasNext())
             {
-                String name = it.next();
-                ow.write(name + SEPERATOR + GeneralSettings.get(name));
+                final String name = it.next();
+                ow.write(name + SEPERATOR + GeneralSettings.get(name) + "\n");
             }
 
-            Set<Integer> connectionSet = ConnectionDefinition.keySet();
-            Iterator<Integer> connectionIterator = connectionSet.iterator();
+            final Set<Integer> connectionSet = ConnectionDefinition.keySet();
+            final Iterator<Integer> connectionIterator = connectionSet.iterator();
             while(connectionIterator.hasNext())
             {
-                Integer ConnectionNum = connectionIterator.next();
-                ow.write(CONNECTION_START + getConnectionDefinitionOfClient(ConnectionNum) + CONNECTION_END);
+                final Integer ConnectionNum = connectionIterator.next();
+                ow.write(CONNECTION_START + getConnectionDefinitionOfClient(ConnectionNum) + CONNECTION_END + "\n");
 // write out the settings for this connection:
 
 // Temperature Sensors:
@@ -506,14 +516,17 @@ public class Cfg
                     ow.write(" " + heater);
                 }
                 ow.write("\n");
-                HashMap<Integer, Heater_enum> sensors = TemperatureSensors.get(ConnectionNum);
-                Set<Integer> usedSensorsSet = sensors.keySet();
-                Iterator<Integer> sensorsIterator = usedSensorsSet.iterator();
-                while(sensorsIterator.hasNext())
+                final HashMap<Integer, Heater_enum> sensors = TemperatureSensors.get(ConnectionNum);
+                if(null != sensors)
                 {
-                    Integer curSensor = sensorsIterator.next();
-                    Heater_enum function = sensors.get(curSensor);
-                    ow.write(curSensor + SEPERATOR +  function + "\n");
+                    final Set<Integer> usedSensorsSet = sensors.keySet();
+                    final Iterator<Integer> sensorsIterator = usedSensorsSet.iterator();
+                    while(sensorsIterator.hasNext())
+                    {
+                        final Integer curSensor = sensorsIterator.next();
+                        final Heater_enum function = sensors.get(curSensor);
+                        ow.write(curSensor + SEPERATOR +  function + "\n");
+                    }
                 }
 
 // Heaters :
@@ -524,14 +537,17 @@ public class Cfg
                     ow.write(" " + heater);
                 }
                 ow.write("\n");
-                HashMap<Integer, Heater_enum> heat = Heaters.get(ConnectionNum);
-                Set<Integer> usedHeatersSet = heat.keySet();
-                Iterator<Integer> heatorsIterator = usedHeatersSet.iterator();
-                while(heatorsIterator.hasNext())
+                final HashMap<Integer, Heater_enum> heat = Heaters.get(ConnectionNum);
+                if(null != heat)
                 {
-                    Integer curHeater = heatorsIterator.next();
-                    Heater_enum function = sensors.get(curHeater);
-                    ow.write(curHeater + SEPERATOR +  function + "\n");
+                    final Set<Integer> usedHeatersSet = heat.keySet();
+                    final Iterator<Integer> heatorsIterator = usedHeatersSet.iterator();
+                    while(heatorsIterator.hasNext())
+                    {
+                        final Integer curHeater = heatorsIterator.next();
+                        final Heater_enum function = sensors.get(curHeater);
+                        ow.write(curHeater + SEPERATOR +  function + "\n");
+                    }
                 }
 
 // Fans :
@@ -542,14 +558,17 @@ public class Cfg
                     ow.write(" " + ele);
                 }
                 ow.write("\n");
-                HashMap<Integer, Fan_enum> fan = Fans.get(ConnectionNum);
-                Set<Integer> usedFanSet = fan.keySet();
-                Iterator<Integer> FansIterator = usedFanSet.iterator();
-                while(FansIterator.hasNext())
+                final HashMap<Integer, Fan_enum> fan = Fans.get(ConnectionNum);
+                if(null != fan)
                 {
-                    Integer curFan = FansIterator.next();
-                    Fan_enum function = fan.get(curFan);
-                    ow.write(curFan + SEPERATOR +  function + "\n");
+                    final Set<Integer> usedFanSet = fan.keySet();
+                    final Iterator<Integer> FansIterator = usedFanSet.iterator();
+                    while(FansIterator.hasNext())
+                    {
+                        final Integer curFan = FansIterator.next();
+                        final Fan_enum function = fan.get(curFan);
+                        ow.write(curFan + SEPERATOR +  function + "\n");
+                    }
                 }
 
 // Outputs :
@@ -560,14 +579,17 @@ public class Cfg
                     ow.write(" " + ele);
                 }
                 ow.write("\n");
-                HashMap<Integer, Output_enum> op = Outputs.get(ConnectionNum);
-                Set<Integer> usedOutputsSet = op.keySet();
-                Iterator<Integer> OutputsIterator = usedOutputsSet.iterator();
-                while(OutputsIterator.hasNext())
+                final HashMap<Integer, Output_enum> op = Outputs.get(ConnectionNum);
+                if(null != op)
                 {
-                    Integer curOutput = OutputsIterator.next();
-                    Output_enum function = op.get(curOutput);
-                    ow.write(curOutput + SEPERATOR +  function + "\n");
+                    final Set<Integer> usedOutputsSet = op.keySet();
+                    final Iterator<Integer> OutputsIterator = usedOutputsSet.iterator();
+                    while(OutputsIterator.hasNext())
+                    {
+                        final Integer curOutput = OutputsIterator.next();
+                        final Output_enum function = op.get(curOutput);
+                        ow.write(curOutput + SEPERATOR +  function + "\n");
+                    }
                 }
 // Switches :
                 ow.write(SWITCHES_SECTION + "\n");
@@ -577,52 +599,58 @@ public class Cfg
                     ow.write(" " + ele);
                 }
                 ow.write("\n");
-                HashMap<Integer, Switch_enum> sw = Switches.get(ConnectionNum);
-                Set<Integer> usedSwitchesSet = sw.keySet();
-                Iterator<Integer> SwitchesIterator = usedSwitchesSet.iterator();
-                while(SwitchesIterator.hasNext())
+                final HashMap<Integer, Switch_enum> sw = Switches.get(ConnectionNum);
+                if(null != sw)
                 {
-                    Integer curSwitch = SwitchesIterator.next();
-                    Switch_enum function = sw.get(curSwitch);
-                    ow.write(curSwitch + SEPERATOR +  function + "\n");
+                    final Set<Integer> usedSwitchesSet = sw.keySet();
+                    final Iterator<Integer> SwitchesIterator = usedSwitchesSet.iterator();
+                    while(SwitchesIterator.hasNext())
+                    {
+                        final Integer curSwitch = SwitchesIterator.next();
+                        final Switch_enum function = sw.get(curSwitch);
+                        ow.write(curSwitch + SEPERATOR +  function + "\n");
+                    }
                 }
 
 // Stepper Motors :
                 ow.write(STEPPER_SECTION + "\n");
                 ow.write(STEPPER_ENALED + SEPERATOR + useSteppers.get(ConnectionNum));
 
-                int maxStepperIndex = getMaxStepperIndexfor(ConnectionNum);
-                HashMap<Integer, Boolean> invertedMap = movementDirectionInverted.get(ConnectionNum);
-                HashMap<Integer,Axis_enum> axisMap = Steppers.get(ConnectionNum);
-                HashMap<Integer,Double> maxAccelMap = StepperMaxAcceleration.get(ConnectionNum);
-                HashMap<Integer,Integer> maxSpeedMap = StepperMaxSpeed.get(ConnectionNum);
-                HashMap<Integer,Double> StepsMap = StepperStepsPerMillimeter.get(ConnectionNum);
-                for(int i = 0; i <= maxStepperIndex; i++)
+                final int maxStepperIndex = getMaxStepperIndexfor(ConnectionNum);
+                final HashMap<Integer, Boolean> invertedMap = movementDirectionInverted.get(ConnectionNum);
+                final HashMap<Integer,Axis_enum> axisMap = Steppers.get(ConnectionNum);
+                if(null != axisMap)
                 {
-                    Axis_enum axis = axisMap.get(i);
-                    if(null == axis)
+                    final HashMap<Integer,Double> maxAccelMap = StepperMaxAcceleration.get(ConnectionNum);
+                    final HashMap<Integer,Integer> maxSpeedMap = StepperMaxSpeed.get(ConnectionNum);
+                    final HashMap<Integer,Double> StepsMap = StepperStepsPerMillimeter.get(ConnectionNum);
+                    for(int i = 0; i <= maxStepperIndex; i++)
                     {
-                        // this stepper is not used
-                    }
-                    else
-                    {
-                        ow.write(STEPPER_SECTION_OPEN + "." + i  + "]\n");
-                        ow.write(STEPPER_INVERTED + SEPERATOR + invertedMap.get(i)  + "\n");
-                        ow.write(STEPPER_AXIS + SEPERATOR + axisMap.get(i)  + "\n");
-                        ow.write(STEPPER_MAXIMUM_ACCELLERATION + SEPERATOR + maxAccelMap.get(i)  + "\n");
-                        ow.write(STEPPER_STEPS_PER_MILLIMETER +SEPERATOR + StepsMap.get(i)  + "\n");
-                        ow.write(STEPPER_MAXIMUM_SPEED + SEPERATOR + maxSpeedMap.get(i)  + "\n");
+                        final Axis_enum axis = axisMap.get(i);
+                        if(null == axis)
+                        {
+                            // this stepper is not used
+                        }
+                        else
+                        {
+                            ow.write(STEPPER_SECTION_OPEN + "." + i  + "]\n");
+                            ow.write(STEPPER_INVERTED + SEPERATOR + invertedMap.get(i)  + "\n");
+                            ow.write(STEPPER_AXIS + SEPERATOR + axisMap.get(i)  + "\n");
+                            ow.write(STEPPER_MAXIMUM_ACCELLERATION + SEPERATOR + maxAccelMap.get(i)  + "\n");
+                            ow.write(STEPPER_STEPS_PER_MILLIMETER +SEPERATOR + StepsMap.get(i)  + "\n");
+                            ow.write(STEPPER_MAXIMUM_SPEED + SEPERATOR + maxSpeedMap.get(i)  + "\n");
+                        }
                     }
                 }
 
 // Firmware specific configuration values :
                 ow.write(FIRMWARE_CONFIGURATION_SECTION + "\n");
-                Vector<Setting> fwcfg = firmwareCfg.get(ConnectionNum);
+                final Vector<Setting> fwcfg = firmwareCfg.get(ConnectionNum);
                 if(null != fwcfg)
                 {
                     for(int i = 0; i < fwcfg.size(); i++)
                     {
-                        Setting curSetting = fwcfg.get(i);
+                        final Setting curSetting = fwcfg.get(i);
                         ow.write(curSetting.getName() + SEPERATOR + curSetting.getValue() + "\n");
                     }
                 }
@@ -642,14 +670,17 @@ public class Cfg
     private int getMaxStepperIndexfor(Integer connectionNum)
     {
         int max = 0;
-        HashMap<Integer, Axis_enum> allSteppers = Steppers.get(connectionNum);
-        Iterator<Integer> it = allSteppers.keySet().iterator();
-        while(it.hasNext())
+        final HashMap<Integer, Axis_enum> allSteppers = Steppers.get(connectionNum);
+        if(null != allSteppers)
         {
-            int cur = it.next();
-            if(cur > max)
+            final Iterator<Integer> it = allSteppers.keySet().iterator();
+            while(it.hasNext())
             {
-                max = cur;
+                final int cur = it.next();
+                if(cur > max)
+                {
+                    max = cur;
+                }
             }
         }
         return max;
@@ -657,6 +688,7 @@ public class Cfg
 
     public boolean readFrom(final InputStream in)
     {
+        log.trace("Reading Configuration");
         final BufferedReader br = new BufferedReader(new InputStreamReader(in, Charset.forName("UTF-8")));
         int curStepper = 0;
         try
@@ -704,7 +736,7 @@ public class Cfg
                         else if(true == curLine.startsWith(STEPPER_SECTION_OPEN))
                         {
                             curSection = Sect.STEPPER;
-                            String hlp = curLine.substring(curLine.indexOf('.') + 1, curLine.indexOf(']'));
+                            final String hlp = curLine.substring(curLine.indexOf('.') + 1, curLine.indexOf(']'));
                             curStepper = Integer.parseInt(hlp);
                         }
                         else if(true == FIRMWARE_CONFIGURATION_SECTION.equals(curLine))
@@ -719,7 +751,8 @@ public class Cfg
                     else if(true == curLine.startsWith(CONNECTION_START))
                     {
                         connectionNumber ++;
-                        String cstr = curLine.substring(CONNECTION_START.length(), curLine.indexOf(CONNECTION_END));
+                        final String cstr = curLine.substring(CONNECTION_START.length(),
+                                                              curLine.indexOf(CONNECTION_END));
                         ConnectionDefinition.put(connectionNumber, cstr);
                         inConnection = true;
                     }
@@ -836,7 +869,7 @@ public class Cfg
                             {
                                 if(true == curLine.startsWith(STEPPER_ENALED))
                                 {
-                                    Boolean activated = getBooleanValueFrom(curLine);
+                                    final Boolean activated = getBooleanValueFrom(curLine);
                                     useSteppers.put(connectionNumber, activated);
                                 }
                                 else if(true == curLine.startsWith(STEPPER_INVERTED))
@@ -904,7 +937,7 @@ public class Cfg
     {
         if(true == aLine.contains(COMMENT_START))
         {
-            String res = aLine.substring(0, aLine.indexOf(COMMENT_START));
+            final String res = aLine.substring(0, aLine.indexOf(COMMENT_START));
             return res.trim();
         }
         else
@@ -987,6 +1020,79 @@ public class Cfg
         String hlp = line.substring(line.indexOf(SEPERATOR_CHAR) + 1);
         hlp = hlp.trim();
         return Boolean.valueOf(hlp);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Vector<Macro> getMacros()
+    {
+        final String data = getGeneralSetting(MACROS_SETTING_NAME, "");
+        if(1 > data.length())
+        {
+            log.warn("No Macros found in configuration !");
+            return new Vector<Macro>();
+        }
+        // else ...
+        final byte[] DecodedData = Base64.decodeBase64(data);
+        final ByteArrayInputStream bin = new ByteArrayInputStream(DecodedData);
+        GZIPInputStream gin = null;
+        ObjectInputStream oin = null;
+        Vector<Macro> res;
+        try
+        {
+            gin = new GZIPInputStream(bin);
+            oin = new ObjectInputStream(gin);
+            res  = (Vector<Macro>)oin.readObject();
+        }
+        catch(IOException e)
+        {
+            log.error(Tool.fromExceptionToString(e));
+            res = new Vector<Macro>();
+        }
+        catch(ClassNotFoundException e)
+        {
+            log.error(Tool.fromExceptionToString(e));
+            res = new Vector<Macro>();
+        }
+        try
+        {
+            if(null != oin)
+            {
+                oin.close();
+            }
+            if(null != gin)
+            {
+                gin.close();
+            }
+            bin.close();
+        }
+        catch(IOException e)
+        {
+            log.error(Tool.fromExceptionToString(e));
+        }
+        return res;
+    }
+
+    public void setMacros(Vector<Macro> macros)
+    {
+        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        GZIPOutputStream gout;
+        try
+        {
+            gout = new GZIPOutputStream(bout);
+            final ObjectOutputStream oOut = new ObjectOutputStream(gout);
+            oOut.writeObject(macros);
+            oOut.flush();
+            oOut.close();
+            gout.close();
+            bout.close();
+            // Base64
+            final String encodedText = new String(Base64.encodeBase64( bout.toByteArray() ));
+            setValueOfSetting(MACROS_SETTING_NAME, encodedText);
+        }
+        catch(IOException e)
+        {
+            log.error(Tool.fromExceptionToString(e));
+        }
     }
 
 }
