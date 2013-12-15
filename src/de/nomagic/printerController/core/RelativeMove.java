@@ -15,6 +15,7 @@
 package de.nomagic.printerController.core;
 
 import java.io.Serializable;
+import java.util.Scanner;
 
 import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.core.movement.XyzTable;
@@ -69,6 +70,43 @@ public class RelativeMove implements Serializable
         }
         sb.append(" ]");
         return sb.toString();
+    }
+
+    public static Object getFromDefinition(String value)
+    {
+        final RelativeMove res = new RelativeMove();
+        final Scanner sc = new Scanner(value);
+        while(true == sc.hasNext())
+        {
+            final String cur = sc.next();
+            if(true == cur.startsWith("x="))
+            {
+                final String val = cur.substring(2);
+                res.setX(Double.parseDouble(val));
+            }
+            if(true == cur.startsWith("y="))
+            {
+                final String val = cur.substring(2);
+                res.setY(Double.parseDouble(val));
+            }
+            if(true == cur.startsWith("z="))
+            {
+                final String val = cur.substring(2);
+                res.setZ(Double.parseDouble(val));
+            }
+            if(true == cur.startsWith("e="))
+            {
+                final String val = cur.substring(2);
+                res.setE(Double.parseDouble(val));
+            }
+            if(true == cur.startsWith("f="))
+            {
+                final String val = cur.substring(2);
+                res.setF(Double.parseDouble(val));
+            }
+        }
+        sc.close();
+        return res;
     }
 
     public boolean has(Axis_enum axis)

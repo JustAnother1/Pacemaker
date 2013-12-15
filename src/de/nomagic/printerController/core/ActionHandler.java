@@ -432,7 +432,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         else
         {
             final Reply r = thePrinter.sendRawOrderFrame((Integer)e.getParameter2(),
-                                                         (int[])e.getParameter3(),
+                                                         (Integer[])e.getParameter3(),
                                                          (Integer)e.getParameter4());
             if(null == r)
             {

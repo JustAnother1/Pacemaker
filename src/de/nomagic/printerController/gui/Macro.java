@@ -26,6 +26,7 @@ import de.nomagic.printerController.core.CoreStateMachine;
 @SuppressWarnings("serial")
 public abstract class Macro implements Serializable
 {
+    public static final String SEPERATOR = ":";
     private String Name = "";
 
     public void setName(String Name)
@@ -41,4 +42,19 @@ public abstract class Macro implements Serializable
     public abstract void updateCore(CoreStateMachine core);
     public abstract void execute();
 
+    protected String getPrefix()
+    {
+        return Name;
+    }
+
+    protected void setValuesFromPrefix(String pre)
+    {
+        if(true == pre.endsWith(SEPERATOR))
+        {
+            pre = pre.substring(0, pre.indexOf(SEPERATOR));
+        }
+        Name = pre;
+    }
+
+    public abstract String getDefinition();
 }

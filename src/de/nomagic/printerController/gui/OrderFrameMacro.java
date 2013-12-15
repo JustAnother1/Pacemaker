@@ -14,6 +14,8 @@
  */
 package de.nomagic.printerController.gui;
 
+import java.util.Vector;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +30,14 @@ import de.nomagic.printerController.pacemaker.Reply;
  */
 public class OrderFrameMacro extends Macro
 {
+    public static final String TYPE_DEFINITION = "OrderFrame";
+
     private static final long serialVersionUID = 1L;
     private final transient Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private int order;
     private int parameterLength;
-    private int[] parameterBytes;
-    private Executor exe = null;
+    private Integer[] parameterBytes;
+    private transient Executor exe = null;
 
     public OrderFrameMacro()
     {
@@ -65,9 +69,71 @@ public class OrderFrameMacro extends Macro
         parameterLength = paraLength;
     }
 
-    public void setParameter(int[] data)
+    public void setParameter(Integer[] data)
     {
         parameterBytes = data;
+    }
+
+    @Override
+    public String getDefinition()
+    {
+        final StringBuffer sb = new StringBuffer();
+        for(int i = 0; i < parameterBytes.length; i++)
+        {
+            sb.append(parameterBytes[i]);
+            sb.append( SEPERATOR);
+        }
+        final String help = sb.toString();
+        return TYPE_DEFINITION + SEPERATOR +
+               getPrefix() + SEPERATOR +
+               order + SEPERATOR +
+               parameterLength + SEPERATOR +
+               help;
+    }
+
+    public static Macro getMacroFromDefinition(String macroString)
+    {
+        if(null == macroString)
+        {
+            return null;
+        }
+        if(1 > macroString.length())
+        {
+            return null;
+        }
+        if(false == macroString.startsWith(TYPE_DEFINITION))
+        {
+            return null;
+        }
+        String help = macroString.substring(macroString.indexOf(SEPERATOR) + SEPERATOR.length());
+        final String prefix = help.substring(0, help.indexOf(SEPERATOR));
+        help = help.substring(help.indexOf(SEPERATOR) + SEPERATOR.length());
+        final String OrderStr =  help.substring(0, help.indexOf(SEPERATOR));
+        final int order = Integer.parseInt(OrderStr);
+        help = help.substring(help.indexOf(SEPERATOR) + SEPERATOR.length());
+        final String LengthStr = help.substring(0, help.indexOf(SEPERATOR));
+        final int length = Integer.parseInt(LengthStr);
+        help = help.substring(help.indexOf(SEPERATOR) + SEPERATOR.length());
+        final Vector<Integer> vec = new  Vector<Integer>();
+        while(true == help.contains(SEPERATOR))
+        {
+            final String aLine = help.substring(0, help.indexOf(SEPERATOR));
+            vec.add(Integer.parseInt(aLine));
+            help = help.substring(help.indexOf(SEPERATOR) + SEPERATOR.length());
+        }
+        if(length <= vec.size())
+        {
+            final OrderFrameMacro res = new OrderFrameMacro();
+            res.setValuesFromPrefix(prefix);
+            res.setOrder(order);
+            res.setParameterLength(length);
+            res.setParameter(vec.toArray(new Integer[0]));
+            return res;
+        }
+        else
+        {
+            return null;
+        }
     }
 
 }

@@ -15,13 +15,9 @@
 package de.nomagic.printerController;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
@@ -29,14 +25,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.Vector;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
 
-import org.apache.commons.codec.binary.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.gui.Macro;
+import de.nomagic.printerController.gui.MacroFactory;
 
 /** host configuration settings.
  *
@@ -69,13 +63,15 @@ public class Cfg
     public static final String STEPPER_SECTION = "[steppers]";
     public static final String STEPPER_SECTION_OPEN = "[stepper";
     public static final String FIRMWARE_CONFIGURATION_SECTION = "[firmware]";
-    public static final String MACROS_SETTING_NAME = "Macros";
+    public static final String MACRO_PREFIX = "Macro";
 
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     // General Section
     private HashMap<String,String> GeneralSettings
     = new HashMap<String,String>();
+    private HashMap<Integer, Macro> macroMap
+    = new HashMap<Integer, Macro>();
 
     // Settings per Connection:
     private HashMap<Integer,String> ConnectionDefinition
@@ -483,7 +479,6 @@ public class Cfg
         return firmwareCfg.get(ClientNumber);
     }
 
-
     // Save and Load
     public boolean saveTo(final OutputStream out)
     {
@@ -499,6 +494,19 @@ public class Cfg
                 final String name = it.next();
                 ow.write(name + SEPERATOR + GeneralSettings.get(name) + "\n");
             }
+
+            // Macros
+            Macro m = null;
+            Integer idx = 0;
+            do
+            {
+                m = macroMap.get(idx);
+                if(null != m)
+                {
+                    ow.write(MACRO_PREFIX + idx + Macro.SEPERATOR + m.getDefinition() + "\n");
+                    idx ++;
+                }
+            }while(null != m);
 
             final Set<Integer> connectionSet = ConnectionDefinition.keySet();
             final Iterator<Integer> connectionIterator = connectionSet.iterator();
@@ -708,6 +716,7 @@ public class Cfg
                         if(true == GENERAL_SECTION.equals(curLine))
                         {
                             curSection = Sect.GENERAL;
+                            inConnection = false;
                         }
                         else if(true == TEMPERATURES_SECTION.equals(curLine))
                         {
@@ -763,7 +772,20 @@ public class Cfg
                             switch(curSection)
                             {
                             case GENERAL:
-                                GeneralSettings.put(getKeyFrom(curLine), getValueFrom(curLine));
+                                if(true == curLine.startsWith(MACRO_PREFIX))
+                                {
+                                    final String numStr = curLine.substring(MACRO_PREFIX.length(),
+                                                                            curLine.indexOf(Macro.SEPERATOR));
+                                    final String MacroString = curLine.substring(
+                                                               curLine.indexOf(
+                                                                       Macro.SEPERATOR) +Macro.SEPERATOR.length());
+                                    final Macro m = MacroFactory.getMacroFromLine(MacroString);
+                                    macroMap.put(Integer.parseInt(numStr), m);
+                                }
+                                else
+                                {
+                                    GeneralSettings.put(getKeyFrom(curLine), getValueFrom(curLine));
+                                }
                                 break;
 
                             default:
@@ -1022,76 +1044,28 @@ public class Cfg
         return Boolean.valueOf(hlp);
     }
 
-    @SuppressWarnings("unchecked")
     public Vector<Macro> getMacros()
     {
-        final String data = getGeneralSetting(MACROS_SETTING_NAME, "");
-        if(1 > data.length())
+        final Vector<Macro> res = new Vector<Macro>();
+        Macro m = null;
+        int i = 0;
+        do
         {
-            log.warn("No Macros found in configuration !");
-            return new Vector<Macro>();
-        }
-        // else ...
-        final byte[] DecodedData = Base64.decodeBase64(data);
-        final ByteArrayInputStream bin = new ByteArrayInputStream(DecodedData);
-        GZIPInputStream gin = null;
-        ObjectInputStream oin = null;
-        Vector<Macro> res;
-        try
-        {
-            gin = new GZIPInputStream(bin);
-            oin = new ObjectInputStream(gin);
-            res  = (Vector<Macro>)oin.readObject();
-        }
-        catch(IOException e)
-        {
-            log.error(Tool.fromExceptionToString(e));
-            res = new Vector<Macro>();
-        }
-        catch(ClassNotFoundException e)
-        {
-            log.error(Tool.fromExceptionToString(e));
-            res = new Vector<Macro>();
-        }
-        try
-        {
-            if(null != oin)
+            m = macroMap.get(i);
+            if(null != m)
             {
-                oin.close();
+                res.add(m);
+                i++;
             }
-            if(null != gin)
-            {
-                gin.close();
-            }
-            bin.close();
-        }
-        catch(IOException e)
-        {
-            log.error(Tool.fromExceptionToString(e));
-        }
+        }while(null != m);
         return res;
     }
 
     public void setMacros(Vector<Macro> macros)
     {
-        final ByteArrayOutputStream bout = new ByteArrayOutputStream();
-        GZIPOutputStream gout;
-        try
+        for(int i = 0; i < macros.size(); i++)
         {
-            gout = new GZIPOutputStream(bout);
-            final ObjectOutputStream oOut = new ObjectOutputStream(gout);
-            oOut.writeObject(macros);
-            oOut.flush();
-            oOut.close();
-            gout.close();
-            bout.close();
-            // Base64
-            final String encodedText = new String(Base64.encodeBase64( bout.toByteArray() ));
-            setValueOfSetting(MACROS_SETTING_NAME, encodedText);
-        }
-        catch(IOException e)
-        {
-            log.error(Tool.fromExceptionToString(e));
+            macroMap.put(i, macros.get(i));
         }
     }
 

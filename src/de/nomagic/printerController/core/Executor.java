@@ -476,7 +476,7 @@ public class Executor
         return false;
     }
 
-    public Reply sendRawOrderFrame(int ClientNumber, int order, int[] parameterBytes, int length)
+    public Reply sendRawOrderFrame(int ClientNumber, int order, Integer[] parameterBytes, int length)
     {
         final ActionResponse response = handler.getValue(Action_enum.sendRawOrderFrame,
                                                          ClientNumber, order, parameterBytes, length);

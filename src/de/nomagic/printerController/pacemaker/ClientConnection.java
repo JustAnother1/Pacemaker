@@ -98,6 +98,16 @@ public abstract class ClientConnection extends Thread
         }
     }
 
+    public Reply sendRequest(final int Order, final Integer[] parameter, int offset, int length)
+    {
+        final byte[] para = new byte[length];
+        for(int i = 0; i < length; i++)
+        {
+            para[i] = (byte)(0xff & parameter[offset + i]);
+        }
+        return sendRequest((byte)(0xff & Order), para, 0, length);
+    }
+
     public Reply sendRequest(final int Order, final int[] parameter, int offset, int length)
     {
         final byte[] para = new byte[length];

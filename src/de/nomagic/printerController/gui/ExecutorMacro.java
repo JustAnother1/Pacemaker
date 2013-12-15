@@ -14,10 +14,14 @@
  */
 package de.nomagic.printerController.gui;
 
+import java.util.Scanner;
+import java.util.Vector;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
+import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
 import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.core.Executor;
@@ -30,6 +34,17 @@ import de.nomagic.printerController.core.RelativeMove;
  */
 public class ExecutorMacro extends Macro
 {
+    public static final String TYPE_DEFINITION = "Executor";
+
+    public static final String OBJECT_TYPE_DOUBLE = "Double";
+    public static final String OBJECT_TYPE_INTEGER = "Integer";
+    public static final String OBJECT_TYPE_HEATER_ENUM = "Heater_enum";
+    public static final String OBJECT_TYPE_SWITCH_ENUM = "Switch_enum";
+    public static final String OBJECT_TYPE_AXIS_ENUM = "Axis_enum";
+    public static final String OBJECT_TYPE_RELATIVEMOVE = "RelativeMove";
+    public static final String OBJECT_TYPE_INTEGER_ARRAY = "Integer[]";
+    public static final String OBJECT_TYPE_AXIS_ENUM_ARRAY = "Axis_enum[]";
+
     public static final int FUNC_DO_SHUT_DOWN = 0;
     public static final int FUNC_DO_IMMEDIATE_SHUT_DOWN = 1;
     public static final int FUNC_ADD_PAUSE_FOR = 2;
@@ -56,11 +71,11 @@ public class ExecutorMacro extends Macro
     private static final long serialVersionUID = 1L;
     private final transient Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private transient Executor exe;
-    private int[] function;
+    private Integer[] function;
     private Object[] parameter;
     private Object[] parameter2;
 
-    public ExecutorMacro(int[] function, Object[] parameter, Object[] parameter2)
+    public ExecutorMacro(Integer[] function, Object[] parameter, Object[] parameter2)
     {
         this.function = function;
         this.parameter = parameter;
@@ -69,7 +84,7 @@ public class ExecutorMacro extends Macro
 
     public ExecutorMacro(int function)
     {
-        this.function = new int[1];
+        this.function = new Integer[1];
         this.function[0] = function;
         this.parameter = new Object[1];
         this.parameter[0] = null;
@@ -79,7 +94,7 @@ public class ExecutorMacro extends Macro
 
     public ExecutorMacro(int function, Object parameter)
     {
-        this.function = new int[1];
+        this.function = new Integer[1];
         this.function[0] = function;
         this.parameter = new Object[1];
         this.parameter[0] = parameter;
@@ -89,7 +104,7 @@ public class ExecutorMacro extends Macro
 
     public ExecutorMacro(int function, Object parameter, Object parameter2)
     {
-        this.function = new int[1];
+        this.function = new Integer[1];
         this.function[0] = function;
         this.parameter = new Object[1];
         this.parameter[0] = parameter;
@@ -231,7 +246,7 @@ public class ExecutorMacro extends Macro
                 break;
 
             default:
-                log.error("Invalid Function {} !", function);
+                log.error("Invalid Function {} !", function[i]);
             }
             if(false == res)
             {
@@ -239,6 +254,205 @@ public class ExecutorMacro extends Macro
                 log.error(exe.getLastErrorReason());
             }
         }
+    }
+
+    private static String objectToString(Object obj)
+    {
+        if(null == obj)
+        {
+            return "null";
+        }
+        if(obj instanceof Double)
+        {
+            return OBJECT_TYPE_DOUBLE + " " + obj.toString();
+        }
+        else if(obj instanceof Integer)
+        {
+            return OBJECT_TYPE_INTEGER + " " + obj.toString();
+        }
+        else if(obj instanceof Heater_enum)
+        {
+            return OBJECT_TYPE_HEATER_ENUM + " " + obj.toString();
+        }
+        else if(obj instanceof Switch_enum)
+        {
+            return OBJECT_TYPE_SWITCH_ENUM + " " + obj.toString();
+        }
+        else if(obj instanceof Axis_enum)
+        {
+            return OBJECT_TYPE_AXIS_ENUM + " " + obj.toString();
+        }
+        else if(obj instanceof RelativeMove)
+        {
+            return OBJECT_TYPE_RELATIVEMOVE + " " + obj.toString();
+        }
+        else if(obj instanceof Integer[])
+        {
+            final Integer[] arr = (Integer[]) obj;
+            final StringBuffer sb = new StringBuffer();
+            sb.append(OBJECT_TYPE_INTEGER_ARRAY);
+            for(int i = 0; i < arr.length; i++)
+            {
+                sb.append(" ");
+                sb.append(arr[i].toString());
+            }
+            return sb.toString();
+        }
+        else if(obj instanceof Axis_enum[])
+        {
+            final Axis_enum[] arr = (Axis_enum[]) obj;
+            final StringBuffer sb = new StringBuffer();
+            sb.append(OBJECT_TYPE_AXIS_ENUM_ARRAY);
+            for(int i = 0; i < arr.length; i++)
+            {
+                sb.append(" ");
+                sb.append(arr[i].toString());
+            }
+            return sb.toString();
+        }
+        else
+        {
+            return "Invalid Object " + obj.getClass();
+        }
+    }
+
+    private static Object stringToObject(String str)
+    {
+        if(null == str)
+        {
+            return null;
+        }
+        if(1 > str.length())
+        {
+            return null;
+        }
+        if(false == str.contains(" "))
+        {
+            return null;
+        }
+        final String value = str.substring(str.indexOf(' ') + 1);
+        if(true == str.startsWith(OBJECT_TYPE_DOUBLE))
+        {
+            return new Double(value);
+        }
+        else if(true == str.startsWith(OBJECT_TYPE_INTEGER))
+        {
+            return new Double(value);
+        }
+        else if(true == str.startsWith(OBJECT_TYPE_HEATER_ENUM))
+        {
+            return Heater_enum.valueOf(value);
+        }
+        else if(true == str.startsWith(OBJECT_TYPE_SWITCH_ENUM))
+        {
+            return Switch_enum.valueOf(value);
+        }
+        else if(true == str.startsWith(OBJECT_TYPE_AXIS_ENUM))
+        {
+            return Axis_enum.valueOf(value);
+        }
+        else if(true == str.startsWith(OBJECT_TYPE_RELATIVEMOVE))
+        {
+            return RelativeMove.getFromDefinition(value);
+        }
+        else if(true == str.startsWith(OBJECT_TYPE_INTEGER_ARRAY))
+        {
+            final Scanner sc = new Scanner(value);
+            final Vector<Integer> vec = new Vector<Integer>();
+            while(sc.hasNext())
+            {
+                final String cur = sc.next();
+                vec.add(Integer.parseInt(cur));
+            }
+            sc.close();
+            return vec.toArray(new Integer[0]);
+        }
+        else if(true == str.startsWith(OBJECT_TYPE_AXIS_ENUM_ARRAY))
+        {
+            final Scanner sc = new Scanner(value);
+            final Vector<Axis_enum> vec = new Vector<Axis_enum>();
+            while(sc.hasNext())
+            {
+                final String cur = sc.next();
+                vec.add(Axis_enum.valueOf(cur));
+            }
+            sc.close();
+            return vec.toArray(new Axis_enum[0]);
+        }
+        // new Data Types go in here
+        else
+        {
+            return null;
+        }
+
+    }
+
+    @Override
+    public String getDefinition()
+    {
+        final StringBuffer sb = new StringBuffer();
+        for(int i = 0; i < function.length; i++)
+        {
+            sb.append(function[i]);
+            sb.append(SEPERATOR);
+            sb.append(objectToString(parameter[i]));
+            sb.append(SEPERATOR);
+            sb.append(objectToString(parameter2[i]));
+            sb.append(SEPERATOR);
+        }
+        final String help = sb.toString();
+        return TYPE_DEFINITION + SEPERATOR + getPrefix() + SEPERATOR + help;
+    }
+
+
+    public static Macro getMacroFromDefinition(String macroString)
+    {
+        if(null == macroString)
+        {
+            return null;
+        }
+        if(1 > macroString.length())
+        {
+            return null;
+        }
+        if(false == macroString.startsWith(TYPE_DEFINITION))
+        {
+            return null;
+        }
+        String help = macroString.substring(macroString.indexOf(SEPERATOR) + SEPERATOR.length());
+        final String prefix = help.substring(0, help.indexOf(SEPERATOR));
+        help = help.substring(help.indexOf(SEPERATOR) + SEPERATOR.length());
+        final Vector<String> vec = new  Vector<String>();
+        while(true == help.contains(SEPERATOR))
+        {
+            final String aLine = help.substring(0, help.indexOf(SEPERATOR));
+            vec.add(aLine);
+            help = help.substring(help.indexOf(SEPERATOR) + SEPERATOR.length());
+        }
+        final int numCalls = vec.size() / 3;
+        if(0 == numCalls)
+        {
+            return null;
+        }
+        final int usedParameters = 3 * numCalls;
+        if(usedParameters != vec.size())
+        {
+            return null;
+        }
+        final Vector<Integer> func = new Vector<Integer>();
+        final Vector<Object> para1 = new Vector<Object>();
+        final Vector<Object> para2 = new Vector<Object>();
+        for(int i = 0; i < numCalls; i++)
+        {
+            func.add(Integer.parseInt(vec.get((i*3) +0)));
+            para1.add(stringToObject( vec.get((i*3) +1)));
+            para2.add(stringToObject( vec.get((i*3) +2)));
+        }
+        final ExecutorMacro res = new ExecutorMacro(func.toArray(new Integer[0]),
+                                                    para1.toArray(new Object[0]),
+                                                    para2.toArray(new Object[0]));
+        res.setValuesFromPrefix(prefix);
+        return res;
     }
 
 }

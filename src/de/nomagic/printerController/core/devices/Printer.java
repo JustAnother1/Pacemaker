@@ -48,7 +48,7 @@ public class Printer
         return "Ptotocol=" + pro.toString();
     }
 
-    public Reply sendRawOrderFrame(int Order, int[] parameterBytes, int length)
+    public Reply sendRawOrderFrame(int Order, Integer[] parameterBytes, int length)
     {
         return pro.sendRawOrder(Order, parameterBytes, length);
     }

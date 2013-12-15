@@ -158,7 +158,7 @@ public class SendPanel implements ActionListener
                     paraLengthI = Integer.parseInt(paraLengthS);
                 }
                 m.setParameterLength(paraLengthI);
-                final int[] data = new int[255];
+                final Integer[] data = new Integer[255];
                 for(int i = 0; i < 255; i++)
                 {
                     final String help = parameterData[i].getText();
@@ -177,7 +177,7 @@ public class SendPanel implements ActionListener
         }
         else if(true == COMMAND_SEND.equals(e.getActionCommand()))
         {
-            final int[] data = new int[255];
+            final Integer[] data = new Integer[255];
             for(int i = 0; i < 255; i++)
             {
                 final String help = parameterData[i].getText();
