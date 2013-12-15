@@ -11,7 +11,6 @@
         <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
         <pathelement path="lib/jna-3.5.1.jar"/>
         <pathelement path="lib/purejavacomm.jar"/>
-        <pathelement path="lib/commons-codec-1.8.jar"/>
     </path>
 
     <path id="simulator.class.path">
@@ -42,7 +41,7 @@
         <tstamp>
             <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
         </tstamp>
-        <exec executable = "git" output="${destDir}/commit-id">
+        <exec executable = "git" output="${destDir}/commit-id" failifexecutionfails="no">
             <arg value = "rev-parse" />
             <arg value = "HEAD" />
         </exec>
