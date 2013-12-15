@@ -36,6 +36,7 @@ public class StepperMove
     private double mmY = 0.0;
     private double mmZ = 0.0;
     private int maxSteps = 0;
+    private int StepperWithMostSteps = -1;
     private int IdxOfStepperWithMostSteps = -1;
 
     private boolean on;
@@ -75,7 +76,9 @@ public class StepperMove
         if(maxSteps < steps)
         {
             maxSteps = steps;
-            IdxOfStepperWithMostSteps = stepperNum;
+            StepperWithMostSteps = stepperNum;
+            IdxOfStepperWithMostSteps = AxisDirectionIsIncreasing.size();
+            // This stepper is not added yet so the size == the next used Index
         }
         Boolean isIncreasing = false;
         if(0 > steps)
@@ -220,6 +223,11 @@ public class StepperMove
 
     public int getStepperWithMostSteps()
     {
+        return StepperWithMostSteps;
+    }
+
+    public int getIndexOfStepperWithMostSteps()
+    {
         return IdxOfStepperWithMostSteps;
     }
 
@@ -242,6 +250,7 @@ public class StepperMove
         {
             final StepperMove sm = new StepperMove();
             sm.isHomingMove = this.isHomingMove;
+            sm.StepperWithMostSteps = StepperWithMostSteps;
             sm.IdxOfStepperWithMostSteps = IdxOfStepperWithMostSteps;
             sm.activeSteppers.addAll(activeSteppers);
             sm.AxisDirectionIsIncreasing.putAll(AxisDirectionIsIncreasing);
@@ -273,7 +282,7 @@ public class StepperMove
         final double xMmPerPart = mmX / res.length; // res.length == numParts
         final double yMmPerPart = mmY / res.length; // res.length == numParts
         final double zMmPerPart = mmZ / res.length; // res.length == numParts
-        final int newMaxSteps = res[0].StepsOnAxis.get(res[0].IdxOfStepperWithMostSteps);
+        final int newMaxSteps = res[0].StepsOnAxis.get(res[0].StepperWithMostSteps);
         for(int i = 0; i < res.length; i++)
         {
             res[i].mmX = xMmPerPart;

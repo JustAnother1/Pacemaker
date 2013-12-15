@@ -174,6 +174,7 @@ public class MotionSender
             log.trace("direction is increasing = {}", axisDirectionIsIncreasing[i]);
         }
         final int primaryAxis = sm.getStepperWithMostSteps();
+        final int IdxOfPrimaryAxis = sm.getIndexOfStepperWithMostSteps();
         log.trace("primary Axis = {}", primaryAxis);
 
         // Speed calculation
@@ -244,10 +245,24 @@ public class MotionSender
             }
         }
 
-        log.trace("accelleration Steps = {}", accellerationSteps);
-        log.trace("decelleration Steps = {}", DecellerationSteps);
         final double speed = getSpeedfor(startSpeed, accellerationSteps, MaxAccelleration, true);
         final double endSpeed = getSpeedfor(speed, DecellerationSteps,MaxAccelleration, false);
+        // In the last move before a stop it can happen that this move does not have enough steps
+        // to come to a full stop.
+        // we rely on the Under Run avoidance of the Client here. So the deceleration steps will be
+        // to few to actually do the breaking. But the Under run avoidance should have kicked in already,
+        // so that the Client does not move with the specified speed but slower.
+        // Therefore everything should be alright even though we made a mistake here,..
+        if(accellerationSteps > steps[IdxOfPrimaryAxis])
+        {
+            accellerationSteps = steps[IdxOfPrimaryAxis];
+        }
+        if(DecellerationSteps > steps[IdxOfPrimaryAxis])
+        {
+            DecellerationSteps = steps[IdxOfPrimaryAxis];
+        }
+        log.trace("accelleration Steps = {}", accellerationSteps);
+        log.trace("decelleration Steps = {}", DecellerationSteps);
         log.trace("speed = {}", speed);
         log.trace("end speed = {}", endSpeed);
 
