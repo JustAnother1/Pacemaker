@@ -29,10 +29,11 @@ public class MovementQueue
     public static final int MAX_QUEUE_SIZE = 1000;
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private LinkedList<StepperMove> entries = new LinkedList<StepperMove>();
+    private final String Name;
 
-
-    public MovementQueue()
+    public MovementQueue(String Name)
     {
+        this.Name = Name;
     }
 
     public void add(StepperMove sm)
@@ -83,7 +84,7 @@ public class MovementQueue
 
     public void finishedOneMove()
     {
-        log.trace("Removing a move");
+        log.trace("{} : Removing a move", Name);
         entries.removeFirst();
     }
 

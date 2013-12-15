@@ -15,8 +15,6 @@
 package de.nomagic.printerController.core.movement;
 
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Set;
 import java.util.Vector;
 
 import org.slf4j.Logger;
@@ -37,10 +35,21 @@ public class StepperMove
     private double mmX = 0.0;
     private double mmY = 0.0;
     private double mmZ = 0.0;
+    private int maxSteps = 0;
+    private int IdxOfStepperWithMostSteps = -1;
 
     private boolean on;
     private Integer[] switches;
-    private HashMap<Integer, Stepper> activeAxis = new HashMap<Integer, Stepper>();
+
+    private Vector<Integer> activeSteppers = new Vector<Integer>();
+    private HashMap<Integer, Boolean> AxisDirectionIsIncreasing = new HashMap<Integer, Boolean>();
+    private HashMap<Integer, Integer> StepsOnAxis = new HashMap<Integer, Integer>();
+    private HashMap<Integer, Double> maxEndSpeedMmPerSecond = new HashMap<Integer, Double>();
+    private HashMap<Integer, Double> maxSpeedMmPerSecond = new HashMap<Integer, Double>();
+    private HashMap<Integer, Double> StepsPerMm = new HashMap<Integer, Double>();
+    private HashMap<Integer, Double> maxAccelerationStepsPerSecond = new HashMap<Integer, Double>();
+    private HashMap<Integer, Integer> maxPossibleSpeedStepsPerSecond = new  HashMap<Integer, Integer>();
+
 
     public StepperMove()
     {
@@ -59,69 +68,112 @@ public class StepperMove
 
     public void addAxisMotors(Stepper motor)
     {
-        activeAxis.put(motor.getStepperNumber(), motor);
+        final Integer stepperNum = motor.getStepperNumber();
+        activeSteppers.add(stepperNum);
+        final int steps = motor.getSteps();
+        StepsOnAxis.put(stepperNum, steps);
+        if(maxSteps < steps)
+        {
+            maxSteps = steps;
+            IdxOfStepperWithMostSteps = stepperNum;
+        }
+        Boolean isIncreasing = false;
+        if(0 > steps)
+        {
+            if(false == motor.isDirectionInverted())
+            {
+                isIncreasing = false;
+            }
+            else
+            {
+                isIncreasing = true;
+            }
+        }
+        else
+        {
+            if(false == motor.isDirectionInverted())
+            {
+                isIncreasing = true;
+            }
+            else
+            {
+                isIncreasing = false;
+            }
+        }
+        AxisDirectionIsIncreasing.put(stepperNum, isIncreasing);
+        maxSpeedMmPerSecond.put(stepperNum, motor.getMaxSpeedMmPerSecond());
+        StepsPerMm.put(stepperNum, motor.getStepsPerMm());
+        maxAccelerationStepsPerSecond.put(stepperNum, motor.getMaxAccelerationStepsPerSecond());
+        final int maxPossibleForMotor = motor.getMaxPossibleSpeedStepsPerSecond();
+        final double maxSpeedForMove = motor.getMaxTravelSpeedStepsPerSecond();
+        if(maxSpeedForMove > maxPossibleForMotor)
+        {
+            maxPossibleSpeedStepsPerSecond.put(stepperNum, maxPossibleForMotor);
+        }
+        else
+        {
+            maxPossibleSpeedStepsPerSecond.put(stepperNum, (int)maxSpeedForMove);
+        }
     }
 
     public Integer[] getAllActiveSteppers()
     {
-        final Set<Integer> s = activeAxis.keySet();
-        final Iterator<Integer> it = s.iterator();
-        final Vector<Integer> res = new Vector<Integer>();
-        while(true == it.hasNext())
-        {
-            final Integer curAxis = it.next();
-            final Stepper motor = activeAxis.get(curAxis);
-            if(0 != motor.getSteps())
-            {
-                res.add(curAxis);
-            }
-        }
-        return res.toArray(new Integer[0]);
+        return activeSteppers.toArray(new Integer[0]);
     }
 
-    public boolean[] getAxisDirectionIsIncreasing(Integer[] activeSteppers)
+    public boolean[] getAxisDirectionIsIncreasing()
     {
-        final boolean[] res = new boolean[activeSteppers.length];
-        for(int i = 0; i < activeSteppers.length; i++)
+        final boolean[] res = new boolean[activeSteppers.size()];
+        for(int i = 0; i < res.length; i++)
         {
-            final Integer curAxis = activeSteppers[i];
-            final Stepper motor = activeAxis.get(curAxis);
-            final int steps = motor.getSteps();
-            if(0 > steps)
-            {
-                if(false == motor.isDirectionInverted())
-                {
-                    res[i] = false;
-                }
-                else
-                {
-                    res[i] = true;
-                }
-            }
-            else
-            {
-                if(false == motor.isDirectionInverted())
-                {
-                    res[i] = true;
-                }
-                else
-                {
-                    res[i] = false;
-                }
-            }
+            res[i] = AxisDirectionIsIncreasing.get(activeSteppers.get(i));
         }
         return res;
     }
 
-    public Integer[] getSteps(Integer[] activeSteppers)
+    public Integer[] getSteps()
     {
-        final Integer[] res = new Integer[activeSteppers.length];
-        for(int i = 0; i < activeSteppers.length; i++)
+        final Integer[] res = new Integer[activeSteppers.size()];
+        for(int i = 0; i < res.length; i++)
         {
-            final Stepper motor = activeAxis.get(activeSteppers[i]);
-            res[i] = motor.getSteps();
+            res[i] = StepsOnAxis.get(activeSteppers.get(i));
         }
         return res;
+    }
+
+    public void setMaxEndSpeedMmPerSecondFor(int axis, double speed)
+    {
+        maxEndSpeedMmPerSecond.put(axis, speed);
+    }
+
+    public double getMaxEndSpeedMmPerSecondFor(int axis)
+    {
+        return maxEndSpeedMmPerSecond.get(axis);
+    }
+
+    public double getMaxEndSpeedStepsPerSecondFor(int axis)
+    {
+        return getMaxEndSpeedMmPerSecondFor(axis) * StepsPerMm.get(axis);
+    }
+
+    public double getMaxSpeedMmPerSecondFor(int axis)
+    {
+        return maxSpeedMmPerSecond.get(axis);
+    }
+
+    public double getMaxSpeedStepsPerSecondFor(int axis)
+    {
+        return getMaxSpeedMmPerSecondFor(axis) * StepsPerMm.get(axis);
+    }
+
+    public double getMaxAccelerationStepsPerSecond2(int axis)
+    {
+        return maxAccelerationStepsPerSecond.get(axis);
+    }
+
+    public int getMaxPossibleSpeedStepsPerSecond(int axis)
+    {
+        return maxPossibleSpeedStepsPerSecond.get(axis);
     }
 
     public void setIsHoming(boolean home)
@@ -139,147 +191,16 @@ public class StepperMove
         return hasCommand;
     }
 
-    public int getMaxSteps()
-    {
-        int maxSteps = 0;
-        final Set<Integer> s = activeAxis.keySet();
-        final Iterator<Integer> it = s.iterator();
-        while(true == it.hasNext())
-        {
-            final int idx = it.next();
-            final Stepper motor = activeAxis.get(idx);
-            final int steps = motor.getSteps();
-            if(steps > maxSteps)
-            {
-                maxSteps = steps;
-            }
-        }
-        return maxSteps;
-    }
-
-    public int getStepperWithMostSteps()
-    {
-        long maxSteps = 0;
-        int MotorIdx = -1;
-        final Set<Integer> s = activeAxis.keySet();
-        final Iterator<Integer> it = s.iterator();
-        while(true == it.hasNext())
-        {
-            final int idx = it.next();
-            final Stepper motor = activeAxis.get(idx);
-            final long steps = Math.abs(motor.getSteps());
-            if(steps > maxSteps)
-            {
-                maxSteps = steps;
-                MotorIdx = idx;
-            }
-        }
-        return MotorIdx;
-    }
-
-    /** Splits this move into several moves.
-     *
-     * @param maxStepsPerMove
-     * @return
-     */
-    public StepperMove[] splitInto(int maxStepsPerMove)
-    {
-        final Stepper MaxMotor = activeAxis.get(getStepperWithMostSteps());
-        final int maxSteps = MaxMotor.getSteps();
-        int numParts = maxSteps / maxStepsPerMove;
-        if(maxSteps > numParts * maxStepsPerMove)
-        {
-            // integer divide rounded down
-            numParts = numParts + 1;
-        }
-        // create the classes
-        final StepperMove[] res = new StepperMove[numParts];
-        for(int i = 0; i < numParts; i++)
-        {
-            final StepperMove sm = new StepperMove();
-            sm.isHomingMove = this.isHomingMove;
-            res[i] = sm;
-        }
-        // add the move parts
-        final Set<Integer> s = activeAxis.keySet();
-        final Iterator<Integer> it = s.iterator();
-        while(true == it.hasNext())
-        {
-            final int idx = it.next();
-            final Stepper motor = activeAxis.get(idx);
-            final int Steps = motor.getSteps();
-            final int stepsPerSplit = Steps / numParts;
-            for(int i = 0; i < (numParts - 1); i++)
-            {
-                final Stepper splitMotor = new Stepper(motor);
-                splitMotor.setSteps(stepsPerSplit);
-                res[i].addAxisMotors(splitMotor);
-            }
-            final Stepper splitMotor = new Stepper(motor);
-            final int restOfSteps = Steps - ((numParts -1) * stepsPerSplit);
-            splitMotor.setSteps(restOfSteps);
-            res[numParts -1].addAxisMotors(splitMotor);
-        }
-        return res;
-    }
-
-    public void setMaxEndSpeedMmPerSecondFor(int axis, double speed)
-    {
-        final Stepper motor = activeAxis.get(axis);
-        if(null != motor)
-        {
-            motor.setMaxEndSpeedMmPerSecond(speed);
-            activeAxis.put(axis, motor);
-        }
-    }
-
-    public double getMaxEndSpeedMmPerSecondFor(int axis)
-    {
-        final Stepper motor = activeAxis.get(axis);
-        if(null == motor)
-        {
-            log.trace("Asked for inactive Axis ! {}", axis);
-            return 0;
-        }
-        else
-        {
-            return motor.getMaxEndSpeedMmPerSecond();
-        }
-    }
-
-    public double getMaxSpeedMmPerSecondFor(int axis)
-    {
-        final Stepper motor = activeAxis.get(axis);
-        if(null == motor)
-        {
-            log.trace("Asked for inactive Axis ! {}", axis);
-            return 0;
-        }
-        else
-        {
-            return motor.getMaxSpeedMmPerSecond();
-        }
-    }
-
-    public int getStepsOnStepper(int axis)
-    {
-        final Stepper motor = activeAxis.get(axis);
-        if(null == motor)
-        {
-            log.trace("Asked for inactive Axis ! {}", axis);
-            return 0;
-        }
-        else
-        {
-            return motor.getSteps();
-        }
-    }
-
     public void addEndStopOnOffCommand(boolean on, Integer[] switches)
     {
         hasCommand = true;
         this.on = on;
         this.switches = switches;
+    }
+
+    public int getStepsOnStepper(int axis)
+    {
+        return StepsOnAxis.get(axis);
     }
 
     public boolean getOn()
@@ -292,60 +213,75 @@ public class StepperMove
         return switches;
     }
 
-    public double getMaxEndSpeedStepsPerSecondFor(int axis)
+    public int getMaxSteps()
     {
-        final Stepper motor = activeAxis.get(axis);
-        if(null == motor)
-        {
-            log.trace("Asked for inactive Axis ! {}", axis);
-            return 0.0;
-        }
-        else
-        {
-            return motor.getMaxEndSpeedStepsPerSecond();
-        }
+        return maxSteps;
     }
 
-    public double getMaxSpeedStepsPerSecondFor(int axis)
+    public int getStepperWithMostSteps()
     {
-        final Stepper motor = activeAxis.get(axis);
-        if(null == motor)
-        {
-            log.trace("Asked for inactive Axis ! {}", axis);
-            return 0.0;
-        }
-        else
-        {
-            return motor.getMaxTravelSpeedStepsPerSecond();
-        }
+        return IdxOfStepperWithMostSteps;
     }
 
-    public double getMaxAccelerationStepsPerSecond2(int axis)
+    /** Splits this move into several moves.
+     *
+     * @param maxStepsPerMove
+     * @return
+     */
+    public StepperMove[] splitInto(int maxStepsPerMove)
     {
-        final Stepper motor = activeAxis.get(axis);
-        if(null == motor)
+        int numParts = maxSteps / maxStepsPerMove;
+        if(maxSteps > numParts * maxStepsPerMove)
         {
-            log.trace("Asked for inactive Axis ! {}", axis);
-            return 0.0;
+            // integer divide rounded down
+            numParts = numParts + 1;
         }
-        else
+        // create the classes
+        final StepperMove[] res = new StepperMove[numParts];
+        for(int i = 0; i < numParts; i++)
         {
-            return motor.getMaxAccelerationStepsPerSecond();
+            final StepperMove sm = new StepperMove();
+            sm.isHomingMove = this.isHomingMove;
+            sm.IdxOfStepperWithMostSteps = IdxOfStepperWithMostSteps;
+            sm.activeSteppers.addAll(activeSteppers);
+            sm.AxisDirectionIsIncreasing.putAll(AxisDirectionIsIncreasing);
+            sm.maxEndSpeedMmPerSecond.putAll(maxEndSpeedMmPerSecond);
+            sm.maxSpeedMmPerSecond.putAll(maxSpeedMmPerSecond);
+            sm.StepsPerMm.putAll(StepsPerMm);
+            sm.maxAccelerationStepsPerSecond.putAll(maxAccelerationStepsPerSecond);
+            sm.maxPossibleSpeedStepsPerSecond.putAll(maxPossibleSpeedStepsPerSecond);
+            res[i] = sm;
         }
-    }
-
-    public double getMaxPossibleSpeedStepsPerSecond(int axis)
-    {
-        final Stepper motor = activeAxis.get(axis);
-        if(null == motor)
+        // copy the command but only to the first move
+        if(true == hasCommand)
         {
-            log.trace("Asked for inactive Axis ! {}", axis);
-            return 0.0;
+            res[0].hasCommand = true;
+            res[0].on = on;
+            res[0].switches = switches;
         }
-        else
+        // add the move parts
+        for(int i = 0; i < activeSteppers.size(); i++)
         {
-            return motor.getMaxPossibleSpeedStepsPerSecond();
+            final Integer StepperNum = activeSteppers.get(i);
+            final int allSteps = StepsOnAxis.get(StepperNum);
+            final int StepsPerPart = allSteps/ numParts;
+            for(int j = 0; j < numParts; j++)
+            {
+                res[j].StepsOnAxis.put(StepperNum, StepsPerPart);
+            }
         }
+        final double xMmPerPart = mmX / res.length; // res.length == numParts
+        final double yMmPerPart = mmY / res.length; // res.length == numParts
+        final double zMmPerPart = mmZ / res.length; // res.length == numParts
+        final int newMaxSteps = res[0].StepsOnAxis.get(res[0].IdxOfStepperWithMostSteps);
+        for(int i = 0; i < res.length; i++)
+        {
+            res[i].mmX = xMmPerPart;
+            res[i].mmY = yMmPerPart;
+            res[i].mmZ = zMmPerPart;
+            res[i].maxSteps = newMaxSteps;
+        }
+        return res;
     }
 
     public double getMmX()

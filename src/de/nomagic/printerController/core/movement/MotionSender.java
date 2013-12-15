@@ -34,7 +34,7 @@ public class MotionSender
     private HashMap<Integer, Double> startSpeeds = new HashMap<Integer, Double>();
 
     private Protocol pro;
-    private MovementQueue mq = new MovementQueue();
+    private MovementQueue mq = new MovementQueue("MotionSender");
 
     public MotionSender()
     {
@@ -59,13 +59,16 @@ public class MotionSender
      */
     public void add(StepperMove sm)
     {
+        log.trace("adding the move {}", sm);
         final int steps = sm.getMaxSteps();
         if(Protocol.MAX_STEPS_PER_MOVE > steps)
         {
+            log.trace("directly");
             mq.add(sm);
         }
         else
         {
+            log.trace("spßlit");
             // we need to split that move into smaller moves
             final StepperMove[] moves = sm.splitInto(Protocol.MAX_STEPS_PER_MOVE);
             for(int i = 0; i < moves.length; i++)
@@ -130,6 +133,7 @@ public class MotionSender
 
     private void sendMoveCommand()
     {
+        log.trace("sendMoveCommand: mq.size = {} ", mq.size());
         final StepperMove sm = mq.getMove(0);
         if(null == sm)
         {
@@ -155,9 +159,9 @@ public class MotionSender
             return;
         }
         // there is movement in this Move
-        final boolean[] axisDirectionIsIncreasing = sm.getAxisDirectionIsIncreasing(activeSteppers);
+        final boolean[] axisDirectionIsIncreasing = sm.getAxisDirectionIsIncreasing();
 
-        final Integer[] steps = sm.getSteps(activeSteppers);
+        final Integer[] steps = sm.getSteps();
         for(int i = 0; i < activeSteppers.length; i++)
         {
             log.trace("direction is increasing = {}", axisDirectionIsIncreasing[i]);
@@ -273,17 +277,13 @@ public class MotionSender
                 axisDirectionIsIncreasing,
                 primaryAxis,
                 steps);
-
         if(false == res)
         {
             log.error("Oh oh !");
             //TODO
-            mq.finishedOneMove();
         }
-        else
-        {
-            mq.finishedOneMove();
-        }
+        // else ok
+        mq.finishedOneMove();
     }
 
     public boolean hasAllMovementFinished()

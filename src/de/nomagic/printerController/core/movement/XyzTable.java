@@ -97,7 +97,7 @@ public class XyzTable
     private int endStop_Zmax = -1;
 
     private MotionSender sender;
-    private MovementQueue PlannerQueue = new MovementQueue();
+    private MovementQueue PlannerQueue = new MovementQueue("XyzTable");
 
     private double FeedrateMmPerMinute = 0;
 
@@ -468,6 +468,7 @@ public class XyzTable
         {
             if(0 < stopsOn.size())
             {
+                log.trace("Adding stops On !(not homed)");
                 final StepperMove sm = new StepperMove();
                 sm.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
                 res.add(sm);
@@ -476,20 +477,24 @@ public class XyzTable
         }
         if(0 < stopsOff.size())
         {
+            log.trace("Adding stops Off !");
             final StepperMove sm = new StepperMove();
             sm.addEndStopOnOffCommand(false, stopsOff.toArray(new Integer[0]));
             res.add(sm);
         }
         if(null != move)
         {
+            log.trace("Adding the move!");
             res.add(move);
         }
         if(0 < stopsOn.size())
         {
+            log.trace("Adding stops On !");
             final StepperMove sm = new StepperMove();
             sm.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
             res.add(sm);
         }
+        log.trace("Returning {} moves", res.size());
         return res;
     }
 
@@ -667,24 +672,12 @@ public class XyzTable
                    {
                        X0.addMove(relMov.get(ax));
                        X0.setMaxSpeedMmPerSecond(XSpeed);
-                       final int max = X0.getMaxPossibleSpeedStepsPerSecond();
-                       final int speed = (int)X0.getMaxTravelSpeedStepsPerSecond();
-                       if(speed > max)
-                       {
-                           X0.setMaxSpeedStepsPerSecond(max);
-                       }
                        res.addAxisMotors(X0);
                    }
                    if(null != X1)
                    {
                        X1.addMove(relMov.get(ax));
                        X1.setMaxSpeedMmPerSecond(XSpeed);
-                       final int max = X1.getMaxPossibleSpeedStepsPerSecond();
-                       final int speed = (int)X1.getMaxTravelSpeedStepsPerSecond();
-                       if(speed > max)
-                       {
-                           X1.setMaxSpeedStepsPerSecond(max);
-                       }
                        res.addAxisMotors(X1);
                    }
                    break;
@@ -698,24 +691,12 @@ public class XyzTable
                    {
                        Y0.addMove(relMov.get(ax));
                        Y0.setMaxSpeedMmPerSecond(YSpeed);
-                       final int max = Y0.getMaxPossibleSpeedStepsPerSecond();
-                       final int speed = (int)Y0.getMaxTravelSpeedStepsPerSecond();
-                       if(speed > max)
-                       {
-                           Y0.setMaxSpeedStepsPerSecond(max);
-                       }
                        res.addAxisMotors(Y0);
                    }
                    if(null != Y1)
                    {
                        Y1.addMove(relMov.get(ax));
                        Y1.setMaxSpeedMmPerSecond(YSpeed);
-                       final int max = Y1.getMaxPossibleSpeedStepsPerSecond();
-                       final int speed = (int)Y1.getMaxTravelSpeedStepsPerSecond();
-                       if(speed > max)
-                       {
-                           Y1.setMaxSpeedStepsPerSecond(max);
-                       }
                        res.addAxisMotors(Y1);
                    }
                    break;
@@ -729,24 +710,12 @@ public class XyzTable
                    {
                        Z0.addMove(relMov.get(ax));
                        Z0.setMaxSpeedMmPerSecond(ZSpeed);
-                       final int max = Z0.getMaxPossibleSpeedStepsPerSecond();
-                       final int speed = (int)Z0.getMaxTravelSpeedStepsPerSecond();
-                       if(speed > max)
-                       {
-                           Z0.setMaxSpeedStepsPerSecond(max);
-                       }
                        res.addAxisMotors(Z0);
                    }
                    if(null != Z1)
                    {
                        Z1.addMove(relMov.get(ax));
                        Z1.setMaxSpeedMmPerSecond(ZSpeed);
-                       final int max = Z1.getMaxPossibleSpeedStepsPerSecond();
-                       final int speed = (int)Z1.getMaxTravelSpeedStepsPerSecond();
-                       if(speed > max)
-                       {
-                           Z1.setMaxSpeedStepsPerSecond(max);
-                       }
                        res.addAxisMotors(Z1);
                    }
                    break;
@@ -858,6 +827,7 @@ public class XyzTable
            {
                PlannerQueue.add(moves.get(i));
            }
+           log.trace("PlannerQueue.size = {}", PlannerQueue.size());
        }
        // else no new movement data, but we now know that this is the end of the move.
        sendAllPossibleMoves(isLastMove);

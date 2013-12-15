@@ -82,6 +82,11 @@ public class Stepper
         return StepperNumber;
     }
 
+    public double getStepsPerMm()
+    {
+        return StepsPerMillimeter;
+    }
+
     public void clearMove()
     {
         DistanceInSteps = 0;
@@ -89,7 +94,7 @@ public class Stepper
 
     public void addMove(double distanceInMillimeters)
     {
-        double Steps = (distanceInMillimeters + RoundingError) * StepsPerMillimeter;
+        final double Steps = (distanceInMillimeters + RoundingError) * StepsPerMillimeter;
         DistanceInSteps = (int)Steps;
         RoundingError = (Steps - DistanceInSteps)/StepsPerMillimeter;
     }
@@ -119,11 +124,6 @@ public class Stepper
         return maxSpeed;
     }
 
-    public double getMaxTravelSpeedStepsPerSecond()
-    {
-        return maxSpeed * StepsPerMillimeter;
-    }
-
     public void setMaxEndSpeedMmPerSecond(double maxEndSpeed)
     {
         this.maxEndSpeed = maxEndSpeed;
@@ -134,11 +134,6 @@ public class Stepper
         this.maxSpeed = maxSpeed;
     }
 
-    public void setMaxSpeedStepsPerSecond(double maxSpeed)
-    {
-        this.maxSpeed = maxSpeed / StepsPerMillimeter;
-    }
-
     public int getMaxPossibleSpeedStepsPerSecond()
     {
         return maxPossibleStepsPerSecond;
@@ -147,6 +142,11 @@ public class Stepper
     public double getMaxAccelerationStepsPerSecond()
     {
         return MaxAccelleration;
+    }
+
+    public double getMaxTravelSpeedStepsPerSecond()
+    {
+        return maxSpeed * StepsPerMillimeter;
     }
 
 }
