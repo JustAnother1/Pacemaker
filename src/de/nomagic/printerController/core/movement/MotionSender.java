@@ -245,7 +245,11 @@ public class MotionSender
             }
         }
 
-        final double speed = getSpeedfor(startSpeed, accellerationSteps, MaxAccelleration, true);
+        double speed = getSpeedfor(startSpeed, accellerationSteps, MaxAccelleration, true);
+        if(speed > MaxPossibleSpeed)
+        {
+            speed = MaxPossibleSpeed;
+        }
         final double endSpeed = getSpeedfor(speed, DecellerationSteps,MaxAccelleration, false);
         // In the last move before a stop it can happen that this move does not have enough steps
         // to come to a full stop.
