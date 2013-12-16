@@ -774,13 +774,20 @@ public class Cfg
                             case GENERAL:
                                 if(true == curLine.startsWith(MACRO_PREFIX))
                                 {
-                                    final String numStr = curLine.substring(MACRO_PREFIX.length(),
-                                                                            curLine.indexOf(Macro.SEPERATOR));
-                                    final String MacroString = curLine.substring(
-                                                               curLine.indexOf(
-                                                                       Macro.SEPERATOR) +Macro.SEPERATOR.length());
-                                    final Macro m = MacroFactory.getMacroFromLine(MacroString);
-                                    macroMap.put(Integer.parseInt(numStr), m);
+                                    if(true == curLine.contains(SEPERATOR))
+                                    {
+                                        final String numStr = curLine.substring(MACRO_PREFIX.length(),
+                                                                                curLine.indexOf(Macro.SEPERATOR));
+                                        final String MacroString = curLine.substring(
+                                                                   curLine.indexOf(
+                                                                           Macro.SEPERATOR) +Macro.SEPERATOR.length());
+                                        final Macro m = MacroFactory.getMacroFromLine(MacroString);
+                                        macroMap.put(Integer.parseInt(numStr), m);
+                                    }
+                                    else
+                                    {
+                                        log.error("Found Invalid Macro ({})! ", curLine);
+                                    }
                                 }
                                 else
                                 {

@@ -25,6 +25,9 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.core.CoreStateMachine;
 
@@ -34,6 +37,8 @@ import de.nomagic.printerController.core.CoreStateMachine;
  */
 public class ClientPanel
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     private final JPanel myPanel = new JPanel();
     private final JPanel myDescriptionPanel = new JPanel();
     private final JPanel myButtonPanel = new JPanel();
@@ -99,19 +104,22 @@ public class ClientPanel
 
     public void updateConnectionDefinition(String connection)
     {
-        if(1 < connection.length())
+        if(1 > connection.length())
         {
             if(null == cfg)
             {
+                log.warn("No Configuration available !");
                 desscriptionField.setText("");
             }
             else
             {
+                log.trace("Connection set from Configuration !");
                 desscriptionField.setText(cfg.getConnectionDefinitionOfClient(0));
             }
         }
         else
         {
+            log.trace("Connection set explicitly !");
             desscriptionField.setText(connection);
         }
     }
@@ -128,6 +136,7 @@ public class ClientPanel
 
     public void close()
     {
+        log.trace("Storing ClientConnection Definition ({}) in Configuration File !", desscriptionField.getText());
         cfg.setClientDeviceString(0 /* TODO add support for more than one connection*/,
                                   desscriptionField.getText());
     }
