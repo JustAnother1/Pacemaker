@@ -204,6 +204,7 @@ public class MotionSender
             DecellerationSteps =  DecellerationSteps +
                     (int)getBrakingDistance(startSpeed, MaxEndSpeed, MaxAccelleration);
             StepsOnAxis = StepsOnAxis - DecellerationSteps;
+            log.trace("decellerate - adoption: {}", DecellerationSteps);
         }
         else if(startSpeed < MaxEndSpeed)
         {
@@ -214,12 +215,14 @@ public class MotionSender
                 // we have the steps so lets do it
                 accellerationSteps = accellerationSteps + neededSteps;
                 StepsOnAxis = StepsOnAxis - neededSteps;
+                log.trace("accellerate - adoption(1): {}", accellerationSteps);
             }
             else
             {
                 // we accelerate as much as we can
                 accellerationSteps = accellerationSteps + StepsOnAxis;
                 StepsOnAxis = 0;
+                log.trace("accellerate - adoption(2): {}", accellerationSteps);
             }
         }
         if(0 < StepsOnAxis)
@@ -229,8 +232,10 @@ public class MotionSender
             // if start is slower than max end speed then we already accounted for
             // the additional acceleration and therefore can also go on with the max end speed.
             final double adoptedSpeed = Math.max(startSpeed, MaxEndSpeed);
+            log.trace("adopted  speed: {}", adoptedSpeed);
             // we can now _try_ to accelerate to the max travel speed
             final int neededSteps = (int)getBrakingDistance(adoptedSpeed, MaxTravelSpeed, MaxAccelleration);
+            log.trace("needed steps: {}", neededSteps);
             if(StepsOnAxis > 2*neededSteps)
             {
                 // we have the steps so lets do it
