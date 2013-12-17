@@ -132,7 +132,6 @@ public class MainWindow extends JFrame implements ActionListener
         // Set view Mode
         setViewMode();
 
-        this.pack();
         this.setVisible(true);
     }
 
@@ -220,6 +219,7 @@ public class MainWindow extends JFrame implements ActionListener
             }
         }
         setViewMode(mode);
+        this.pack();
     }
 
     private void setViewMode(int mode)
