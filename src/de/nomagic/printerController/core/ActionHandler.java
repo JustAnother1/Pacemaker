@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,11 +73,17 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     private long lastTime = 0;
     private boolean TimeoutsActive = false;
     private volatile boolean isRunning = false;
+    // one task should be enough
+    private ScheduledThreadPoolExecutor timedExecutor = new ScheduledThreadPoolExecutor(1);
 
     public ActionHandler(Cfg cfg)
     {
         super("ActionHandler");
         this.cfg = cfg;
+        timedExecutor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
+        timedExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
+        timedExecutor.setRemoveOnCancelPolicy(true);
+
         move = new Movement(this, cfg);
         for(int i = 0; i < MAX_TIMEOUT; i++)
         {
@@ -190,6 +197,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                 return false;
             }
             log.info("Protocol is operational");
+            pro.activateKeepAlive(timedExecutor);
             // First send the configuration.
             // The configuration might have an effect on the other values.
             if(false == applyConfiguration(pro, i))
@@ -1051,6 +1059,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                 e.printStackTrace();
             }
         }
+        timedExecutor.shutdownNow();
         log.trace("Action Handler has closed !");
     }
 

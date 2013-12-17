@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.Vector;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -216,6 +218,7 @@ public class Protocol
     private int ClientExecutedJobs = 0;
     private int CommandsSendToClient = 0;
     private long timeofLastClientQueueUpdate;
+    private int hostTimeout = 2;
 
     public static String parse(byte[] buf)
     {
@@ -639,6 +642,7 @@ public class Protocol
             if(true == paceMaker.readDeviceInformationFrom(this))
             {
                 di = paceMaker;
+                hostTimeout = di.getHostTimeoutSeconds();
                 return paceMaker;
             }
             else
@@ -1659,6 +1663,37 @@ public class Protocol
     public Reply sendRawOrder(int order, Integer[] parameterBytes, int length)
     {
         return cc.sendRequest(order, parameterBytes, 0, length);
+    }
+
+    public void activateKeepAlive(ScheduledThreadPoolExecutor timedExecutor)
+    {
+        timedExecutor.scheduleAtFixedRate(new Runnable()
+        {
+            public void run()
+            {
+                if(true == isOperational)
+                {
+                    final long now = System.currentTimeMillis();
+                    long lastHearedOfClient = cc.getTimeOfLastSuccessfulReply();
+                    lastHearedOfClient = lastHearedOfClient + (hostTimeout/2 * 1000);
+                    if(lastHearedOfClient < now) // we haven't heard from the client since the last run
+                    {
+                        sendKeepAliveSignal();
+                    }
+                    // else communication active -> no need for keep alive signal.
+                }
+            }
+        }, hostTimeout/2, hostTimeout/2, TimeUnit.SECONDS);
+    }
+
+    private void sendKeepAliveSignal()
+    {
+        final int timeout = sendOrderExpectInt(ORDER_REQ_INFORMATION, new byte[]{INFO_HOST_TIMEOUT});
+        if(0 < timeout)
+        {
+            // read a vaild value
+            hostTimeout = timeout;
+        }
     }
 
 }

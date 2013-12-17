@@ -81,6 +81,8 @@ public abstract class ClientConnection extends Thread
     private int numberOfTimeouts = 0;
     private int numberOfTransmissions = 0;
 
+    private volatile long timeOfLastSuccessfulReply = 0;
+
     public ClientConnection(String name)
     {
         super(name);
@@ -523,6 +525,7 @@ public abstract class ClientConnection extends Thread
                 final Reply curReply = new Reply(buf);
                 log.trace(curReply.getDump());
                 log.trace(Protocol.parse(buf));
+                timeOfLastSuccessfulReply = System.currentTimeMillis();
                 if(true == curReply.isDebugFrame())
                 {
                     log.info(curReply.toString());
@@ -558,6 +561,11 @@ public abstract class ClientConnection extends Thread
     public void close()
     {
         this.interrupt();
+    }
+
+    public long getTimeOfLastSuccessfulReply()
+    {
+        return timeOfLastSuccessfulReply;
     }
 
 }
