@@ -665,6 +665,84 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         reportIntResult(e, res);
     }
 
+    private void handleEvent(Event e)
+    {
+        switch(e.getType())
+        {
+        // For data Types of parameters see Executor !
+        case doShutDown:
+            handleShutDown(e);
+            break;
+
+        case doImmediateShutDown:
+            handleImmediateShutDown(e);
+            break;
+
+        case pauseMovement:
+            handlePauseMovement(e);
+            break;
+
+        case relativeMove:
+            handleRelativeMove(e);
+            break;
+
+        case endOfMove:
+            handleEndOfMove(e);
+            break;
+
+        case homeAxis:
+            handleHomeAxis(e);
+            break;
+
+        case getIsHoming:
+            final boolean res = move.isHoming();
+            reportBooleanResult(e, res);
+            break;
+
+        case enableMotor:
+            handleEnableMotors(e);
+            break;
+
+        case disableMotor:
+            handleDisableMotors(e);
+            break;
+
+        case setStepsPerMilimeter:
+            handleSetSteppsPerMillimeter(e);
+            break;
+
+        case setFanSpeed:
+            handleSetFanSpeed(e);
+            break;
+
+        case setHeaterTemperature:
+            handleSetHeaterTemperature(e);
+            break;
+
+        case getTemperature:
+            handleGetTemperature(e);
+            break;
+
+        case getStateOfSwitch:
+            handleGeStateOfSwitch(e);
+            break;
+
+        case getUsedSlotsClientQueue:
+            handleUsedSlotsClientQueue(e);
+            break;
+
+        case sendRawOrderFrame:
+            handleSendRawOrderFrame(e);
+            break;
+
+        default:
+            lastErrorReason = "Invalid Event Type ! " + e.getType();
+            log.error(lastErrorReason);
+            reportFailed(e);
+            break;
+        }
+    }
+
     @Override
     public void run()
     {
@@ -691,81 +769,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
                 e = eventQueue.take();
                 if(null != e)
                 {
-                    // handle that
-                    switch(e.getType())
-                    {
-                    // For data Types of parameters see Executor !
-                    case doShutDown:
-                        handleShutDown(e);
-                        break;
-
-                    case doImmediateShutDown:
-                        handleImmediateShutDown(e);
-                        break;
-
-                    case pauseMovement:
-                        handlePauseMovement(e);
-                        break;
-
-                    case relativeMove:
-                        handleRelativeMove(e);
-                        break;
-
-                    case endOfMove:
-                        handleEndOfMove(e);
-                        break;
-
-                    case homeAxis:
-                        handleHomeAxis(e);
-                        break;
-
-                    case getIsHoming:
-                        final boolean res = move.isHoming();
-                        reportBooleanResult(e, res);
-                        break;
-
-                    case enableMotor:
-                        handleEnableMotors(e);
-                        break;
-
-                    case disableMotor:
-                        handleDisableMotors(e);
-                        break;
-
-                    case setStepsPerMilimeter:
-                        handleSetSteppsPerMillimeter(e);
-                        break;
-
-                    case setFanSpeed:
-                        handleSetFanSpeed(e);
-                        break;
-
-                    case setHeaterTemperature:
-                        handleSetHeaterTemperature(e);
-                        break;
-
-                    case getTemperature:
-                        handleGetTemperature(e);
-                        break;
-
-                    case getStateOfSwitch:
-                        handleGeStateOfSwitch(e);
-                        break;
-
-                    case getUsedSlotsClientQueue:
-                        handleUsedSlotsClientQueue(e);
-                        break;
-
-                    case sendRawOrderFrame:
-                        handleSendRawOrderFrame(e);
-                        break;
-
-                    default:
-                        lastErrorReason = "Invalid Event Type ! " + e.getType();
-                        log.error(lastErrorReason);
-                        reportFailed(e);
-                        break;
-                    }
+                    handleEvent(e);
                 }
                 checkTimeouts();
             }

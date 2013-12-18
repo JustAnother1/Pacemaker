@@ -220,6 +220,30 @@ public class Protocol
     private long timeofLastClientQueueUpdate;
     private int hostTimeout = 2;
 
+
+    public Protocol(String ConnectionDefinition)
+    {
+        this.cc = ClientConnectionFactory.establishConnectionTo(ConnectionDefinition);
+        if(null == cc)
+        {
+            isOperational = false;
+        }
+        else
+        {
+            // Arduino Clients with Automatic Reset need a pause of one second.(Bootloader)
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch(InterruptedException e)
+            {
+                // I don't care
+            }
+            // take client out of Stopped Mode
+            isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
+        }
+    }
+
     public static String parse(byte[] buf)
     {
         if(null == buf)
@@ -230,7 +254,7 @@ public class Protocol
         {
             return "no data";
         }
-        StringBuffer res = new StringBuffer();
+        final StringBuffer res = new StringBuffer();
         if(ORDER_POS_OF_SYNC < buf.length)
         {
             if(START_OF_HOST_FRAME == buf[ORDER_POS_OF_SYNC])
@@ -241,8 +265,8 @@ public class Protocol
                     res.append(orderCodeToString(buf[ORDER_POS_OF_ORDER_CODE]));
                     if(ORDER_POS_OF_START_OF_PARAMETER < buf.length)
                     {
-                        int length = (0xff & buf[ORDER_POS_OF_LENGTH]) -2;
-                        int offset = ORDER_POS_OF_START_OF_PARAMETER;
+                        final int length = (0xff & buf[ORDER_POS_OF_LENGTH]) -2;
+                        final int offset = ORDER_POS_OF_START_OF_PARAMETER;
                         if(0 < length)
                         {
                             if(ORDER_QUEUE_COMMAND_BLOCKS == buf[ORDER_POS_OF_ORDER_CODE])
@@ -268,8 +292,8 @@ public class Protocol
                     res.append(replyCodeToString(buf[REPLY_POS_OF_REPLY_CODE]));
                     if(REPLY_POS_OF_START_OF_PARAMETER < buf.length)
                     {
-                        int length = (0xff & buf[REPLY_POS_OF_LENGTH]) -2;
-                        int offset = REPLY_POS_OF_START_OF_PARAMETER;
+                        final int length = (0xff & buf[REPLY_POS_OF_LENGTH]) -2;
+                        final int offset = REPLY_POS_OF_START_OF_PARAMETER;
                         if(0 < length)
                         {
                             res.append(Tool.fromByteBufferToHexString(buf, length, offset));
@@ -283,12 +307,12 @@ public class Protocol
 
     private static String parseQueueBlock(byte[] buf, int length, int offset)
     {
-        StringBuffer res = new StringBuffer();
+        final StringBuffer res = new StringBuffer();
         int bytesToGo = length;
         do
         {
-            int blockLength = buf[offset];
-            int BlockType = buf[offset + 1];
+            final int blockLength = buf[offset];
+            final int BlockType = buf[offset + 1];
             switch(BlockType)
             {
             case MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER:
@@ -320,7 +344,7 @@ public class Protocol
 
     private static String parseBasicLinearMove(byte[] data, int length, int offset)
     {
-        StringBuffer res = new StringBuffer();
+        final StringBuffer res = new StringBuffer();
         res.append("[");
         boolean twoByteAxisFormat;
         if(0 == (0x80 & data[offset]))
@@ -364,7 +388,7 @@ public class Protocol
             nextByte = nextByte + 2;
         }
         res.append("AxisDirections=" + AxisDirection);
-        int primaryAxis = (0x0f & data[nextByte]);
+        final int primaryAxis = (0x0f & data[nextByte]);
         res.append(" primaryAxis=" + primaryAxis);
         if(0 == (0x10 & data[nextByte]))
         {
@@ -376,10 +400,10 @@ public class Protocol
             res.append(" homing");
         }
         nextByte++;
-        int nominalSpeed = (0xff & data[nextByte]);
+        final int nominalSpeed = (0xff & data[nextByte]);
         res.append(" nominalSpeed=" + nominalSpeed);
         nextByte++;
-        int endSpeed = (0xff & data[nextByte]);
+        final int endSpeed = (0xff & data[nextByte]);
         res.append(" endSpeed=" + endSpeed);
         nextByte++;
         int accelerationSteps;
@@ -408,7 +432,7 @@ public class Protocol
         res.append(" decelSteps=" + decelerationSteps);
         for(int i = 0; i < 16; i++)
         {
-            int pattern = 0x1<<i;
+            final int pattern = 0x1<<i;
             if(pattern == (AxisSelection & pattern))
             {
                 int StepsOnAxis;
@@ -496,7 +520,26 @@ public class Protocol
             return "invalid Message";
         }
         String res = "";
-        // TODO parse recovery options
+        // recovery Options
+        switch(stoppedMessage[0])
+        {
+        case RECOVERY_CLEARED:
+            res = res + "(one time event- cleared)";
+            break;
+
+        case RECOVERY_PERSISTS:
+            res = res + "(persisting problem)";
+            break;
+
+        case RECOVERY_UNRECOVERABLE:
+            res = res + "(unrecoverable)";
+            break;
+
+        default:
+            res = res + "(invalid recovery)";
+            break;
+        }
+        // Cause
         switch(stoppedMessage[1])
         {
         case CAUSE_RESET:
@@ -543,29 +586,14 @@ public class Protocol
             res = res + "invalid cause !";
             break;
         }
+        // Reason
         if(2 < stoppedMessage.length)
         {
-             res = res + new String(stoppedMessage,
+             res = res + " " + new String(stoppedMessage,
                                     2, (stoppedMessage.length - 2),
                                     Charset.forName("UTF-8"));
         }
         return res;
-    }
-
-    public Protocol(String ConnectionDefinition)
-    {
-        this.cc = ClientConnectionFactory.establishConnectionTo(ConnectionDefinition);
-        if(null == cc)
-        {
-            isOperational = false;
-        }
-        else
-        {
-            // Arduino Clients with Automatic Reset need a pause of one second.(Bootloader)
-            try{ Thread.sleep(1000); } catch(InterruptedException e) { }
-            // take client out of Stopped Mode
-            isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
-        }
     }
 
     public String getLastErrorReason()
@@ -689,7 +717,7 @@ public class Protocol
 
     public double readTemperatureFrom(int sensorNumber)
     {
-        byte[] param = new byte[2];
+        final byte[] param = new byte[2];
         param[0] = DEVICE_TYPE_TEMPERATURE_SENSOR;
         param[1] = (byte) sensorNumber;
         final Reply r = cc.sendRequest(ORDER_REQ_TEMPERATURE, param);
@@ -699,13 +727,13 @@ public class Protocol
         }
         if(true == r.isOKReply())
         {
-            byte[] reply = r.getParameter();
+            final byte[] reply = r.getParameter();
             if(2 > reply.length)
             {
                 // The return did not have the data
                 return -1000.4;
             }
-            int reportedTemp = ((0xff &reply[0]) * 256) + ( 0xff & reply[1]);
+            final int reportedTemp = ((0xff &reply[0]) * 256) + ( 0xff & reply[1]);
             if(SENSOR_PROBLEM == reportedTemp)
             {
                 return -1000.1;
@@ -914,7 +942,7 @@ public class Protocol
 
     public int getNumberOfCommandsInClientQueue()
     {
-        long now = System.currentTimeMillis();
+        final long now = System.currentTimeMillis();
         if((now - timeofLastClientQueueUpdate) > QUEUE_TIMEOUT_MS)
         {
             log.trace("polling client for Queue status");
@@ -1258,9 +1286,9 @@ public class Protocol
         else if(RESPONSE_ORDER_SPECIFIC_ERROR == r.getReplyCode())
         {
             // Order Specific Error
-            byte[] response = r.getParameter();
+            final byte[] response = r.getParameter();
             // partly Queued
-            int numberOfQueued = (0xff & response[1]);
+            final int numberOfQueued = (0xff & response[1]);
             for(int i = 0; i < numberOfQueued; i++)
             {
                 if(0 < sendQueue.size())
@@ -1288,9 +1316,9 @@ public class Protocol
         }
         else if(RESPONSE_STOPPED == r.getReplyCode())
         {
-            //TODO
-            byte[] stoppedMessage = r.getParameter();
-            String stoppedDescription = getDescriptionOfStopped(stoppedMessage);
+            //TODO handle stopped - Tell User ? - Auto Resume ?
+            final byte[] stoppedMessage = r.getParameter();
+            final String stoppedDescription = getDescriptionOfStopped(stoppedMessage);
             lastErrorReason = "Client entered Stopped Mode (" + stoppedDescription + ")!";
             log.error(lastErrorReason);
             return RESULT_ERROR;
@@ -1330,12 +1358,12 @@ public class Protocol
         if(0 == ClientQueueFreeSlots)
         {
             // send only the first command from the command queue
-            byte[] firstCommand = sendQueue.get(0);
+            final byte[] firstCommand = sendQueue.get(0);
             return sendDataToClientQueue(firstCommand, firstCommand.length, 1);
         }
         else
         {
-            byte[] sendBuffer = new byte[QUEUE_SEND_BUFFER_SIZE];
+            final byte[] sendBuffer = new byte[QUEUE_SEND_BUFFER_SIZE];
             int writePos = 0;
             int numBlocksInBuffer = 0;
             int idx = 0;
@@ -1347,7 +1375,7 @@ public class Protocol
                 // or the number of free slots on the client has been reached
                 if(idx < sendQueue.size())
                 {
-                    byte[] buf = sendQueue.get(idx);
+                    final byte[] buf = sendQueue.get(idx);
                     if(null != buf)
                     {
                         if(buf.length < QUEUE_SEND_BUFFER_SIZE - writePos)
@@ -1445,9 +1473,9 @@ public class Protocol
 
     public boolean writeFirmwareConfigurationValue(String name, String value)
     {
-        byte[] nameBuf = name.getBytes(Charset.forName("UTF-8"));
-        byte[] valueBuf = value.getBytes(Charset.forName("UTF-8"));
-        byte[] parameter = new byte[nameBuf.length + valueBuf.length + 1];
+        final byte[] nameBuf = name.getBytes(Charset.forName("UTF-8"));
+        final byte[] valueBuf = value.getBytes(Charset.forName("UTF-8"));
+        final byte[] parameter = new byte[nameBuf.length + valueBuf.length + 1];
         parameter[0] = (byte)nameBuf.length;
         for(int i = 0; i < nameBuf.length; i++)
         {
@@ -1493,7 +1521,7 @@ public class Protocol
         {
             return "";
         }
-        byte[] res = r.getParameter();
+        final byte[] res = r.getParameter();
         if(null == res)
         {
             return "";
@@ -1502,11 +1530,11 @@ public class Protocol
         {
             return "";
         }
-        int ElementType = 0xff & res[0];
-        int ElementModes = 0xff & res[1];
-        int DeviceType = 0xff & res[2];
-        int DeviceNumber = 0xff & res[3];
-        StringBuffer description = new StringBuffer();
+        final int ElementType = 0xff & res[0];
+        final int ElementModes = 0xff & res[1];
+        final int DeviceType = 0xff & res[2];
+        final int DeviceNumber = 0xff & res[3];
+        final StringBuffer description = new StringBuffer();
         description.append(curSetting);
         description.append("(");
         switch(ElementType)
@@ -1564,7 +1592,7 @@ public class Protocol
         {
             return "";
         }
-        byte[] res = r.getParameter();
+        final byte[] res = r.getParameter();
         if(null == res)
         {
             return "";
@@ -1604,7 +1632,7 @@ public class Protocol
         {
             return "";
         }
-        byte[] res = r.getParameter();
+        final byte[] res = r.getParameter();
         if(null == res)
         {
             return "";
@@ -1622,7 +1650,7 @@ public class Protocol
 
     private boolean sendOrderExpectOK(final byte order, final byte parameter)
     {
-        byte[] help = new byte[1];
+        final byte[] help = new byte[1];
         help[0] = parameter;
         return sendOrderExpectOK(order, help);
     }
