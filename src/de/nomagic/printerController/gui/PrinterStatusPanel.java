@@ -37,13 +37,14 @@ public class PrinterStatusPanel
     public static final String OFFLINE_MESSAGE = "Status Information not available !\n";
     public static final int FONT_SIZE = 12;
     private final JPanel myPanel = new JPanel();
-    private final JTextArea statusText = new JTextArea(20, 50);
-    private final JScrollPane scrollPane = new JScrollPane();
+    private final JTextArea statusText = new JTextArea();
+    private final JScrollPane scrollPane;
     private Executor exe;
 
     public PrinterStatusPanel(Executor exe)
     {
         this.exe = exe;
+        myPanel.setLayout(new BorderLayout());
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Printer Status"));
@@ -53,6 +54,7 @@ public class PrinterStatusPanel
         statusText.setText(OFFLINE_MESSAGE);
         final DefaultCaret caret = (DefaultCaret)statusText.getCaret();
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
+        scrollPane = new JScrollPane(statusText);
         scrollPane.setViewportView(statusText);
         myPanel.add(scrollPane, BorderLayout.CENTER);
         GuiAppender.setTextArea(statusText);
