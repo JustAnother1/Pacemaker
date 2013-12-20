@@ -68,7 +68,7 @@ public class MotionSender
         }
         else
         {
-            log.trace("spßlit");
+            log.trace("split");
             // we need to split that move into smaller moves
             final StepperMove[] moves = sm.splitInto(Protocol.MAX_STEPS_PER_MOVE);
             for(int i = 0; i < moves.length; i++)
