@@ -127,7 +127,14 @@ public class MotionSender
         }
         else
         {
-            return startSpeed - change;
+            if(change > startSpeed)
+            {
+                return 0.0;
+            }
+            else
+            {
+                return startSpeed - change;
+            }
         }
     }
 
