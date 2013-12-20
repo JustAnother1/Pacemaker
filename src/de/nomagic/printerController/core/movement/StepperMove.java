@@ -73,9 +73,9 @@ public class StepperMove
         activeSteppers.add(stepperNum);
         final int steps = motor.getSteps();
         StepsOnAxis.put(stepperNum, steps);
-        if(maxSteps < steps)
+        if(maxSteps < Math.abs(steps))
         {
-            maxSteps = steps;
+            maxSteps = Math.abs(steps);
             StepperWithMostSteps = stepperNum;
             IdxOfStepperWithMostSteps = AxisDirectionIsIncreasing.size();
             // This stepper is not added yet so the size == the next used Index
