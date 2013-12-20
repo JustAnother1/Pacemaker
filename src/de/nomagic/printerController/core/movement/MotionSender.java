@@ -187,8 +187,8 @@ public class MotionSender
         // Speed calculation
         int StepsOnAxis = Math.abs(sm.getStepsOnStepper(primaryAxis));
         log.trace("Steps on Axis = {}", StepsOnAxis);
-        int accellerationSteps = 0;
-        int DecellerationSteps = 0;
+        int accelerationSteps = 0;
+        int DecelerationSteps = 0;
 
         Double startSpeed = startSpeeds.get(primaryAxis);
         if(null == startSpeed)
@@ -208,10 +208,10 @@ public class MotionSender
         if(startSpeed > MaxEndSpeed)
         {
             // we _need_ to decelerate to this speed
-            DecellerationSteps =  DecellerationSteps +
+            DecelerationSteps =  DecelerationSteps +
                     (int)getBrakingDistance(startSpeed, MaxEndSpeed, MaxAccelleration);
-            StepsOnAxis = StepsOnAxis - DecellerationSteps;
-            log.trace("decellerate - adoption: {}", DecellerationSteps);
+            StepsOnAxis = StepsOnAxis - DecelerationSteps;
+            log.trace("decelerate - adoption: {}", DecelerationSteps);
         }
         else if(startSpeed < MaxEndSpeed)
         {
@@ -220,16 +220,16 @@ public class MotionSender
             if(StepsOnAxis > neededSteps)
             {
                 // we have the steps so lets do it
-                accellerationSteps = accellerationSteps + neededSteps;
+                accelerationSteps = accelerationSteps + neededSteps;
                 StepsOnAxis = StepsOnAxis - neededSteps;
-                log.trace("accellerate - adoption(1): {}", accellerationSteps);
+                log.trace("accellerate - adoption(1): {}", accelerationSteps);
             }
             else
             {
                 // we accelerate as much as we can
-                accellerationSteps = accellerationSteps + StepsOnAxis;
+                accelerationSteps = accelerationSteps + StepsOnAxis;
                 StepsOnAxis = 0;
-                log.trace("accellerate - adoption(2): {}", accellerationSteps);
+                log.trace("accellerate - adoption(2): {}", accelerationSteps);
             }
         }
         if(0 < StepsOnAxis)
@@ -246,39 +246,39 @@ public class MotionSender
             if(StepsOnAxis > 2*neededSteps)
             {
                 // we have the steps so lets do it
-                accellerationSteps = accellerationSteps + neededSteps;
-                DecellerationSteps =  DecellerationSteps + neededSteps;
+                accelerationSteps = accelerationSteps + neededSteps;
+                DecelerationSteps =  DecelerationSteps + neededSteps;
             }
             else
             {
                 // we can not accelerate to the max speed so go as fast as possible
-                accellerationSteps = StepsOnAxis/2;
-                DecellerationSteps = StepsOnAxis - accellerationSteps;
+                accelerationSteps = StepsOnAxis/2;
+                DecelerationSteps = StepsOnAxis - accelerationSteps;
             }
         }
 
-        double speed = getSpeedfor(startSpeed, accellerationSteps, MaxAccelleration, true);
+        double speed = getSpeedfor(startSpeed, accelerationSteps, MaxAccelleration, true);
         if(speed > MaxPossibleSpeed)
         {
             speed = MaxPossibleSpeed;
         }
-        final double endSpeed = getSpeedfor(speed, DecellerationSteps,MaxAccelleration, false);
+        final double endSpeed = getSpeedfor(speed, DecelerationSteps,MaxAccelleration, false);
         // In the last move before a stop it can happen that this move does not have enough steps
         // to come to a full stop.
         // we rely on the Under Run avoidance of the Client here. So the deceleration steps will be
         // to few to actually do the breaking. But the Under run avoidance should have kicked in already,
         // so that the Client does not move with the specified speed but slower.
         // Therefore everything should be alright even though we made a mistake here,..
-        if(accellerationSteps > steps[IdxOfPrimaryAxis])
+        if(accelerationSteps > steps[IdxOfPrimaryAxis])
         {
-            accellerationSteps = steps[IdxOfPrimaryAxis];
+            accelerationSteps = steps[IdxOfPrimaryAxis];
         }
-        if(DecellerationSteps > steps[IdxOfPrimaryAxis])
+        if(DecelerationSteps > steps[IdxOfPrimaryAxis])
         {
-            DecellerationSteps = steps[IdxOfPrimaryAxis];
+            DecelerationSteps = steps[IdxOfPrimaryAxis];
         }
-        log.trace("accelleration Steps = {}", accellerationSteps);
-        log.trace("decelleration Steps = {}", DecellerationSteps);
+        log.trace("acceleration Steps = {}", accelerationSteps);
+        log.trace("deceleration Steps = {}", DecelerationSteps);
         log.trace("speed = {}", speed);
         log.trace("end speed = {}", endSpeed);
 
@@ -303,8 +303,8 @@ public class MotionSender
                 sm.isHomingMove(),
                 speedFactor,
                 endSpeedFactor,
-                accellerationSteps,
-                DecellerationSteps,
+                accelerationSteps,
+                DecelerationSteps,
                 axisDirectionIsIncreasing,
                 primaryAxis,
                 steps);
