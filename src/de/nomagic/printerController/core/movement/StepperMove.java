@@ -17,9 +17,7 @@ package de.nomagic.printerController.core.movement;
 import java.util.HashMap;
 import java.util.Vector;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.core.devices.Stepper;
 
 /**
@@ -29,12 +27,9 @@ import de.nomagic.printerController.core.devices.Stepper;
  */
 public class StepperMove
 {
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private boolean isHomingMove = false;
     private boolean hasCommand = false;
-    private double mmX = 0.0;
-    private double mmY = 0.0;
-    private double mmZ = 0.0;
+    private double[] mm;
     private int maxSteps = 0;
     private int StepperWithMostSteps = -1;
     private int IdxOfStepperWithMostSteps = -1;
@@ -54,16 +49,25 @@ public class StepperMove
 
     public StepperMove()
     {
+        mm = new double[Axis_enum.size];
+        for(int i = 0; i < Axis_enum.size; i++)
+        {
+            mm[i] = 0.0;
+        }
     }
 
     @Override
     public String toString()
     {
+        final StringBuffer sb = new StringBuffer();
+        for(Axis_enum axis: Axis_enum.values())
+        {
+            sb.append(", mm" + axis.toString() + "=" +  mm[axis.ordinal()]);
+        }
+
         return "StepperMove [isHomingMove=" + isHomingMove +
                             ", hasCommand=" + hasCommand +
-                            ", mmX=" + mmX +
-                            ", mmY=" + mmY +
-                            ", mmZ=" + mmZ +
+                            sb.toString() +
                             "]";
     }
 
@@ -279,48 +283,26 @@ public class StepperMove
                 res[j].StepsOnAxis.put(StepperNum, StepsPerPart);
             }
         }
-        final double xMmPerPart = mmX / res.length; // res.length == numParts
-        final double yMmPerPart = mmY / res.length; // res.length == numParts
-        final double zMmPerPart = mmZ / res.length; // res.length == numParts
         final int newMaxSteps = res[0].StepsOnAxis.get(res[0].StepperWithMostSteps);
         for(int i = 0; i < res.length; i++)
         {
-            res[i].mmX = xMmPerPart;
-            res[i].mmY = yMmPerPart;
-            res[i].mmZ = zMmPerPart;
+            for(Axis_enum axis: Axis_enum.values())
+            {
+                res[i].mm[axis.ordinal()] = this.mm[axis.ordinal()]/res.length;// res.length == numParts
+            }
             res[i].maxSteps = newMaxSteps;
         }
         return res;
     }
 
-    public double getMmX()
+    public double getMm(Axis_enum axis)
     {
-        return mmX;
+        return mm[axis.ordinal()];
     }
 
-    public void setMmX(double mmX)
+    public void setMm(double mm, Axis_enum axis)
     {
-        this.mmX = mmX;
-    }
-
-    public double getMmY()
-    {
-        return mmY;
-    }
-
-    public void setMmY(double mmY)
-    {
-        this.mmY = mmY;
-    }
-
-    public double getMmZ()
-    {
-        return mmZ;
-    }
-
-    public void setMmZ(double mmZ)
-    {
-        this.mmZ = mmZ;
+        this.mm[axis.ordinal()] = mm;
     }
 
 }

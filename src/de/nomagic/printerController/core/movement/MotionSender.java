@@ -138,6 +138,7 @@ public class MotionSender
         }
     }
 
+
     private void sendMoveCommand()
     {
         log.trace("sendMoveCommand: mq.size = {} ", mq.size());
@@ -171,7 +172,7 @@ public class MotionSender
         final Integer[] steps = sm.getSteps();
         for(int i = 0; i < activeSteppers.length; i++)
         {
-            log.trace("direction is increasing = {}", axisDirectionIsIncreasing[i]);
+            // log.trace("direction is increasing = {}", axisDirectionIsIncreasing[i]);
             log.trace("Active Axis = {}", activeSteppers[i]);
             log.trace("Steps on Axis = {}", steps[i]);
             if(0 > steps[i])

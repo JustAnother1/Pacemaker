@@ -42,77 +42,67 @@ public class XyzTable
     public static final double MIN_MOVEMENT_DISTANCE = 0.00001;
     /** if the axis has steps the speed may not be 0. So this is the speed is will have at least */
     public static final double MIN_MOVEMENT_SPEED_MM_SECOND = 0.1;
+    /** switch off end stops if print head prints closer than this to the end stop
+     *  Reason: The end stop might trigger to early. This should be avoided. */
+    public static final double DEFAULT_END_STOP_ALLOWANCE = 0.5;
+    /** maximum supported number of Steppers on a axis */
+    public static final int MAX_STEPPERS_PER_AXIS = 2;
 
     public static final String CFG_NAME_AUTO_END_STOP_DISABLE = "automatically disable end stops";
     public static final String CFG_NAME_END_STOP_ALLOWANCE = "end stop allowance";
-    public static final String CFG_NAME_X_MIN = "allowed movement area x min";
-    public static final String CFG_NAME_Y_MIN = "allowed movement area y min";
-    public static final String CFG_NAME_Z_MIN = "allowed movement area z min";
-    public static final String CFG_NAME_X_MAX = "allowed movement area x max";
-    public static final String CFG_NAME_Y_MAX = "allowed movement area y max";
-    public static final String CFG_NAME_Z_MAX = "allowed movement area z max";
+    public static final String CFG_NAME_MIN = "allowed movement area min";
+    public static final String CFG_NAME_MAX = "allowed movement area max";
 
-
-    private static final int X = 0;
-    private static final int Y = 1;
-    private static final int Z = 2;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
-    private Stepper X0 = null;
-    private Stepper X1 = null;
-    private Stepper Y0 = null;
-    private Stepper Y1 = null;
-    private Stepper Z0 = null;
-    private Stepper Z1 = null;
-    private Stepper E0 = null;
-    private Stepper E1 = null;
+    private Stepper[][] Steppers;
 
-    private double[] curPosition = {0,0,0};
-    private boolean XisHomed = false;
-    private boolean YisHomed = false;
-    private boolean ZisHomed = false;
 
-    private double[] HomePosition = {0,0,0};
+    private double[] curPosition;
+    private boolean[] isHomed;
 
     private double endstopAllowance;
-    private double xMin;
-    private double yMin;
-    private double zMin;
-    private double xMax;
-    private double yMax;
-    private double zMax;
+    private double[] Min;
+    private double[] Max;
 
     private boolean autoEndStopDisable = true;
-    private boolean endStopXminOn = false;
-    private boolean endStopXmaxOn = false;
-    private boolean endStopYminOn = false;
-    private boolean endStopYmaxOn = false;
-    private boolean endStopZminOn = false;
-    private boolean endStopZmaxOn = false;
-    private int endStop_Xmin = -1;
-    private int endStop_Xmax = -1;
-    private int endStop_Ymin = -1;
-    private int endStop_Ymax = -1;
-    private int endStop_Zmin = -1;
-    private int endStop_Zmax = -1;
+    private boolean[] endStopminOn;
+    private boolean[] endStopmaxOn;
+    private int[] endStop_min;
+    private int[] endStop_max;
+
+    private Vector<Integer> stopsOn;
+    private Vector<Integer> stopsOff;
 
     private MotionSender sender;
     private MovementQueue PlannerQueue = new MovementQueue("XyzTable");
 
     private double FeedrateMmPerMinute = 0;
 
-    private int activeToolhead = 0; // TODO
-
     public XyzTable(Cfg cfg)
     {
+        Steppers = new Stepper[Axis_enum.size][2];
+        curPosition = new double[Axis_enum.size];
+        isHomed = new boolean[Axis_enum.size];
+        endStopminOn = new boolean[Axis_enum.size];
+        endStopmaxOn = new boolean[Axis_enum.size];
+        Min = new double[Axis_enum.size];
+        Max = new double[Axis_enum.size];
+        endStop_min = new int[Axis_enum.size];
+        endStop_max = new int[Axis_enum.size];
+        for(Axis_enum axis: Axis_enum.values())
+        {
+            curPosition[axis.ordinal()] = 0.0;
+            isHomed[axis.ordinal()] = false;
+            Min[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis, 0);
+            Max[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis, 0);
+            endStopminOn[axis.ordinal()] = false;
+            endStopmaxOn[axis.ordinal()] = false;
+            endStop_min[axis.ordinal()] = -1;
+            endStop_max[axis.ordinal()] = -1;
+        }
         autoEndStopDisable = cfg.getGeneralSetting(CFG_NAME_AUTO_END_STOP_DISABLE, true);
-        endstopAllowance   = cfg.getGeneralSetting(CFG_NAME_END_STOP_ALLOWANCE,    0.5);
-        xMin               = cfg.getGeneralSetting(CFG_NAME_X_MIN,                 0);
-        yMin               = cfg.getGeneralSetting(CFG_NAME_Y_MIN,                 0);
-        zMin               = cfg.getGeneralSetting(CFG_NAME_Z_MIN,                 0);
-        xMax               = cfg.getGeneralSetting(CFG_NAME_X_MAX,                 200);
-        yMax               = cfg.getGeneralSetting(CFG_NAME_Y_MAX,                 200);
-        zMax               = cfg.getGeneralSetting(CFG_NAME_Z_MAX,                 200);
+        endstopAllowance   = cfg.getGeneralSetting(CFG_NAME_END_STOP_ALLOWANCE,    DEFAULT_END_STOP_ALLOWANCE);
     }
 
     @Override
@@ -120,37 +110,15 @@ public class XyzTable
     {
         final StringBuffer sb = new StringBuffer();
         sb.append("Configured Steppers:\n");
-        if(null != X0)
+        for(Axis_enum axis: Axis_enum.values())
         {
-            sb.append("X0 : " + X0 + "\n");
-        }
-        if(null != X1)
-        {
-            sb.append("X1 : " + X1 + "\n");
-        }
-        if(null != Y0)
-        {
-            sb.append("Y0 : " + Y0 + "\n");
-        }
-        if(null != Y1)
-        {
-            sb.append("Y1 : " + Y1 + "\n");
-        }
-        if(null != Z0)
-        {
-            sb.append("Z0 : " + Z0 + "\n");
-        }
-        if(null != Z1)
-        {
-            sb.append("Z1 : " + Z1 + "\n");
-        }
-        if(null != E0)
-        {
-            sb.append("E0 : " + E0 + "\n");
-        }
-        if(null != E1)
-        {
-            sb.append("E1 : " + E1 + "\n");
+            for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
+            {
+                if(null != Steppers[axis.ordinal()][i])
+                {
+                    sb.append("" +axis + i + " : " + Steppers[axis.ordinal()][i] + "\n");
+                }
+            }
         }
         return sb.toString();
     }
@@ -165,306 +133,136 @@ public class XyzTable
         final Switch xmin = switches.get(Switch_enum.Xmin);
         if(null != xmin)
         {
-            endStop_Xmin = xmin.getNumber();
+            endStop_min[Axis_enum.X.ordinal()] = xmin.getNumber();
         }
         final Switch xmax = switches.get(Switch_enum.Xmax);
         if(null != xmax)
         {
-            endStop_Xmax = xmax.getNumber();
+            endStop_max[Axis_enum.X.ordinal()] = xmax.getNumber();
         }
 
         final Switch ymin = switches.get(Switch_enum.Ymin);
         if(null != ymin)
         {
-            endStop_Ymin = ymin.getNumber();
+            endStop_min[Axis_enum.Y.ordinal()] = ymin.getNumber();
         }
         final Switch ymax = switches.get(Switch_enum.Ymax);
         if(null != ymax)
         {
-            endStop_Ymax = ymax.getNumber();
+            endStop_max[Axis_enum.Y.ordinal()] = ymax.getNumber();
         }
 
         final Switch zmin = switches.get(Switch_enum.Zmin);
         if(null != zmin)
         {
-            endStop_Zmin = zmin.getNumber();
+            endStop_min[Axis_enum.Z.ordinal()] = zmin.getNumber();
         }
         final Switch zmax = switches.get(Switch_enum.Zmax);
         if(null != zmax)
         {
-            endStop_Zmax = zmax.getNumber();
+            endStop_max[Axis_enum.Z.ordinal()] = zmax.getNumber();
         }
     }
 
-    private Vector<StepperMove> updateEndStopActivation(StepperMove move)
+    private void setEndstopMinEnabled(Axis_enum axis, boolean on)
     {
-        final Vector<Integer> stopsOn = new Vector<Integer>();
-        final Vector<Integer> stopsOff = new Vector<Integer>();
+        if(on != endStopminOn[axis.ordinal()])
+        {
+            endStopminOn[axis.ordinal()] = on;
+            if(-1 < endStop_min[axis.ordinal()])
+            {
+                if(false == on)
+                {
+                    stopsOff.add(endStop_min[axis.ordinal()]);
+                }
+                else
+                {
+                    stopsOn.add(endStop_min[axis.ordinal()]);
+                }
+            }
+        }
+    }
+
+    private void setEndstopMaxEnabled(Axis_enum axis, boolean on)
+    {
+        if(on != endStopmaxOn[axis.ordinal()])
+        {
+            endStopmaxOn[axis.ordinal()] = on;
+            if(-1 < endStop_max[axis.ordinal()])
+            {
+                if(false == on)
+                {
+                    stopsOff.add(endStop_max[axis.ordinal()]);
+                }
+                else
+                {
+                    stopsOn.add(endStop_max[axis.ordinal()]);
+                }
+            }
+        }
+    }
+
+    private void calculateEndStopsThatNeedToChangeTheirEnabledState()
+    {
         if(true == autoEndStopDisable)
         {
-// X
-            if(true == XisHomed)
+            for(Axis_enum axis: Axis_enum.values())
             {
-                final double posOnAxis = curPosition[X];
-                if((xMin <= posOnAxis) && ((xMin + endstopAllowance)>= posOnAxis))
+                if(Axis_enum.E == axis)
                 {
-                    // position close to min end stop -> min end stop off
-                    if(true == endStopXminOn)
-                    {
-                        endStopXminOn = false;
-                        if(-1 < endStop_Xmin)
-                        {
-                            stopsOff.add(endStop_Xmin);
-                        }
-                    }
+                    continue;
                 }
-                else if((xMax >= posOnAxis) && (xMax - endstopAllowance) <= posOnAxis)
+
+                if(true == isHomed[axis.ordinal()])
                 {
-                    // position close to end stop -> end stop off
-                    if(true == endStopXmaxOn)
+                    final double posOnAxis = curPosition[axis.ordinal()];
+                    if((Min[axis.ordinal()] <= posOnAxis) && ((Min[axis.ordinal()] + endstopAllowance)>= posOnAxis))
                     {
-                        endStopXmaxOn = false;
-                        if(-1 < endStop_Xmax)
-                        {
-                            stopsOff.add(endStop_Xmax);
-                        }
+                        // position close to min end stop -> min end stop off
+                        setEndstopMinEnabled(axis, false);
+                    }
+                    else if((Max[axis.ordinal()] >= posOnAxis) && (Max[axis.ordinal()] - endstopAllowance) <= posOnAxis)
+                    {
+                        // position close to end stop -> end stop off
+                        setEndstopMaxEnabled(axis, false);
+                    }
+                    else
+                    {
+                        // position far away from end stops -> end Stops on
+                        setEndstopMinEnabled(axis, true);
+                        setEndstopMaxEnabled(axis, true);
                     }
                 }
                 else
                 {
-                    // position far away from end stops -> end Stops on
-                    if(false == endStopXminOn)
-                    {
-                        endStopXminOn = true;
-                        if(-1 < endStop_Xmin)
-                        {
-                            stopsOn.add(endStop_Xmin);
-                        }
-                    }
-                    if(false == endStopXmaxOn)
-                    {
-                        endStopXmaxOn = true;
-                        if(-1 < endStop_Xmax)
-                        {
-                            stopsOn.add(endStop_Xmax);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // X not homed -> end stops on
-                if(false == endStopXminOn)
-                {
-                    endStopXminOn = true;
-                    if(-1 < endStop_Xmin)
-                    {
-                        stopsOn.add(endStop_Xmin);
-                    }
-                }
-                if(false == endStopXmaxOn)
-                {
-                    endStopXmaxOn = true;
-                    if(-1 < endStop_Xmax)
-                    {
-                        stopsOn.add(endStop_Xmax);
-                    }
-                }
-            }
-// Y
-            if(true == YisHomed)
-            {
-                final double posOnAxis = curPosition[Y];
-                if((yMin <= posOnAxis) && ((yMin + endstopAllowance)>= posOnAxis))
-                {
-                    // position close to min end stop -> min end stop off
-                    if(true == endStopYminOn)
-                    {
-                        endStopYminOn = false;
-                        if(-1 < endStop_Ymin)
-                        {
-                            stopsOff.add(endStop_Ymin);
-                        }
-                    }
-                }
-                else if((yMax >= posOnAxis) && (yMax - endstopAllowance) <= posOnAxis)
-                {
-                    // position close to end stop -> end stop off
-                    if(true == endStopYmaxOn)
-                    {
-                        endStopYmaxOn = false;
-                        if(-1 < endStop_Ymax)
-                        {
-                            stopsOff.add(endStop_Ymax);
-                        }
-                    }
-                }
-                else
-                {
-                    // position far away from end stops -> end Stops on
-                    if(false == endStopYminOn)
-                    {
-                        endStopYminOn = true;
-                        if(-1 < endStop_Ymin)
-                        {
-                            stopsOn.add(endStop_Ymin);
-                        }
-                    }
-                    if(false == endStopYmaxOn)
-                    {
-                        endStopYmaxOn = true;
-                        if(-1 < endStop_Ymax)
-                        {
-                            stopsOn.add(endStop_Ymax);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // X not homed -> end stops on
-                if(false == endStopYminOn)
-                {
-                    endStopYminOn = true;
-                    if(-1 < endStop_Ymin)
-                    {
-                        stopsOn.add(endStop_Ymin);
-                    }
-                }
-                if(false == endStopYmaxOn)
-                {
-                    endStopYmaxOn = true;
-                    if(-1 < endStop_Ymax)
-                    {
-                        stopsOn.add(endStop_Ymax);
-                    }
-                }
-            }
-// Z
-            if(true == ZisHomed)
-            {
-                final double posOnAxis = curPosition[Z];
-                if((zMin <= posOnAxis) && ((zMin + endstopAllowance)>= posOnAxis))
-                {
-                    // position close to min end stop -> min end stop off
-                    if(true == endStopZminOn)
-                    {
-                        endStopZminOn = false;
-                        if(-1 < endStop_Zmin)
-                        {
-                            stopsOff.add(endStop_Zmin);
-                        }
-                    }
-                }
-                else if((zMax >= posOnAxis) && (zMax - endstopAllowance) <= posOnAxis)
-                {
-                    // position close to end stop -> end stop off
-                    if(true == endStopZmaxOn)
-                    {
-                        endStopZmaxOn = false;
-                        if(-1 < endStop_Zmax)
-                        {
-                            stopsOff.add(endStop_Zmax);
-                        }
-                    }
-                }
-                else
-                {
-                    // position far away from end stops -> end Stops on
-                    if(false == endStopZminOn)
-                    {
-                        endStopZminOn = true;
-                        if(-1 < endStop_Zmin)
-                        {
-                            stopsOn.add(endStop_Zmin);
-                        }
-                    }
-                    if(false == endStopZmaxOn)
-                    {
-                        endStopZmaxOn = true;
-                        if(-1 < endStop_Zmax)
-                        {
-                            stopsOn.add(endStop_Zmax);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // X not homed -> end stops on
-                if(false == endStopZminOn)
-                {
-                    endStopZminOn = true;
-                    if(-1 < endStop_Zmin)
-                    {
-                        stopsOn.add(endStop_Zmin);
-                    }
-                }
-                if(false == endStopZmaxOn)
-                {
-                    endStopZmaxOn = true;
-                    if(-1 < endStop_Zmax)
-                    {
-                        stopsOn.add(endStop_Zmax);
-                    }
+                    // not homed -> end stops on
+                    setEndstopMinEnabled(axis, true);
+                    setEndstopMaxEnabled(axis, true);
                 }
             }
         }
         else
         {
             // end stops always on
-            if(false == endStopXminOn)
+            for(Axis_enum axis: Axis_enum.values())
             {
-                endStopXminOn = true;
-                if(-1 < endStop_Xmin)
-                {
-                    stopsOn.add(endStop_Xmin);
-                }
-            }
-            if(false == endStopXmaxOn)
-            {
-                endStopXmaxOn = true;
-                if(-1 < endStop_Xmax)
-                {
-                    stopsOn.add(endStop_Xmax);
-                }
-            }
-            if(false == endStopYminOn)
-            {
-                endStopYminOn = true;
-                if(-1 < endStop_Ymin)
-                {
-                    stopsOn.add(endStop_Ymin);
-                }
-            }
-            if(false == endStopYmaxOn)
-            {
-                endStopYmaxOn = true;
-                if(-1 < endStop_Ymax)
-                {
-                    stopsOn.add(endStop_Ymax);
-                }
-            }
-            if(false == endStopZminOn)
-            {
-                endStopZminOn = true;
-                if(-1 < endStop_Zmin)
-                {
-                    stopsOn.add(endStop_Zmin);
-                }
-            }
-            if(false == endStopZmaxOn)
-            {
-                endStopZmaxOn = true;
-                if(-1 < endStop_Zmax)
-                {
-                    stopsOn.add(endStop_Zmax);
-                }
+                setEndstopMinEnabled(axis, true);
+                setEndstopMaxEnabled(axis, true);
             }
         }
+    }
+
+    private Vector<StepperMove> updateEndStopActivation(StepperMove move)
+    {
+        stopsOn = new Vector<Integer>();
+        stopsOff = new Vector<Integer>();
+
+        calculateEndStopsThatNeedToChangeTheirEnabledState();
 
         final Vector<StepperMove> res = new Vector<StepperMove>();
-        if((false == XisHomed) || (false == YisHomed) || (false == ZisHomed))
+        if(   (false == isHomed[Axis_enum.X.ordinal()])
+           || (false == isHomed[Axis_enum.Y.ordinal()])
+           || (false == isHomed[Axis_enum.Z.ordinal()]) )
         {
             if(0 < stopsOn.size())
             {
@@ -500,55 +298,13 @@ public class XyzTable
 
     public void addStepper(Axis_enum ae, Stepper motor)
     {
-        switch(ae)
+        for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
         {
-        case X:
-            if(null == X0)
+            if(null == Steppers[ae.ordinal()][i])
             {
-                X0 = motor;
+                Steppers[ae.ordinal()][i] = motor;
+                break;
             }
-            else
-            {
-                X1 = motor;
-            }
-            break;
-
-        case Y:
-            if(null == Y0)
-            {
-                Y0 = motor;
-            }
-            else
-            {
-                Y1 = motor;
-            }
-            break;
-
-        case Z:
-            if(null == Z0)
-            {
-                Z0 = motor;
-            }
-            else
-            {
-                Z1 = motor;
-            }
-            break;
-
-        case E:
-            if(null == E0)
-            {
-                E0 = motor;
-            }
-            else
-            {
-                E1 = motor;
-            }
-            break;
-
-        default:
-            log.error("Handling of the Axis {} not implemented !", ae);
-            break;
         }
     }
 
@@ -557,60 +313,12 @@ public class XyzTable
         // This is only used for the G-Code function.
         // That G-Code can not distinguish between the steppers for the same axis.
         // So lets assume he means both. Otherwise we would get trouble,...
-        switch(axis)
+        for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
         {
-        case X:
-            if(null != X0)
+            if(null != Steppers[axis.ordinal()][i])
             {
-                X0.setStepsPerMillimeter(steps);
+                Steppers[axis.ordinal()][i].setStepsPerMillimeter(steps);
             }
-            if(null != X1)
-            {
-                X1.setStepsPerMillimeter(steps);
-            }
-            break;
-
-        case Y:
-            if(null != Y0)
-            {
-                Y0.setStepsPerMillimeter(steps);
-            }
-            if(null != Y1)
-            {
-                Y1.setStepsPerMillimeter(steps);
-            }
-            break;
-
-        case Z:
-            if(null != Z0)
-            {
-                Z0.setStepsPerMillimeter(steps);
-            }
-            if(null != Z1)
-            {
-                Z1.setStepsPerMillimeter(steps);
-            }
-            break;
-
-        case E:
-
-            if((0 == activeToolhead) && (null != E0))
-            {
-                E0.setStepsPerMillimeter(steps);
-            }
-            else if((1 == activeToolhead) && (null != E1))
-            {
-                E1.setStepsPerMillimeter(steps);
-            }
-            else
-            {
-                log.error("Using unconfigured Tool Head{} !", activeToolhead);
-            }
-            break;
-
-        default:
-            log.error("Handling of the Axis {} not implemented !", axis);
-            return false;
         }
         return true;
     }
@@ -661,83 +369,18 @@ public class XyzTable
        {
            if(true == relMov.has(ax))
            {
-               switch(ax)
+               curPosition[ax.ordinal()] = curPosition[ax.ordinal()] + relMov.get(ax);
+               res.setMm(relMov.get(ax), ax);
+               final double Speed = Math.abs(relMov.get(ax) * SpeedPerMm);
+               log.trace("{}Speed = {}", ax, Speed);
+               for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
-               case X:
-                   curPosition[X] = curPosition[X] + relMov.get(Axis_enum.X);
-                   res.setMmX(relMov.get(Axis_enum.X));
-                   final double XSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
-                   log.trace("XSpeed = {}", XSpeed);
-                   if(null != X0)
+                   if(null != Steppers[ax.ordinal()][i])
                    {
-                       X0.addMove(relMov.get(ax));
-                       X0.setMaxSpeedMmPerSecond(XSpeed);
-                       res.addAxisMotors(X0);
+                       Steppers[ax.ordinal()][i].addMove(relMov.get(ax));
+                       Steppers[ax.ordinal()][i].setMaxSpeedMmPerSecond(Speed);
+                       res.addAxisMotors(Steppers[ax.ordinal()][i]);
                    }
-                   if(null != X1)
-                   {
-                       X1.addMove(relMov.get(ax));
-                       X1.setMaxSpeedMmPerSecond(XSpeed);
-                       res.addAxisMotors(X1);
-                   }
-                   break;
-
-               case Y:
-                   curPosition[Y] = curPosition[Y] + relMov.get(Axis_enum.Y);
-                   res.setMmY(relMov.get(Axis_enum.Y));
-                   final double YSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
-                   log.trace("YSpeed = {}", YSpeed);
-                   if(null != Y0)
-                   {
-                       Y0.addMove(relMov.get(ax));
-                       Y0.setMaxSpeedMmPerSecond(YSpeed);
-                       res.addAxisMotors(Y0);
-                   }
-                   if(null != Y1)
-                   {
-                       Y1.addMove(relMov.get(ax));
-                       Y1.setMaxSpeedMmPerSecond(YSpeed);
-                       res.addAxisMotors(Y1);
-                   }
-                   break;
-
-               case Z:
-                   curPosition[Z] = curPosition[Z] + relMov.get(Axis_enum.Z);
-                   res.setMmZ(relMov.get(Axis_enum.Z));
-                   final double ZSpeed = Math.abs(relMov.get(ax) * SpeedPerMm);
-                   log.trace("ZSpeed = {}", ZSpeed);
-                   if(null != Z0)
-                   {
-                       Z0.addMove(relMov.get(ax));
-                       Z0.setMaxSpeedMmPerSecond(ZSpeed);
-                       res.addAxisMotors(Z0);
-                   }
-                   if(null != Z1)
-                   {
-                       Z1.addMove(relMov.get(ax));
-                       Z1.setMaxSpeedMmPerSecond(ZSpeed);
-                       res.addAxisMotors(Z1);
-                   }
-                   break;
-
-               case E:
-                   if(null != E0)
-                   {
-                       E0.addMove(relMov.get(ax));
-                       E0.setMaxSpeedMmPerSecond(E0.getMaxSpeedMmPerSecond());
-                       res.addAxisMotors(E0);
-                   }
-                   if(null != E1)
-                   {
-                       E1.addMove(relMov.get(ax));
-                       E1.setMaxSpeedMmPerSecond(E1.getMaxSpeedMmPerSecond());
-                       res.addAxisMotors(E1);
-                   }
-                   break;
-
-               default:
-                   log.error("Handling of the Axis {} not implemented !", ax);
-                   break;
                }
            }
            // else axis not used
@@ -752,67 +395,25 @@ public class XyzTable
        final StepperMove res = new StepperMove();
        res.setIsHoming(true);
        double homingDistance = 0.0;
-       for(int i = 0; i < axis.length; i++)
+
+       for(int a = 0; a < axis.length; a++)
        {
-           final Axis_enum ax = axis[i];
-           switch(ax)
+           final Axis_enum ax = axis[a];
+           isHomed[ax.ordinal()] = true;
+           if(ax != Axis_enum.E)
            {
-           case X:
-               XisHomed = true;
-               homingDistance = (xMax - xMin) * HOMING_MOVE_SFAETY_FACTOR;
-               res.setMmX(homingDistance);
-               if(null != X0)
+               homingDistance = (Max[ax.ordinal()] - Min[ax.ordinal()]) * HOMING_MOVE_SFAETY_FACTOR;
+               res.setMm(homingDistance, ax);
+               for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
-                   X0.addMove(homingDistance);
-                   res.addAxisMotors(X0);
+                   if(null != Steppers[ax.ordinal()][i])
+                   {
+                       Steppers[ax.ordinal()][i].addMove(homingDistance);
+                       res.addAxisMotors(Steppers[ax.ordinal()][i]);
+                   }
                }
-               if(null != X1)
-               {
-                   X1.addMove(homingDistance);
-                   res.addAxisMotors(X1);
-               }
-               break;
-
-           case Y:
-               YisHomed = true;
-               homingDistance = (yMax - yMin) * HOMING_MOVE_SFAETY_FACTOR;
-               res.setMmY(homingDistance);
-               if(null != Y0)
-               {
-                   Y0.addMove(homingDistance);
-                   res.addAxisMotors(Y0);
-               }
-               if(null != Y1)
-               {
-                   Y1.addMove(homingDistance);
-                   res.addAxisMotors(Y1);
-               }
-               break;
-
-           case Z:
-               ZisHomed = true;
-               homingDistance = (yMax - yMin) * HOMING_MOVE_SFAETY_FACTOR;
-               res.setMmZ(homingDistance);
-               if(null != Z0)
-               {
-                   Z0.addMove(homingDistance);
-                   res.addAxisMotors(Z0);
-               }
-               if(null != Z1)
-               {
-                   Z1.addMove(homingDistance);
-                   res.addAxisMotors(Z1);
-               }
-               break;
-
-           case E:
-               // home on E not possible
-               break;
-
-           default:
-               log.error("Homing not implemented for the new Axis {} !", ax);
-               break;
            }
+           // else nothing to do to home E
        }
        prepareMoveForSending(res, true);
    }
@@ -872,11 +473,12 @@ public class XyzTable
            return false;
        }
        final StepperMove firstMove = PlannerQueue.getMove(0);
-       final double[] firstVector =new double[3];
-       firstVector[X] = firstMove.getMmX();
-       firstVector[Y] = firstMove.getMmY();
-       firstVector[Z] = firstMove.getMmZ();
-       log.trace("getting the move [{},{},z]", firstVector[X], firstVector[Y]);
+       final double[] firstVector =new double[Axis_enum.size];
+       for(Axis_enum axis: Axis_enum.values())
+       {
+           firstVector[axis.ordinal()] = firstMove.getMm(axis);
+       }
+       log.trace("getting the move [{},{},z]", firstVector[Axis_enum.X.ordinal()], firstVector[Axis_enum.Y.ordinal()]);
 
        final Integer[] steppers = firstMove.getAllActiveSteppers();
        for(int j = 0; j < steppers.length; j++)
@@ -891,11 +493,13 @@ public class XyzTable
        do
        {
            final StepperMove curMove = PlannerQueue.getMove(i);
-           secondVector = new double[3];
-           secondVector[X] = curMove.getMmX();
-           secondVector[Y] = curMove.getMmY();
-           secondVector[Z] = curMove.getMmZ();
-           log.trace("getting the move [{},{},z]", secondVector[X], secondVector[Y]);
+           secondVector = new double[Axis_enum.size];
+           for(Axis_enum axis: Axis_enum.values())
+           {
+               secondVector[axis.ordinal()] = curMove.getMm(axis);
+           }
+           log.trace("getting the move [{},{},z]", secondVector[Axis_enum.X.ordinal()],
+                                                   secondVector[Axis_enum.Y.ordinal()]);
            if(true == hasMovementData(secondVector))
            {
                found = true;
@@ -967,10 +571,11 @@ public class XyzTable
                     log.error("Could not send Command - no sender available !");
                 }
             }
-            final double[] curVector = new double[3];
-            curVector[X] = curMove.getMmX();
-            curVector[Y] = curMove.getMmY();
-            curVector[Z] = curMove.getMmZ();
+            final double[] curVector = new double[Axis_enum.size];
+            for(Axis_enum axis: Axis_enum.values())
+            {
+                curVector[axis.ordinal()] = curMove.getMm(axis);
+            }
             if(true == hasMovementData(curVector))
             {
                 break;
@@ -1002,25 +607,22 @@ public class XyzTable
     {
         vec_one = normalize(vec_one);
         vec_two = normalize(vec_two);
-        return Math.max(Math.max(cornerBreakFactor(vec_one[X], vec_two[X]),
-                                 cornerBreakFactor(vec_one[Y], vec_two[Y])),
-                                 cornerBreakFactor(vec_one[Z], vec_two[Z]));
-
+        double max = 0.0;
+        for(Axis_enum axis: Axis_enum.values())
+        {
+            max = Math.max(max, cornerBreakFactor(vec_one[axis.ordinal()], vec_two[axis.ordinal()]));
+        }
+        return max;
     }
 
     private boolean hasMovementData(double[] vec)
     {
-        if(MIN_MOVEMENT_DISTANCE < Math.abs(vec[X]))
+        for(Axis_enum axis: Axis_enum.values())
         {
-            return true;
-        }
-        if(MIN_MOVEMENT_DISTANCE < Math.abs(vec[Y]))
-        {
-            return true;
-        }
-        if(MIN_MOVEMENT_DISTANCE < Math.abs(vec[Z]))
-        {
-            return true;
+            if(MIN_MOVEMENT_DISTANCE < Math.abs(vec[axis.ordinal()]))
+            {
+                return true;
+            }
         }
         return false;
     }
@@ -1028,10 +630,14 @@ public class XyzTable
     private double[] normalize(double[] vec)
     {
         double sum = 0.0;
-        sum = Math.abs(vec[X]) + Math.abs(vec[Y]) + Math.abs(vec[Z]);
-        vec[X] = vec[X] / sum;
-        vec[Y] = vec[Y] / sum;
-        vec[Z] = vec[Z] / sum;
+        for(Axis_enum axis: Axis_enum.values())
+        {
+            sum = sum + Math.abs(vec[axis.ordinal()]);
+        }
+        for(Axis_enum axis: Axis_enum.values())
+        {
+            vec[axis.ordinal()] = vec[axis.ordinal()] / sum;
+        }
         return vec;
     }
 
