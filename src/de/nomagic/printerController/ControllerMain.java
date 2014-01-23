@@ -64,8 +64,33 @@ public class ControllerMain implements CloseApplication
     private CoreStateMachine core;
     private Vector<InteractiveInterface> interfaces = new Vector<InteractiveInterface>();
 
-    public ControllerMain()
+    public ControllerMain(final String[] args)
     {
+        startLogging(args);
+    }
+
+    private void startLogging(final String[] args)
+    {
+        int numOfV = 0;
+        for(int i = 0; i < args.length; i++)
+        {
+            if(true == "-v".equals(args[i]))
+            {
+                numOfV ++;
+            }
+        }
+
+        // configure Logging
+        switch(numOfV)
+        {
+        case 0: setLogLevel("info"); break;
+        case 1: setLogLevel("debug");break;
+        case 2:
+        default:
+            setLogLevel("trace");
+            System.out.println("Build from " + getCommitID());
+            break;
+        }
     }
 
     public void printHelp()
@@ -138,7 +163,6 @@ public class ControllerMain implements CloseApplication
 
     public boolean parseCommandLineParameters(final String[] args)
     {
-        int numOfV = 0;
         for(int i = 0; i < args.length; i++)
         {
             if(true == args[i].startsWith("-"))
@@ -188,13 +212,13 @@ public class ControllerMain implements CloseApplication
                 {
                     schallStartStandardStreams = true;
                 }
+                else if(true == "-v".equals(args[i]))
+                {
+                    // already handeled -> ignore
+                }
                 else if(true == "--no-gui".equals(args[i]))
                 {
                     shallStartGui = false;
-                }
-                else if(true == "-v".equals(args[i]))
-                {
-                    numOfV ++;
                 }
                 else
                 {
@@ -224,17 +248,6 @@ public class ControllerMain implements CloseApplication
                 System.err.println(e.getLocalizedMessage());
                 // this is OK if we go for the GUI !
             }
-        }
-        // configure Logging
-        switch(numOfV)
-        {
-        case 0: setLogLevel("info"); break;
-        case 1: setLogLevel("debug");break;
-        case 2:
-        default:
-            setLogLevel("trace");
-            System.out.println("Build from " + getCommitID());
-            break;
         }
         return true;
     }
@@ -384,7 +397,7 @@ public class ControllerMain implements CloseApplication
 
     public static void main(final String[] args)
     {
-        final ControllerMain cm = new ControllerMain();
+        final ControllerMain cm = new ControllerMain(args);
         if(false == cm.parseCommandLineParameters(args))
         {
             cm.printHelp();
