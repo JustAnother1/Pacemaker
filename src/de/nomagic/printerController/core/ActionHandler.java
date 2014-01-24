@@ -73,6 +73,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
     private long lastTime = 0;
     private boolean TimeoutsActive = false;
     private volatile boolean isRunning = false;
+    // timedExecutor Actions will be logged as [pool-1-thread-1]
     // one task should be enough
     private ScheduledThreadPoolExecutor timedExecutor = new ScheduledThreadPoolExecutor(1);
 
