@@ -113,7 +113,7 @@ public class DeviceInformation
 
     private int readValueOf(int which, String Name) throws IOException
     {
-        int res = requestInteger(which);
+        final int res = requestInteger(which);
         if(0 > res)
         {
             log.error("Could not read the {} !", Name);
@@ -188,7 +188,7 @@ public class DeviceInformation
         }
         for(int i = 0; i < extensions.size(); i++)
         {
-            int ExtensionType = extensions.get(i);
+            final int ExtensionType = extensions.get(i);
             switch(ExtensionType)
             {
             case Protocol.INFO_PROTOCOL_EXTENSION_STEPPER_CONTROL:
@@ -286,7 +286,7 @@ public class DeviceInformation
 
     private String[] getAllNames(int Number, byte deviceType) throws IOException
     {
-        String[] allNames = new String[Number];
+        final String[] allNames = new String[Number];
         for(int i = 0; i < Number; i++)
         {
             allNames[i] = requestDeviceNameString(deviceType, i);
@@ -327,11 +327,31 @@ public class DeviceInformation
         int res = -3;
         switch(p.length)
         {
-        case 1: res = 0xff & p[0]; break;
-        case 2: res = ((0xff & p[0])*256) + (0xff & p[1]); break;
-        case 3: res = ((0xff & p[0])*256*256) + ((0xff & p[1])*256) + (0xff & p[2]); break;
-        case 4: res = ((0xff & p[0])*256*256*256) + ((0xff & p[1])*256*256) + ((0xff & p[2])*256) + (0xff & p[3]); break;
-        default:res = -5; break;
+        case 1:
+            res = 0xff & p[0];
+            break;
+
+        case 2:
+            res = (  (0xff & p[0])*256)
+                   + (0xff & p[1]);
+            break;
+
+        case 3:
+            res = (   (0xff & p[0])*256*256)
+                   + ((0xff & p[1])*256)
+                   +  (0xff & p[2]);
+            break;
+
+        case 4:
+            res = (   (0xff & p[0])*256*256*256)
+                   + ((0xff & p[1])*256*256)
+                   + ((0xff & p[2])*256)
+                   +  (0xff & p[3]);
+            break;
+
+        default:
+            res = -5;
+            break;
         }
         return res;
     }
