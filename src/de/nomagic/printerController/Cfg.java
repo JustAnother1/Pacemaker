@@ -332,7 +332,7 @@ public class Cfg
         final Boolean res = useSteppers.get(clientNumber);
         if(null == res)
         {
-            // There was no configuration for this client in the config file
+            log.trace("There was no configuration for this client in the config file");
             return false;
         }
         else
@@ -756,6 +756,7 @@ public class Cfg
                         {
                             log.error("Invalid Section : " + curLine);
                         }
+                        log.trace("Now in Section {} !", curSection);
                     }
                     else if(true == curLine.startsWith(CONNECTION_START))
                     {
@@ -764,6 +765,7 @@ public class Cfg
                                                               curLine.indexOf(CONNECTION_END));
                         ConnectionDefinition.put(connectionNumber, cstr);
                         inConnection = true;
+                        log.trace("Found the connection {} as Number {} !", cstr, connectionNumber);
                     }
                     else
                     {
@@ -783,6 +785,7 @@ public class Cfg
                                                                            Macro.SEPERATOR) +Macro.SEPERATOR.length());
                                         final Macro m = MacroFactory.getMacroFromLine(MacroString);
                                         macroMap.put(Integer.parseInt(numStr), m);
+                                        log.trace("Found the Macro: {}", MacroString);
                                     }
                                     else
                                     {
@@ -813,8 +816,11 @@ public class Cfg
                                 }
                                 try
                                 {
-                                    curMap.put(getIntKeyFrom(curLine), Heater_enum.valueOf(getValueFrom(curLine)));
+                                    final int key = getIntKeyFrom(curLine);
+                                    final String value = getValueFrom(curLine);
+                                    curMap.put(key, Heater_enum.valueOf(value));
                                     TemperatureSensors.put(connectionNumber, curMap);
+                                    log.trace("Temperature sensor #{} is used for {}", key, value);
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
@@ -831,8 +837,11 @@ public class Cfg
                                 }
                                 try
                                 {
-                                    curMap.put(getIntKeyFrom(curLine), Heater_enum.valueOf(getValueFrom(curLine)));
+                                    final int key = getIntKeyFrom(curLine);
+                                    final String value = getValueFrom(curLine);
+                                    curMap.put(key, Heater_enum.valueOf(value));
                                     Heaters.put(connectionNumber, curMap);
+                                    log.trace("Heater #{} is used for {}", key, value);
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
@@ -849,8 +858,11 @@ public class Cfg
                                 }
                                 try
                                 {
-                                    curMap.put(getIntKeyFrom(curLine), Fan_enum.valueOf(getValueFrom(curLine)));
+                                    final int key = getIntKeyFrom(curLine);
+                                    final String value = getValueFrom(curLine);
+                                    curMap.put(key, Fan_enum.valueOf(value));
                                     Fans.put(connectionNumber, curMap);
+                                    log.trace("Fan #{} is used for {}", key, value);
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
@@ -867,8 +879,11 @@ public class Cfg
                                 }
                                 try
                                 {
-                                    curMap.put(getIntKeyFrom(curLine), Output_enum.valueOf(getValueFrom(curLine)));
+                                    final int key = getIntKeyFrom(curLine);
+                                    final String value = getValueFrom(curLine);
+                                    curMap.put(key, Output_enum.valueOf(value));
                                     Outputs.put(connectionNumber, curMap);
+                                    log.trace("Output #{} is used for {}", key, value);
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
@@ -885,8 +900,11 @@ public class Cfg
                                 }
                                 try
                                 {
-                                    curMap.put(getIntKeyFrom(curLine), Switch_enum.valueOf(getValueFrom(curLine)));
+                                    final int key = getIntKeyFrom(curLine);
+                                    final String value = getValueFrom(curLine);
+                                    curMap.put(key, Switch_enum.valueOf(value));
                                     Switches.put(connectionNumber, curMap);
+                                    log.trace("Switch #{} is used for {}", key, value);
                                 }
                                 catch(IllegalArgumentException iae)
                                 {
@@ -900,36 +918,47 @@ public class Cfg
                                 {
                                     final Boolean activated = getBooleanValueFrom(curLine);
                                     useSteppers.put(connectionNumber, activated);
+                                    log.trace("Steppers activated : {}", activated);
                                 }
                                 else if(true == curLine.startsWith(STEPPER_INVERTED))
                                 {
+                                    final boolean inverted = getBooleanValueFrom(curLine);
                                     setMovementDirectionInverted(connectionNumber,
                                                                  curStepper,
-                                                                 getBooleanValueFrom(curLine));
+                                                                 inverted);
+                                    log.trace("Steppers #{} inverted: {}", curStepper, inverted);
                                 }
                                 else if(true == curLine.startsWith(STEPPER_AXIS))
                                 {
+                                    final String value = getValueFrom(curLine);
                                     addStepper(connectionNumber,
                                                curStepper,
-                                               Axis_enum.valueOf(getValueFrom(curLine)));
+                                               Axis_enum.valueOf(value));
+                                    log.trace("Steppers #{} axis: {}", curStepper, value);
                                 }
                                 else if(true == curLine.startsWith(STEPPER_MAXIMUM_ACCELLERATION))
                                 {
+                                    final double value = getDoubleValueFrom(curLine);
                                     setMaxAccelerationFor(connectionNumber,
                                                           curStepper,
-                                                          getDoubleValueFrom(curLine));
+                                                          value);
+                                    log.trace("Steppers #{} max. Accel.: {}", curStepper, value);
                                 }
                                 else if(true == curLine.startsWith(STEPPER_MAXIMUM_SPEED))
                                 {
+                                    final int value = getIntValueFrom(curLine);
                                     setMaxSpeedFor(connectionNumber,
                                                    curStepper,
-                                                   getIntValueFrom(curLine));
+                                                   value);
+                                    log.trace("Steppers #{} max. speed: {}", curStepper, value);
                                 }
                                 else if(true == curLine.startsWith(STEPPER_STEPS_PER_MILLIMETER))
                                 {
+                                    final double value = getDoubleValueFrom(curLine);
                                     setSteppsPerMillimeterFor(connectionNumber,
                                                               curStepper,
-                                                              getDoubleValueFrom(curLine));
+                                                              value);
+                                    log.trace("Steppers #{} Steps/mm: {}", curStepper, value);
                                 }
                                 else
                                 {
@@ -938,7 +967,10 @@ public class Cfg
                             }
                                 break;
                             case FIRMWARE_CONFIGURATION:
-                                addFirmwareConfiguration(connectionNumber, getKeyFrom(curLine), getValueFrom(curLine));
+                                final String key = getKeyFrom(curLine);
+                                final String value = getValueFrom(curLine);
+                                addFirmwareConfiguration(connectionNumber, key, value);
+                                log.error("{} = {}", key, value);
                                 break;
 
                             default:
