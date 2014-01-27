@@ -653,20 +653,62 @@ public class ProtocolClient
         {
             switch(parameter[0])
             {
-            case Protocol.INFO_FIRMWARE_NAME_STRING:sendString(hw.getFirmwareNameString()); break;
-            case Protocol.INFO_SERIAL_NUMBER_STRING:sendString(hw.getSerialNumberString()); break;
-            case Protocol.INFO_BOARD_NAME_STRING:sendString(hw.getBoardNameString()); break;
-            case Protocol.INFO_GIVEN_NAME_STRING:sendString(hw.getGivenNameString()); break;
-            case Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR:sendByte(hw.getProtocolVersionMajor()); break;
-            case Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MINOR:sendByte(hw.getProtocolVersionMinor()); break;
-            case Protocol.INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS:sendByteArray(hw.getListOfSupportedProtocolExtensions()); break;
-            case Protocol.INFO_FIRMWARE_TYPE:sendByte(hw.getFirmwareType()); break;
-            case Protocol.INFO_FIRMWARE_REVISION_MAJOR:sendByte(hw.getFirmwareRevisionMajor()); break;
-            case Protocol.INFO_FIRMWARE_REVISION_MINOR:sendByte(hw.getFirmwareRevisionMinor()); break;
-            case Protocol.INFO_HARDWARE_TYPE:sendByte(hw.getHardwareType()); break;
-            case Protocol.INFO_HARDWARE_REVISION:sendByte(hw.getHardwareRevision()); break;
-            case Protocol.INFO_MAX_STEP_RATE:sendByte(hw.getMaxStepRate()); break;
-            case Protocol.INFO_HOST_TIMEOUT:sendByte(hw.getHostTimeout()); break;
+            case Protocol.INFO_FIRMWARE_NAME_STRING:
+                sendString(hw.getFirmwareNameString());
+                break;
+
+            case Protocol.INFO_SERIAL_NUMBER_STRING:
+                sendString(hw.getSerialNumberString());
+                break;
+
+            case Protocol.INFO_BOARD_NAME_STRING:
+                sendString(hw.getBoardNameString());
+                break;
+
+            case Protocol.INFO_GIVEN_NAME_STRING:
+                sendString(hw.getGivenNameString());
+                break;
+
+            case Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR:
+                sendByte(hw.getProtocolVersionMajor());
+                break;
+
+            case Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MINOR:
+                sendByte(hw.getProtocolVersionMinor());
+                break;
+
+            case Protocol.INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS:
+                sendByteArray(hw.getListOfSupportedProtocolExtensions());
+                break;
+
+            case Protocol.INFO_FIRMWARE_TYPE:
+                sendByte(hw.getFirmwareType());
+                break;
+
+            case Protocol.INFO_FIRMWARE_REVISION_MAJOR:
+                sendByte(hw.getFirmwareRevisionMajor());
+                break;
+
+            case Protocol.INFO_FIRMWARE_REVISION_MINOR:
+                sendByte(hw.getFirmwareRevisionMinor());
+                break;
+
+            case Protocol.INFO_HARDWARE_TYPE:
+                sendByte(hw.getHardwareType());
+                break;
+
+            case Protocol.INFO_HARDWARE_REVISION:
+                sendByte(hw.getHardwareRevision());
+                break;
+
+            case Protocol.INFO_MAX_STEP_RATE:
+                sendI16(hw.getMaxStepRate());
+                break;
+
+            case Protocol.INFO_HOST_TIMEOUT:
+                sendByte(hw.getHostTimeout());
+                break;
+
             default:
                 sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                           Protocol.RESPONSE_BAD_PARAMETER_VALUE);
