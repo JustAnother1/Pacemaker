@@ -28,7 +28,7 @@ import de.nomagic.printerController.core.Action_enum;
 import de.nomagic.printerController.core.Event;
 import de.nomagic.printerController.core.RelativeMove;
 import de.nomagic.printerController.core.TimeoutHandler;
-import de.nomagic.printerController.core.movement.MotionSender;
+import de.nomagic.printerController.core.movement.PlannedMoves;
 import de.nomagic.printerController.core.movement.XyzTable;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
 import de.nomagic.printerController.pacemaker.Protocol;
@@ -51,7 +51,6 @@ public class Movement
 
     private Integer maxProtocol = 0;
     private XyzTable table;
-    private MotionSender sender;
     private TimeoutHandler to;
     private int TimeoutId;
 
@@ -66,14 +65,7 @@ public class Movement
     @Override
     public String toString()
     {
-        if(null == sender)
-        {
-            return "table : " + table.toString() + " sender : null";
-        }
-        else
-        {
-            return "table : " + table.toString() + " sender : " + sender.toString();
-        }
+        return "table : " + table.toString();
     }
 
     public String getLastErrorReason()
@@ -87,76 +79,72 @@ public class Movement
                               int ClientNumber,
                               HashMap<Switch_enum, Switch> switches)
     {
-        if(true == cfg.shouldUseSteppers(ClientNumber))
+        if(false == cfg.shouldUseSteppers(ClientNumber))
         {
-            if(    (true == di.hasExtensionBasicMove())
-                && (true == di.hasExtensionQueuedCommand())
-                && (true == di.hasExtensionStepperControl())
-                && (0 < di.getNumberSteppers()))
+            log.info("Client #{} is not allowed to use the Steppers !", ClientNumber);
+            return;
+        }
+
+        if(    (false == di.hasExtensionBasicMove())
+            || (false == di.hasExtensionQueuedCommand())
+            || (false == di.hasExtensionStepperControl())
+            || (1 > di.getNumberSteppers()))
+        {
+            log.info("Skipped Move as client does not support it !");
+            return;
+        }
+
+        boolean first = true;
+        int thisProtocolIdx = -1; // -1 is invalid
+        for(int i = 0; i < di.getNumberSteppers(); i++)
+        {
+            final Axis_enum ae = cfg.getFunctionOfAxis(ClientNumber, i);
+            if(null != ae)
             {
-                boolean first = true;
-                int thisProtocolIdx = -1; // -1 is invalid
-                for(int i = 0; i < di.getNumberSteppers(); i++)
+                switch(ae)
                 {
-                    final Axis_enum ae = cfg.getFunctionOfAxis(ClientNumber, i);
-                    if(null != ae)
+                case X:
+                case Y:
+                case Z:
+                case E:
+                    if(true == first)
                     {
-                        switch(ae)
-                        {
-                        case X:
-                        case Y:
-                        case Z:
-                        case E:
-                            if(true == first)
-                            {
-                                first = false;
-                                // we need this Protocol
-                                protocols.put(maxProtocol, pro);
-                                thisProtocolIdx = maxProtocol;
-                                maxProtocol++;
-                                sender = new MotionSender();
-                                sender.setProtocol(pro);
-                                table.addSender(sender);
-                                log.debug("Using this protocol as number {} !", thisProtocolIdx);
-                            }
-                            // else protocol already added
-                            log.trace("Using stepper number {} for axis {} !", i, ae);
-                            final double maxAccelerationOfThisStepper = cfg.getMaxAccelerationFor(ClientNumber, i);
-                            final int maxStepsPerSecond = cfg.getMaxSpeedFor(ClientNumber, i);
-                            final Stepper motor = new Stepper(i,
-                                             maxAccelerationOfThisStepper,
-                                             maxStepsPerSecond,
-                                             cfg.isMovementDirectionInverted(ClientNumber, i),
-                                             cfg.getStepsPerMillimeterFor(ClientNumber, i));
-                            table.addStepper(ae, motor);
-                            connectEndSwitchesToStepper(ae, motor, switches, pro);
-                            configureStepperMaxSpeed(motor, pro);
-                            configureUnderRunAvoidance(motor, pro);
-                            table.addEndStopSwitches(switches);
-                            break;
-
-                        default:
-                            // This axis is not interesting for me.
-                            break;
-                        }
+                        first = false;
+                        final PlannedMoves Queue = new PlannedMoves(di.getMaxSteppsPerSecond());
+                        Queue.addProtocol(pro);
+                        table.addMovementQueue(Queue);
+                        // we need this Protocol
+                        protocols.put(maxProtocol, pro);
+                        thisProtocolIdx = maxProtocol;
+                        maxProtocol++;
+                        log.debug("Using this protocol as number {} !", thisProtocolIdx);
                     }
-                }
-                if(false == pro.activateStepperControl())
-                {
-                    log.error("Could not activate Stepper control !");
-                }
+                    // else protocol already added
+                    log.trace("Using stepper number {} for axis {} !", i, ae);
+                    final double maxAccelerationOfThisStepper = cfg.getMaxAccelerationFor(ClientNumber, i);
+                    final int maxStepsPerSecond = cfg.getMaxSpeedFor(ClientNumber, i);
+                    final Stepper motor = new Stepper(i,
+                                     maxAccelerationOfThisStepper,
+                                     maxStepsPerSecond,
+                                     cfg.isMovementDirectionInverted(ClientNumber, i),
+                                     cfg.getStepsPerMillimeterFor(ClientNumber, i));
+                    table.addStepper(ae, motor);
+                    connectEndSwitchesToStepper(ae, motor, switches, pro);
+                    configureStepperMaxSpeed(motor, pro);
+                    configureUnderRunAvoidance(motor, pro);
+                    table.addEndStopSwitches(switches);
+                    table.setMaxClientStepsPerSecond(di.getMaxSteppsPerSecond());
+                    break;
 
-            }
-            else
-            {
-                log.trace("Skipped Move as client does not support it !");
-                return;
+                default:
+                    // This axis is not interesting for me.
+                    break;
+                }
             }
         }
-        else
+        if(false == pro.activateStepperControl())
         {
-            log.trace("Client is not allowed to use the Steppers !");
-            return;
+            log.error("Could not activate Stepper control !");
         }
     }
 
@@ -284,7 +272,7 @@ public class Movement
     public boolean isHoming()
     {
         // TODO check if homing is finished - all end stops triggered,...
-        final boolean isFinished = sender.hasAllMovementFinished();
+        final boolean isFinished = table.hasAllMovementFinished();
         if(false == isFinished)
         {
             return true;

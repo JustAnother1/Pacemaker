@@ -40,8 +40,6 @@ public class XyzTable
     public static final double HOMING_MOVE_SFAETY_FACTOR = 1.5;
     /** everything shorter than this will be assumed to be 0 */
     public static final double MIN_MOVEMENT_DISTANCE = 0.00001;
-    /** if the axis has steps the speed may not be 0. So this is the speed is will have at least */
-    public static final double MIN_MOVEMENT_SPEED_MM_SECOND = 0.1;
     /** switch off end stops if print head prints closer than this to the end stop
      *  Reason: The end stop might trigger to early. This should be avoided. */
     public static final double DEFAULT_END_STOP_ALLOWANCE = 0.5;
@@ -74,10 +72,10 @@ public class XyzTable
     private Vector<Integer> stopsOn;
     private Vector<Integer> stopsOff;
 
-    private MotionSender sender;
-    private MovementQueue PlannerQueue = new MovementQueue("XyzTable");
+    private PlannedMoves planner;
 
     private double FeedrateMmPerMinute = 0;
+    private int MaxClientStepsPerSecond = 0;
 
     public XyzTable(Cfg cfg)
     {
@@ -105,6 +103,17 @@ public class XyzTable
         endstopAllowance   = cfg.getGeneralSetting(CFG_NAME_END_STOP_ALLOWANCE,    DEFAULT_END_STOP_ALLOWANCE);
     }
 
+    public void addMovementQueue(PlannedMoves queue)
+    {
+        log.info("Adding Queue !");
+        planner = queue;
+    }
+
+    public void setMaxClientStepsPerSecond(int maxSteppsPerSecond)
+    {
+        MaxClientStepsPerSecond = maxSteppsPerSecond;
+    }
+
     @Override
     public String toString()
     {
@@ -120,12 +129,8 @@ public class XyzTable
                 }
             }
         }
+        sb.append("Queue:" + planner + "\n");
         return sb.toString();
-    }
-
-    public void addSender(MotionSender sender)
-    {
-        this.sender = sender;
     }
 
     public void addEndStopSwitches(HashMap<Switch_enum, Switch> switches)
@@ -252,14 +257,17 @@ public class XyzTable
         }
     }
 
-    private Vector<StepperMove> updateEndStopActivation(StepperMove move)
+    private void updateEndStopActivation(BasicLinearMove move)
     {
+        if(null == planner)
+        {
+            log.error("Cann not move as no steppers available !");
+            return;
+        }
         stopsOn = new Vector<Integer>();
         stopsOff = new Vector<Integer>();
 
         calculateEndStopsThatNeedToChangeTheirEnabledState();
-
-        final Vector<StepperMove> res = new Vector<StepperMove>();
         if(   (false == isHomed[Axis_enum.X.ordinal()])
            || (false == isHomed[Axis_enum.Y.ordinal()])
            || (false == isHomed[Axis_enum.Z.ordinal()]) )
@@ -267,33 +275,25 @@ public class XyzTable
             if(0 < stopsOn.size())
             {
                 log.trace("Adding stops On !(not homed)");
-                final StepperMove sm = new StepperMove();
-                sm.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
-                res.add(sm);
+                planner.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
                 stopsOn.clear();
             }
         }
         if(0 < stopsOff.size())
         {
             log.trace("Adding stops Off !");
-            final StepperMove sm = new StepperMove();
-            sm.addEndStopOnOffCommand(false, stopsOff.toArray(new Integer[0]));
-            res.add(sm);
+            planner.addEndStopOnOffCommand(false, stopsOff.toArray(new Integer[0]));
         }
         if(null != move)
         {
             log.trace("Adding the move!");
-            res.add(move);
+            planner.addMove(move);
         }
         if(0 < stopsOn.size())
         {
             log.trace("Adding stops On !");
-            final StepperMove sm = new StepperMove();
-            sm.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
-            res.add(sm);
+            planner.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
         }
-        log.trace("Returning {} moves", res.size());
-        return res;
     }
 
     public void addStepper(Axis_enum ae, Stepper motor)
@@ -330,12 +330,20 @@ public class XyzTable
    public void letMovementStop()
    {
        log.trace("letting the movement stop");
-       prepareMoveForSending(null, true);
+       if(null == planner)
+       {
+           log.warn("No Steppers configured ! No movement to stop !");
+       }
+       else
+       {
+           planner.flushQueueToClient();
+       }
    }
 
    public void addRelativeMove(RelativeMove relMov)
    {
        log.trace("adding the move {}", relMov);
+       final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
        // Feedrate
        if(true == relMov.hasFeedrate())
        {
@@ -343,57 +351,38 @@ public class XyzTable
        }
        // else  reuse last Feedrate
        log.trace("Feedrate = {} mm/Minute", FeedrateMmPerMinute);
-       double distanceOnXYZMm = 0.0;
-       if(true == relMov.has(Axis_enum.X))
-       {
-           distanceOnXYZMm = distanceOnXYZMm + Math.abs(relMov.get(Axis_enum.X));
-       }
-       if(true == relMov.has(Axis_enum.Y))
-       {
-           distanceOnXYZMm = distanceOnXYZMm + Math.abs(relMov.get(Axis_enum.Y));
-       }
-       if(true == relMov.has(Axis_enum.Z))
-       {
-           distanceOnXYZMm = distanceOnXYZMm + Math.abs(relMov.get(Axis_enum.Z));
-       }
-       log.trace("distance on X Y Z = {} mm", distanceOnXYZMm);
-       double SpeedPerMm = (FeedrateMmPerMinute/60) / distanceOnXYZMm;
-       if(MIN_MOVEMENT_SPEED_MM_SECOND > SpeedPerMm)
-       {
-           log.error("Feedrate too low !");
-           SpeedPerMm = MIN_MOVEMENT_SPEED_MM_SECOND;
-       }
-       log.trace("Speed Factor = {} mm/second", SpeedPerMm);
-       final StepperMove res = new StepperMove();
+       aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
+
        for(Axis_enum ax: Axis_enum.values())
        {
            if(true == relMov.has(ax))
            {
+               aMove.setDistanceMm(ax, relMov.get(ax));
                curPosition[ax.ordinal()] = curPosition[ax.ordinal()] + relMov.get(ax);
-               res.setMm(relMov.get(ax), ax);
-               final double Speed = Math.abs(relMov.get(ax) * SpeedPerMm);
-               log.trace("{}Speed = {}", ax, Speed);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
                    {
-                       Steppers[ax.ordinal()][i].addMove(relMov.get(ax));
-                       Steppers[ax.ordinal()][i].setMaxSpeedMmPerSecond(Speed);
-                       res.addAxisMotors(Steppers[ax.ordinal()][i]);
+                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
                }
            }
            // else axis not used
        }
-       prepareMoveForSending(res, false);
+       updateEndStopActivation(aMove);
    }
 
    public void homeAxis(Axis_enum[] axis)
    {
+       if(null == planner)
+       {
+           log.error("Cann not home as no steppers available !");
+           return;
+       }
        log.trace("homing Axis");
        // TODO Homing direction (inverted = - homingDistance)
-       final StepperMove res = new StepperMove();
-       res.setIsHoming(true);
+       final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       aMove.setIsHoming(true);
        double homingDistance = 0.0;
 
        for(int a = 0; a < axis.length; a++)
@@ -403,242 +392,30 @@ public class XyzTable
            if(ax != Axis_enum.E)
            {
                homingDistance = (Max[ax.ordinal()] - Min[ax.ordinal()]) * HOMING_MOVE_SFAETY_FACTOR;
-               res.setMm(homingDistance, ax);
+               aMove.setDistanceMm(ax, homingDistance);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
                    {
-                       Steppers[ax.ordinal()][i].addMove(homingDistance);
-                       res.addAxisMotors(Steppers[ax.ordinal()][i]);
+                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
                }
            }
            // else nothing to do to home E
        }
-       prepareMoveForSending(res, true);
+       updateEndStopActivation(aMove);
+       planner.flushQueueToClient();
    }
 
-   private void prepareMoveForSending(StepperMove aMove, boolean isLastMove)
-   {
-       if(null != aMove)
-       {
-           log.trace("preparing the move : {}", aMove);
-           final Vector<StepperMove> moves = updateEndStopActivation(aMove);
-           for(int i = 0; i < moves.size(); i++)
-           {
-               PlannerQueue.add(moves.get(i));
-           }
-           log.trace("PlannerQueue.size = {}", PlannerQueue.size());
-       }
-       // else no new movement data, but we now know that this is the end of the move.
-       sendAllPossibleMoves(isLastMove);
-       if(true == isLastMove)
-       {
-           if(null != sender)
-           {
-               log.trace("flushing Queue to Client");
-               sender.flushQueueToClient();
-           }
-           // else no sender - no movement to flush
-       }
-   }
-
-   private void sendOneMove(StepperMove aMove, double endSpeedFactor)
-   {
-       log.trace("endSpeedFactor = {}", endSpeedFactor);
-       final Integer[] steppers = aMove.getAllActiveSteppers();
-       for(int j = 0; j < steppers.length; j++)
-       {
-           log.trace("Stepper {}:", steppers[j]);
-           final double maxSpeed = aMove.getMaxSpeedMmPerSecondFor(steppers[j]);
-           log.trace("maxSpeed = {}", maxSpeed);
-           aMove.setMaxEndSpeedMmPerSecondFor(steppers[j], maxSpeed * endSpeedFactor);
-       }
-       if(null != sender)
-       {
-           sender.add(aMove);
-       }
-       else
-       {
-           log.error("Could not send Move - no sender available !");
-       }
-       PlannerQueue.finishedOneMove();
-   }
-
-   private boolean sendOneMoveThatHasAnotherFolling()
-   {
-       if(2 > PlannerQueue.size())
-       {
-           // we need at least two moves
-           return false;
-       }
-       final StepperMove firstMove = PlannerQueue.getMove(0);
-       final double[] firstVector =new double[Axis_enum.size];
-       for(Axis_enum axis: Axis_enum.values())
-       {
-           firstVector[axis.ordinal()] = firstMove.getMm(axis);
-       }
-       log.trace("getting the move [{},{},z]", firstVector[Axis_enum.X.ordinal()], firstVector[Axis_enum.Y.ordinal()]);
-
-       final Integer[] steppers = firstMove.getAllActiveSteppers();
-       for(int j = 0; j < steppers.length; j++)
-       {
-           log.trace("Stepper {}:", steppers[j]);
-       }
-
-       // find second move
-       int i = 1;
-       boolean found = false;
-       double[] secondVector;
-       do
-       {
-           final StepperMove curMove = PlannerQueue.getMove(i);
-           secondVector = new double[Axis_enum.size];
-           for(Axis_enum axis: Axis_enum.values())
-           {
-               secondVector[axis.ordinal()] = curMove.getMm(axis);
-           }
-           log.trace("getting the move [{},{},z]", secondVector[Axis_enum.X.ordinal()],
-                                                   secondVector[Axis_enum.Y.ordinal()]);
-           if(true == hasMovementData(secondVector))
-           {
-               found = true;
-           }
-           //else  we found a empty stepperMove with a command in it -> skip for now
-           i++;
-       } while((i < PlannerQueue.size()) && (false == found));
-
-       if(true == found)
-       {
-           // we have two moves so send the first
-           // set end Speed
-           final double endSpeedFactor = getMaxEndSpeedFactorFor(firstVector, secondVector);
-           // send first move
-           log.trace("sending {}", firstMove);
-           sendOneMove(firstMove, endSpeedFactor);
-           return true;
-       }
-       else
-       {
-           // no second move found
-           return false;
-       }
-   }
-
-   private void sendLastMove()
-   {
-       final StepperMove curMove = PlannerQueue.getMove(0);
-       log.trace("sending last move");
-       sendOneMove(curMove, 0.0);
-   }
-
-    private void sendAllPossibleMoves(boolean isLastMove)
+    public boolean hasAllMovementFinished()
     {
-        if(1 > PlannerQueue.size())
+        if(null == planner)
         {
-            // no moves available to send
-            return;
+            return true;
         }
-        sendCommands();
-        boolean goon = true;
-        do
+        else
         {
-            goon = sendOneMoveThatHasAnotherFolling();
-            sendCommands();
-        }while(true == goon);
-        if(true == isLastMove)
-        {
-            sendLastMove();
-        }
-        log.trace("send everything");
-    }
-
-    private void sendCommands()
-    {
-        while(0 < PlannerQueue.size())
-        {
-            final StepperMove curMove = PlannerQueue.getMove(0);
-            if(true == curMove.hasCommand())
-            {
-                // This move can be send
-                if(null != sender)
-                {
-                    log.trace("sending command");
-                    sender.add(curMove);
-                }
-                else
-                {
-                    log.error("Could not send Command - no sender available !");
-                }
-            }
-            final double[] curVector = new double[Axis_enum.size];
-            for(Axis_enum axis: Axis_enum.values())
-            {
-                curVector[axis.ordinal()] = curMove.getMm(axis);
-            }
-            if(true == hasMovementData(curVector))
-            {
-                break;
-            }
-            else
-            {
-                // empty move -> remove from queue
-                PlannerQueue.finishedOneMove();
-            }
+            return planner.hasAllMovementFinished();
         }
     }
-
-    private double cornerBreakFactor(double in, double out)
-    {
-        if((in > 0) && (out > 0))
-        {
-            return 1 - Math.abs(in -out);
-        }
-        if((in < 0) && ( out < 0))
-        {
-            return 1 - Math.abs(in -out);
-        }
-        // else one is 0 or they point in opposing directions
-        return 0.0;
-    }
-
-
-    private double getMaxEndSpeedFactorFor(double[] vec_one, double[] vec_two)
-    {
-        vec_one = normalize(vec_one);
-        vec_two = normalize(vec_two);
-        double max = 0.0;
-        for(Axis_enum axis: Axis_enum.values())
-        {
-            max = Math.max(max, cornerBreakFactor(vec_one[axis.ordinal()], vec_two[axis.ordinal()]));
-        }
-        return max;
-    }
-
-    private boolean hasMovementData(double[] vec)
-    {
-        for(Axis_enum axis: Axis_enum.values())
-        {
-            if(MIN_MOVEMENT_DISTANCE < Math.abs(vec[axis.ordinal()]))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private double[] normalize(double[] vec)
-    {
-        double sum = 0.0;
-        for(Axis_enum axis: Axis_enum.values())
-        {
-            sum = sum + Math.abs(vec[axis.ordinal()]);
-        }
-        for(Axis_enum axis: Axis_enum.values())
-        {
-            vec[axis.ordinal()] = vec[axis.ordinal()] / sum;
-        }
-        return vec;
-    }
-
 }
