@@ -1004,6 +1004,12 @@ public class Protocol
             lastErrorReason = "no Queue - no chance to add to it.";
             return false;
         }
+        if(false == aMove.hasMovementData())
+        {
+            // no movement in this move, so no need to send anything.
+            log.debug("dropping move that has no steps.");
+            return true;
+        }
         // Prepare data
         final byte[] param;
         int steppsStart;
@@ -1086,9 +1092,21 @@ public class Protocol
         {
             param[steppsStart    ] = (byte)(0xff & aMove.getAccelerationSteps());
             param[steppsStart + 1] = (byte)(0xff & aMove.getDecelerationSteps());
-            for(int i = 0; i < aMove.getNumberOfActiveSteppers(); i++)
+            final int numStepperToGo = aMove.getNumberOfActiveSteppers();
+            int stepperfound = 0;
+            // highest Stepper Number can be 0 -> then we still have one stepper
+            for(int i = 0; i < aMove.getHighestStepperNumber() + 1; i++)
             {
-                param[steppsStart + 2 + i] = (byte)(0xff & aMove.getStepsOnActiveStepper(i));
+                final int steps = aMove.getStepsOnActiveStepper(i);
+                if(0 != steps)
+                {
+                    param[steppsStart + 2 + stepperfound] = (byte)(0xff & steps);
+                    stepperfound ++;
+                    if(stepperfound == numStepperToGo)
+                    {
+                        break;
+                    }
+                }
             }
         }
         else
@@ -1100,11 +1118,22 @@ public class Protocol
             param[steppsStart + 1] = (byte)(0xff & accellerationSteps);
             param[steppsStart + 2] = (byte)(0xff & (DecellerationSteps>>8));
             param[steppsStart + 3] = (byte)(0xff & DecellerationSteps);
-            for(int i = 0; i < aMove.getNumberOfActiveSteppers(); i++)
+            final int numStepperToGo = aMove.getNumberOfActiveSteppers();
+            int stepperfound = 0;
+            // highest Stepper Number can be 0 -> then we still have one stepper
+            for(int i = 0; i < aMove.getHighestStepperNumber() + 1; i++)
             {
                 final int steps = aMove.getStepsOnActiveStepper(i);
-                param[steppsStart + 4 + i*2] = (byte)(0xff & (steps>>8));
-                param[steppsStart + 5 + i*2] = (byte)(0xff & steps);
+                if(0 != steps)
+                {
+                    param[steppsStart + 4 + stepperfound*2] = (byte)(0xff & (steps>>8));
+                    param[steppsStart + 5 + stepperfound*2] = (byte)(0xff & steps);
+                    stepperfound ++;
+                    if(stepperfound == numStepperToGo)
+                    {
+                        break;
+                    }
+                }
             }
         }
         // Send the data

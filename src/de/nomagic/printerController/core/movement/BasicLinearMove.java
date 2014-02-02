@@ -59,10 +59,12 @@ public class BasicLinearMove
     private double PrimaryAxisMaxAceleration = 1;
 
     private boolean hasCommand = false;
+    private boolean hasMovement = false;
     private boolean Command_on = true;
     private Integer[] Command_switches;
 
     private final int MaxPossibleClientSpeed;
+    private int maxStepperNumber = -1;
     private double endSpeed = 0.0;
     private boolean hasEndSpeed = false;
     private double endSpeedFactor = 1.0; // no limitation
@@ -81,23 +83,7 @@ public class BasicLinearMove
 
     public boolean hasMovementData()
     {
-        for(Axis_enum axis: Axis_enum.values())
-        {
-            double dst;
-            try
-            {
-                dst = distances.get(axis.ordinal());
-            }
-            catch(NullPointerException e)
-            {
-                dst = 0.0;
-            }
-            if(MIN_MOVEMENT_DISTANCE < Math.abs(dst))
-            {
-                return true;
-            }
-        }
-        return false;
+        return hasMovement;
     }
 
     public void setFeedrateMmPerMinute(double feedrateMmPerMinute)
@@ -110,7 +96,12 @@ public class BasicLinearMove
 
     public void setDistanceMm(Axis_enum axis, double distance)
     {
+        log.debug("adding {} = {} mm", axis, distance);
         distances.put(axis, distance);
+        if(MIN_MOVEMENT_DISTANCE < distance)
+        {
+            hasMovement = true;
+        }
     }
 
     public double getMm(Axis_enum axis)
@@ -138,6 +129,11 @@ public class BasicLinearMove
     public int getNumberOfActiveSteppers()
     {
         return activeAxises.size();
+    }
+
+    public int getHighestStepperNumber()
+    {
+        return maxStepperNumber;
     }
 
     public int getStepsOnActiveStepper(int i)
@@ -169,22 +165,29 @@ public class BasicLinearMove
             return;
         }
         final Integer number = stepper.getStepperNumber();
+        log.debug("adding Stepper {} for Axis {}", number, ax);
         AxisMapping.put(number, ax);
+        if(maxStepperNumber < number)
+        {
+            maxStepperNumber = number;
+        }
         final double exactSteps = roundingError.get(ax) + (distances.get(ax) * stepper.getStepsPerMm());
         final int steps = (int) exactSteps;
+        log.debug("exact Steps = {}, got rounded to {}", exactSteps, steps);
         final Double difference = exactSteps - steps;
         roundingError.put(ax, difference);
         if(0 == steps)
         {
             return;
         }
-        if(255 < steps)
+        hasMovement = true;
+        if(255 < Math.abs(steps))
         {
             NumBytesNeeededForSteps = 2;
         }
-        if(StepsOnPrimaryAxis < steps)
+        if(StepsOnPrimaryAxis < Math.abs(steps))
         {
-            StepsOnPrimaryAxis = steps;
+            StepsOnPrimaryAxis = Math.abs(steps);
             primaryAxis = number;
             PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
             PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
@@ -230,17 +233,14 @@ public class BasicLinearMove
     public int getDirectionMap()
     {
         int DirectionMap = 0;
-        log.trace("Direction Map = {}", DirectionMap);
         for(int i = 0; i < activeAxises.size(); i++)
         {
             final int StepperNumber = activeAxises.get(i);
             if(true == AxisDirectionIncreasing.get(StepperNumber))
             {
                 DirectionMap = DirectionMap | (1 << StepperNumber);
-                log.trace("Direction Map = {}", DirectionMap);
             }
         }
-        log.trace("Direction Map = {}", DirectionMap);
         return DirectionMap;
     }
 

@@ -357,6 +357,7 @@ public class XyzTable
        {
            if(true == relMov.has(ax))
            {
+               log.debug("adding Axis {}", ax);
                aMove.setDistanceMm(ax, relMov.get(ax));
                curPosition[ax.ordinal()] = curPosition[ax.ordinal()] + relMov.get(ax);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)

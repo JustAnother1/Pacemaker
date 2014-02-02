@@ -97,8 +97,6 @@ public class PlannedMoves
         return entries.isEmpty();
     }
 
-
-
     private void addEndSpeedToLastMove(BasicLinearMove aMove)
     {
         if(false == entries.isEmpty())
@@ -288,7 +286,7 @@ public class PlannedMoves
             {
                 aMove.setDecelerationSteps(steps);
             }
-            aMove.setTravelSpeed(currentSpeed);
+            aMove.setTravelSpeed(desiredEndSpeed);
         }
         currentSpeed = desiredEndSpeed;
         entries.set(0, aMove);
