@@ -286,7 +286,14 @@ public class PlannedMoves
             {
                 aMove.setDecelerationSteps(steps);
             }
-            aMove.setTravelSpeed(desiredEndSpeed);
+            if(true == aMove.endSpeedIsZero())
+            {
+                aMove.setTravelSpeed(currentSpeed);
+            }
+            else
+            {
+                aMove.setTravelSpeed(desiredEndSpeed);
+            }
         }
         currentSpeed = desiredEndSpeed;
         entries.set(0, aMove);
