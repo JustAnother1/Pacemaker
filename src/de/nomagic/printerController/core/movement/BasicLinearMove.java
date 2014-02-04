@@ -246,11 +246,12 @@ public class BasicLinearMove
 
     public int getTravelSpeedFraction()
     {
-        return (int)((travelSpeed * 255)/ MaxPossibleClientSpeed);
+        return (int)((travelSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeed);
     }
 
     public void setTravelSpeed(double speed)
     {
+        log.trace("Nominal speed set to {} mm/s!", speed);
         travelSpeed = speed;
     }
 
