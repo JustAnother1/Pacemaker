@@ -232,7 +232,7 @@ public class PlannedMoves
     private void sendMoveWithEndSpeedSet(BasicLinearMove aMove)
     {
         // we know the speed we need to have at the end of this move
-        final double desiredEndSpeed = aMove.getEndSpeed();
+        double desiredEndSpeed = aMove.getEndSpeed();
         int steps = aMove.getStepsOnActiveStepper(aMove.getPrimaryAxis());
         final int stepsToAchiveEndSpeed = aMove.getNumberOfStepsForSpeedChange(currentSpeed, desiredEndSpeed);
         if(steps > stepsToAchiveEndSpeed)
@@ -276,7 +276,9 @@ public class PlannedMoves
             // we need to use all the steps to achieve the end speed.
             if(steps < stepsToAchiveEndSpeed)
             {
-                log.warn("Not enougth steps to achieve end speed (steps={}, ens speed={})", steps, desiredEndSpeed);
+                log.warn("Not enougth steps to achieve end speed (steps={}, end speed={})", steps, desiredEndSpeed);
+                aMove.setEndSpeed(aMove.getSpeedChangeForSteps(steps));
+                desiredEndSpeed = aMove.getEndSpeed();
             }
             if(desiredEndSpeed > currentSpeed)
             {

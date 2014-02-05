@@ -172,7 +172,7 @@ public class BasicLinearMove
             maxStepperNumber = number;
         }
         final double exactSteps = roundingError.get(ax) + (distances.get(ax) * stepper.getStepsPerMm());
-        final int steps = (int) exactSteps;
+        final int steps = (int) Math.round(exactSteps);
         log.debug("exact Steps = {}, got rounded to {}", exactSteps, steps);
         final Double difference = exactSteps - steps;
         roundingError.put(ax, difference);
@@ -183,6 +183,7 @@ public class BasicLinearMove
         hasMovement = true;
         if(255 < Math.abs(steps))
         {
+            log.debug("we will need 2 bytes for steps");
             NumBytesNeeededForSteps = 2;
         }
         if(StepsOnPrimaryAxis < Math.abs(steps))
@@ -270,17 +271,17 @@ public class BasicLinearMove
     {
         if(MOVEMENT_SPEED_TOLERANCE_MM_SECOND < endSpeed)
         {
-            return true;
+            return false;
         }
         else
         {
-            return false;
+            return true;
         }
     }
 
     public int getEndSpeedFraction()
     {
-        return (int)((endSpeed * 255)/ MaxPossibleClientSpeed);
+        return (int)((endSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeed);
     }
 
     public void setAccelerationSteps(int steps)
