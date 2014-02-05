@@ -970,7 +970,7 @@ public class Cfg
                                 final String key = getKeyFrom(curLine);
                                 final String value = getValueFrom(curLine);
                                 addFirmwareConfiguration(connectionNumber, key, value);
-                                log.error("{} = {}", key, value);
+                                log.trace("{} = {}", key, value);
                                 break;
 
                             default:
