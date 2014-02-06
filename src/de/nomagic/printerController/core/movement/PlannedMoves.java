@@ -340,7 +340,14 @@ public class PlannedMoves
                 {
                     // we found a move that ends with speed = 0.
                     final double possibleEndSpeed = aMove.getSpeedChangeForSteps(stepsSeen);
-                    aMove.setEndSpeed(possibleEndSpeed);
+                    if(possibleEndSpeed > maxEndSpeed)
+                    {
+                        aMove.setEndSpeed(maxEndSpeed);
+                    }
+                    else
+                    {
+                        aMove.setEndSpeed(possibleEndSpeed);
+                    }
                     found = true;
                 }
                 idx++;

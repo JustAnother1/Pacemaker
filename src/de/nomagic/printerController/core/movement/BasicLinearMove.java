@@ -65,7 +65,7 @@ public class BasicLinearMove
     private boolean Command_on = true;
     private Integer[] Command_switches;
 
-    private final int MaxPossibleClientSpeed;
+    private final int MaxPossibleClientSpeedInStepsPerSecond;
     private int maxStepperNumber = -1;
     private double endSpeed = 0.0;
     private boolean hasEndSpeed = false;
@@ -78,7 +78,7 @@ public class BasicLinearMove
 
     public BasicLinearMove(int MaxPossibleClientSpeed)
     {
-        this.MaxPossibleClientSpeed = MaxPossibleClientSpeed;
+        this.MaxPossibleClientSpeedInStepsPerSecond = MaxPossibleClientSpeed;
         myId = nextId;
         nextId++;
         for(Axis_enum axis: Axis_enum.values())
@@ -253,7 +253,9 @@ public class BasicLinearMove
 
     public int getTravelSpeedFraction()
     {
-        return (int)((travelSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeed);
+        final int fraction = (int)((travelSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeedInStepsPerSecond);
+        log.trace("ID{}: travel speed = {} mm/s -> fraction = {}", myId, travelSpeed, fraction);
+        return fraction;
     }
 
     public void setTravelSpeed(double speed)
@@ -288,7 +290,9 @@ public class BasicLinearMove
 
     public int getEndSpeedFraction()
     {
-        return (int)((endSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeed);
+        final int fraction =  (int)((endSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeedInStepsPerSecond);
+        log.trace("ID{}: end speed = {} mm/s -> fraction = {}", myId, endSpeed, fraction);
+        return fraction;
     }
 
     public void setAccelerationSteps(int steps)
@@ -341,8 +345,9 @@ public class BasicLinearMove
 
     public double getSpeedChangeForSteps(int steps)
     {
+
         // V = sqr(2 * s* a
-        final double change = Math.sqrt(2 * steps * getMaxAcceleration());
+        final double change = Math.sqrt(2 * (steps/PrimaryAxisStepsPerMm) * getMaxAcceleration());
         return change;
     }
 
@@ -389,6 +394,13 @@ public class BasicLinearMove
             // speed is restricted by Feedrate
             maxSpeed = SpeedPerMmSec;
         }
+        final double maxClientSpeed = MaxPossibleClientSpeedInStepsPerSecond / PrimaryAxisStepsPerMm;
+        if(maxSpeed > maxClientSpeed)
+        {
+            // speed is restricted by the number of steps the client can do per second
+            maxSpeed = maxClientSpeed;
+        }
+        log.trace("ID{}: Max possible Speed = {}", myId, maxSpeed);
         return maxSpeed;
     }
 
@@ -440,6 +452,13 @@ public class BasicLinearMove
             // speed is restricted by Feedrate
             maxEndSpeed = SpeedPerMmSec;
         }
+        final double maxClientSpeed = MaxPossibleClientSpeedInStepsPerSecond / PrimaryAxisStepsPerMm;
+        if(maxEndSpeed > maxClientSpeed)
+        {
+            // speed is restricted by the number of steps the client can do per second
+            maxEndSpeed = maxClientSpeed;
+        }
+        log.trace("ID{}: Max end Speed = {}", myId, maxEndSpeed);
         return maxEndSpeed;
     }
 
