@@ -1007,9 +1007,10 @@ public class Protocol
         if(false == aMove.hasMovementData())
         {
             // no movement in this move, so no need to send anything.
-            log.debug("dropping move that has no steps.");
+            log.debug("dropping move ({}) that has no steps.", aMove.getId());
             return true;
         }
+        log.trace("Sending move {}", aMove.getId());
         // Prepare data
         final byte[] param;
         int steppsStart;

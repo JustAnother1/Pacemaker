@@ -344,6 +344,7 @@ public class XyzTable
    {
        log.trace("adding the move {}", relMov);
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       log.trace("created Move({}) to hold the move{}.", aMove.getId(), relMov);
        // Feedrate
        if(true == relMov.hasFeedrate())
        {
@@ -383,6 +384,7 @@ public class XyzTable
        log.trace("homing Axis");
        // TODO Homing direction (inverted = - homingDistance)
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       log.trace("created Move({}) to hold the homing move", aMove.getId());
        aMove.setIsHoming(true);
        double homingDistance = 0.0;
 

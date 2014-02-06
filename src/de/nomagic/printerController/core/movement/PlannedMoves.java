@@ -87,6 +87,7 @@ public class PlannedMoves
         if(null == aMove)
         {
             aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+            log.trace("created Move({}) to hold end stop command.", aMove.getId());
         }
         aMove.addEndStopOnOffCommand(on, switches);
         entries.addLast(aMove);
@@ -335,7 +336,7 @@ public class PlannedMoves
                     aMove.setEndSpeed(maxEndSpeed);
                     found = true;
                 }
-                if(true == otherMove.endSpeedIsZero())
+                else if(true == otherMove.endSpeedIsZero())
                 {
                     // we found a move that ends with speed = 0.
                     final double possibleEndSpeed = aMove.getSpeedChangeForSteps(stepsSeen);
