@@ -322,20 +322,25 @@ public class BasicLinearMove
 
     private double getBrakingDistance(double v1, double v2, double a)
     {
-        // v1, v2 = steps per second
-        // a = steps /second*second
+        // v1, v2 = mm per second
+        // a = mm /second*second
         // t = time in seconds
         // v2 = v1 - a*t -> t = (v2 - v1)/a
         // s = v * t
         // ->
-        // S = (v1 + v2)/2 * abs(v1 - v2)/a
-        return ((v1 + v2)/2) * (Math.abs(v1 - v2)/a);
+        // S = abs(v1 - v2)/2 * abs(v1 - v2)/a
+        final double deltaV = Math.abs(v1 - v2);
+        return (deltaV/2) * (deltaV/a);
     }
 
     public int getNumberOfStepsForSpeedChange(double startSpeed, double endSpeed)
     {
+        startSpeed = Math.abs(startSpeed);
+        endSpeed = Math.abs(endSpeed);
         final double distanceMm = Math.abs(getBrakingDistance(startSpeed, endSpeed, getMaxAcceleration()));
-        return (int)(distanceMm * PrimaryAxisStepsPerMm);
+        final int res = (int)(distanceMm * PrimaryAxisStepsPerMm);
+        log.trace("We need {} steps to accelerate from {} mm/s to {} mms/s", res, startSpeed, endSpeed);
+        return res;
     }
 
     public double getMaxAcceleration()
@@ -345,9 +350,9 @@ public class BasicLinearMove
 
     public double getSpeedChangeForSteps(int steps)
     {
-
-        // V = sqr(2 * s* a
+        // V = sqr(2 * s* a)
         final double change = Math.sqrt(2 * (steps/PrimaryAxisStepsPerMm) * getMaxAcceleration());
+        log.trace("Speed change of {} mm/s possible with {} steps", change, steps);
         return change;
     }
 
@@ -370,7 +375,7 @@ public class BasicLinearMove
         // speed on primary Axis / steps on primary axis = a
         // a * steps on the axis = speed on that axis
         // speed on each axis must be smaller than the max speed on that axis
-        double a = maxSpeed / StepsOnAxis.get(primaryAxis);
+        double a = maxSpeed / Math.abs(StepsOnAxis.get(primaryAxis));
         for(int i = 0; i < activeAxises.size(); i++)
         {
             final int axisNumber = activeAxises.get(i);
@@ -381,7 +386,7 @@ public class BasicLinearMove
                 log.error("ID{}: Speed to high for other Axis !", myId);
                 // calculate new possible max Speed
                 a = MaxSpeedStepsPerSecondOnAxis.get(axisNumber) / steps;
-                maxSpeed = a * StepsOnAxis.get(primaryAxis);
+                maxSpeed = a * Math.abs(StepsOnAxis.get(primaryAxis));
                 // try again
                 i = 0;
                 continue;

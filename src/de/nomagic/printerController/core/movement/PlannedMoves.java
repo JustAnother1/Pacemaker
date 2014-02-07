@@ -235,28 +235,40 @@ public class PlannedMoves
         // we know the speed we need to have at the end of this move
         double desiredEndSpeed = aMove.getEndSpeed();
         int steps = aMove.getStepsOnActiveStepper(aMove.getPrimaryAxis());
-        final int stepsToAchiveEndSpeed = aMove.getNumberOfStepsForSpeedChange(currentSpeed, desiredEndSpeed);
+        final int stepsToAchiveEndSpeed = Math.abs(
+                aMove.getNumberOfStepsForSpeedChange(currentSpeed, desiredEndSpeed));
         if(steps > stepsToAchiveEndSpeed)
         {
-            // we can achieve the end speed and have some steps left
+            log.trace("we can achieve the end speed and have some steps left");
             // these steps can be used to accelerate to a higher speed
+            log.trace("steps needed to achieve end Speed = {}", stepsToAchiveEndSpeed);
             steps = steps - stepsToAchiveEndSpeed;
             final double maxSpeedChange = aMove.getSpeedChangeForSteps(steps/2);
+            log.trace("maxSpeedChange = {} mm/s", maxSpeedChange);
             final double maxPossibleSpeed = aMove.getMaxPossibleSpeed();
+            log.trace("maxPossibleSpeed = {} mm/s", maxPossibleSpeed);
             final double travelSpeed = Math.max(currentSpeed, desiredEndSpeed);
+            log.trace("travelSpeed = {} mm/s", travelSpeed);
             int accell = 0;
             int decell = 0;
-            if(travelSpeed + maxSpeedChange > maxPossibleSpeed)
+            if(travelSpeed > maxPossibleSpeed)
             {
-                // we can not use all the steps to accelerate
-                final int accelerateSteps = aMove.getNumberOfStepsForSpeedChange(travelSpeed, maxPossibleSpeed);
+                log.error("Travel speed too high! end speed = {} mm/s currentSpeed = {} mm/s",
+                           desiredEndSpeed, currentSpeed);
+                aMove.setTravelSpeed(maxPossibleSpeed);
+            }
+            else if(travelSpeed + maxSpeedChange > maxPossibleSpeed)
+            {
+                log.trace("we can not use all the steps to accelerate");
+                final int accelerateSteps = Math.abs(
+                        aMove.getNumberOfStepsForSpeedChange(travelSpeed, maxPossibleSpeed));
                 aMove.setTravelSpeed(maxPossibleSpeed);
                 accell = accelerateSteps;
                 decell = accelerateSteps;
             }
             else
             {
-                // we just use all steps for speed changes
+                log.trace("we just use all steps for speed changes");
                 accell = steps/2;
                 decell = steps - accell;
                 aMove.setTravelSpeed(travelSpeed + maxSpeedChange);
@@ -274,10 +286,12 @@ public class PlannedMoves
         }
         else
         {
+            log.trace("we need to use all the steps to achieve the end speed.");
             // we need to use all the steps to achieve the end speed.
             if(steps < stepsToAchiveEndSpeed)
             {
-                log.warn("Not enougth steps to achieve end speed (steps={}, end speed={})", steps, desiredEndSpeed);
+                log.warn("Not enougth steps to achieve end speed (steps={}, end speed={})",
+                          steps, desiredEndSpeed);
                 aMove.setEndSpeed(aMove.getSpeedChangeForSteps(steps));
                 desiredEndSpeed = aMove.getEndSpeed();
             }
@@ -321,7 +335,8 @@ public class PlannedMoves
         {
             final double maxEndSpeed = aMove.getMaxEndSpeed();
             // we can send this move if we find a move that has a end Speed of 0,
-            // or if we have more steps in the Queue than needed to decelerate from the max end Speed of this move to 0.
+            // or if we have more steps in the Queue than needed to decelerate
+            // from the max end Speed of this move to 0.
             int idx = 1;
             boolean found = false;
             final int stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
