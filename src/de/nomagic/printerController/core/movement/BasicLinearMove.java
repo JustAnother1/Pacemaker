@@ -427,10 +427,11 @@ public class BasicLinearMove
 
         double SpeedPerMmSec = (feedrateMmPerMinute/60) / distanceOnXYZMm;
         log.trace("ID{}: Speed Factor = {} mm/second", myId, SpeedPerMmSec);
-        SpeedPerMmSec = SpeedPerMmSec * distances.get(AxisMapping.get(primaryAxis));
+        SpeedPerMmSec = SpeedPerMmSec * Math.abs(distances.get(AxisMapping.get(primaryAxis)));
 
         final int maxSpeed = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
         double maxEndSpeed = maxSpeed * endSpeedFactor;
+        log.trace("ID{}: Max Speed = {}", myId, maxSpeed);
         // Test if this speed is ok for the other axis
         // speed on primary Axis / steps on primary axis = a
         // a * steps on the axis = speed on that axis
@@ -453,13 +454,14 @@ public class BasicLinearMove
             }
             // else ok
         }
-
+        log.trace("ID{}: Feedrate on primary Axis = {}", myId, SpeedPerMmSec);
         if(maxEndSpeed > SpeedPerMmSec)
         {
             // speed is restricted by Feedrate
             maxEndSpeed = SpeedPerMmSec;
         }
         final double maxClientSpeed = MaxPossibleClientSpeedInStepsPerSecond / PrimaryAxisStepsPerMm;
+        log.trace("ID{}: Max client Speed = {}", myId, maxClientSpeed);
         if(maxEndSpeed > maxClientSpeed)
         {
             // speed is restricted by the number of steps the client can do per second
