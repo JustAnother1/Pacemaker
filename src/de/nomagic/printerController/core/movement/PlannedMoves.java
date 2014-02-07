@@ -333,38 +333,57 @@ public class PlannedMoves
         }
         if(false == aMove.hasEndSpeedSet())
         {
-            final double maxEndSpeed = aMove.getMaxEndSpeed();
+            double maxEndSpeed = aMove.getMaxEndSpeed();
             // we can send this move if we find a move that has a end Speed of 0,
             // or if we have more steps in the Queue than needed to decelerate
             // from the max end Speed of this move to 0.
             int idx = 1;
             boolean found = false;
-            final int stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
+            int stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
+            log.trace("steps needed = {}", stepsNeeded);
             int stepsSeen = 0;
+            boolean first = true;
             while(idx < entries.size())
             {
                 final BasicLinearMove otherMove = entries.get(idx);
-                stepsSeen = stepsSeen + otherMove.getStepsOnActiveStepper(otherMove.getPrimaryAxis());
-                if(stepsNeeded < stepsSeen)
+                if(true == otherMove.hasMovementData())
                 {
-                    // we have enough steps in the queue -> we can send this move
-                    aMove.setEndSpeed(maxEndSpeed);
-                    found = true;
-                }
-                else if(true == otherMove.endSpeedIsZero())
-                {
-                    // we found a move that ends with speed = 0.
-                    final double possibleEndSpeed = aMove.getSpeedChangeForSteps(stepsSeen);
-                    if(possibleEndSpeed > maxEndSpeed)
+                    if(true == first)
                     {
+                        first = false;
+                        final double maxSpeedNextMove = otherMove.getMaxPossibleSpeed();
+                        if(maxSpeedNextMove < maxEndSpeed)
+                        {
+                            // we need to reduce the end speed further
+                            // to avoid being to fast for the following move
+                            maxEndSpeed = maxSpeedNextMove;
+                            stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
+                            log.trace("steps needed = {}", stepsNeeded);
+                        }
+                    }
+                    stepsSeen = stepsSeen + otherMove.getStepsOnActiveStepper(aMove.getPrimaryAxis());
+                    if(stepsNeeded < stepsSeen)
+                    {
+                        log.trace("we have enough steps in the queue -> we can send this move");
                         aMove.setEndSpeed(maxEndSpeed);
+                        found = true;
                     }
-                    else
+                    else if(true == otherMove.endSpeedIsZero())
                     {
-                        aMove.setEndSpeed(possibleEndSpeed);
+                        log.trace("we found a move that ends with speed = 0.");
+                        final double possibleEndSpeed = aMove.getSpeedChangeForSteps(stepsSeen);
+                        if(possibleEndSpeed > maxEndSpeed)
+                        {
+                            aMove.setEndSpeed(maxEndSpeed);
+                        }
+                        else
+                        {
+                            aMove.setEndSpeed(possibleEndSpeed);
+                        }
+                        found = true;
                     }
-                    found = true;
                 }
+                // else move without movement
                 idx++;
             }
             if(false == found)
