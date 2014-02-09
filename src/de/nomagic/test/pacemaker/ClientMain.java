@@ -110,11 +110,9 @@ public class ClientMain
 
     public static void main(final String[] args) throws IOException
     {
-
             final ClientMain cm = new ClientMain();
             cm.startGui();
             cm.startCommunicating(12345);
-
     }
 
 }

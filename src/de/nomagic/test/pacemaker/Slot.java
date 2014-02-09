@@ -63,7 +63,7 @@ public class Slot
 
     private String parseBasicLinearMove(int[] data)
     {
-        StringBuffer res = new StringBuffer();
+        final StringBuffer res = new StringBuffer();
         boolean twoByteAxisFormat;
         if(0 == (0x80 & data[0]))
         {
@@ -105,7 +105,7 @@ public class Slot
             AxisDirection = (0x7f & data[nextByte])<<8 + (0xff & data[nextByte + 1]);
             nextByte = nextByte + 2;
         }
-        int primaryAxis = (0x0f & data[nextByte]);
+        final int primaryAxis = (0x0f & data[nextByte]);
         res.append(" primaryAxis=" + primaryAxis);
         if(0 == (0x10 & data[nextByte]))
         {
@@ -117,10 +117,10 @@ public class Slot
             res.append(" homing");
         }
         nextByte++;
-        int nominalSpeed = (0xff & data[nextByte]);
+        final int nominalSpeed = (0xff & data[nextByte]);
         res.append(" nominalSpeed=" + nominalSpeed);
         nextByte++;
-        int endSpeed = (0xff & data[nextByte]);
+        final int endSpeed = (0xff & data[nextByte]);
         res.append(" endSpeed=" + endSpeed);
         nextByte++;
         int accelerationSteps;
@@ -149,7 +149,7 @@ public class Slot
         res.append(" decelSteps=" + decelerationSteps);
         for(int i = 0; i < 16; i++)
         {
-            int pattern = 0x1<<i;
+            final int pattern = 0x1<<i;
             if(pattern == (AxisSelection & pattern))
             {
                 int StepsOnAxis;
@@ -180,7 +180,7 @@ public class Slot
 
     private String parseDelay(int[] data)
     {
-        int time = ((data[0] * 256) + data[1]) *10;
+        final int time = ((data[0] * 256) + data[1]) *10;
         return "" + time + "us";
     }
 

@@ -64,9 +64,9 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
                                BorderFactory.createLineBorder(Color.black),
                                "Control"));
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                                              ControlPanel,
-                                              StatusPanel);
+        final JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                                                    ControlPanel,
+                                                    StatusPanel);
         this.add(splitPane);
 
         this.setResizable(true);
@@ -317,7 +317,7 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     @Override
     public void actionPerformed(ActionEvent e)
     {
-        String cmd = e.getActionCommand();
+        final String cmd = e.getActionCommand();
         if(true == TIMER_ACTION_COMMAND.equals(cmd))
         {
             // update the status
@@ -381,7 +381,7 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
     @Override
     public byte[] getConfigurationOfHeater(int heaterIdx)
     {
-        byte[] res = new byte[2];
+        final byte[] res = new byte[2];
         res[0] = 0; // No internal Sensor
         res[2] = (byte)mappedTemperatureSensor[heaterIdx];
         return res;
@@ -400,7 +400,7 @@ public class StatusWindow extends JFrame implements Hardware, ActionListener
         {
             heaterTargetTemperature[idx] = targetTemp;
             // Fake heating:
-            int tempSensorIdx = mappedTemperatureSensor[idx];
+            final int tempSensorIdx = mappedTemperatureSensor[idx];
             if((-1 < tempSensorIdx) && (tempSensorIdx < temperature.length))
             {
                 temperature[tempSensorIdx] = targetTemp;

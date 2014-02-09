@@ -23,7 +23,7 @@ import java.util.LinkedList;
  */
 public class CommandQueue
 {
-    public final static int totalSlots = 500;
+    public static final int totalSlots = 500;
     private int executedSlots = 0;
     private LinkedList<Slot> queue = new LinkedList<Slot>();
     private Thread worker;
@@ -63,8 +63,8 @@ public class CommandQueue
         int usedBytes = 0;
         do
         {
-            int length = parameter[0 + usedBytes];
-            int type = parameter[1 + usedBytes];
+            final int length = parameter[0 + usedBytes];
+            final int type = parameter[1 + usedBytes];
             if(0 == length)
             {
                 System.err.println("ERROR: invalid length !");
@@ -73,11 +73,11 @@ public class CommandQueue
             System.out.println("Found Block of Type " + type + " and length " + length);
             if(length + usedBytes < ParameterLength)
             {
-                int[] slotData = new int[length -1];
+                final int[] slotData = new int[length -1];
                 System.arraycopy(parameter, 2 + usedBytes,
                                  slotData, 0,
                                  length -1);
-                Slot theSlot = new Slot(type, slotData);
+                final Slot theSlot = new Slot(type, slotData);
                 System.out.println("adding : " + theSlot);
                 queue.add(theSlot);
                 usedBytes = usedBytes + length + 1;
@@ -105,11 +105,11 @@ public class CommandQueue
 
     private byte[] sendOKReply()
     {
-        byte[] res = new byte[6];
-        int availableSlots = totalSlots - queue.size();
+        final byte[] res = new byte[6];
+        final int availableSlots = totalSlots - queue.size();
         res[0] = (byte)(0xff & (availableSlots /256));
         res[1] = (byte)(0xff & (availableSlots));
-        int usedSlots =  0;//queue.size();
+        final int usedSlots =  0;//queue.size();
         res[2] = (byte)(0xff & (usedSlots /256));
         res[3] = (byte)(0xff & (usedSlots));
         res[4] = (byte)(0xff & (executedSlots /256));

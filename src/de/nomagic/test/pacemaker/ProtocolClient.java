@@ -76,8 +76,9 @@ public class ProtocolClient
         {
             data[i + Protocol.ORDER_POS_OF_START_OF_PARAMETER] = (byte)parameter[i];
         }
-        int res =  0xff & ClientConnection.getCRCfor(data, length + Protocol.ORDER_POS_OF_START_OF_PARAMETER - 2);
-        System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data) + " -> " + String.format("%02X", res));
+        final int res =  0xff & ClientConnection.getCRCfor(data, length + Protocol.ORDER_POS_OF_START_OF_PARAMETER - 2);
+        System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data)
+                           + " -> " + String.format("%02X", res));
         return res;
     }
 
@@ -116,7 +117,7 @@ public class ProtocolClient
                         parameter[i] = (0xff & h);
                     }
                     final int checksum = 0xff & getAByte();
-                    int calculatedCheckSum = calculateChecksum(order, length, control, parameter);
+                    final int calculatedCheckSum = calculateChecksum(order, length, control, parameter);
                     if(checksum != calculatedCheckSum)
                     {
                         System.err.println("BAD CRC ! (" +checksum + " - " + calculatedCheckSum + ") !" );
@@ -394,9 +395,9 @@ public class ProtocolClient
     private void handleOrderSetPwm() throws IOException
     {
         // TODO handle more than one pwm at once
-        int devType = parameter[0];
-        int devIdx = parameter[1];
-        int pwm = (parameter[2] * 256) + parameter[3];
+        final int devType = parameter[0];
+        final int devIdx = parameter[1];
+        final int pwm = (parameter[2] * 256) + parameter[3];
         if(Protocol.DEVICE_TYPE_OUTPUT == devType)
         {
             if((-1 < devIdx) && (devIdx < hw.getNumberPwm()))
@@ -420,9 +421,9 @@ public class ProtocolClient
     private void handleOrderSetOutput() throws IOException
     {
         // TODO handle more than one output at once
-        int devType = parameter[0];
-        int devIdx = parameter[1];
-        int state = parameter[2];
+        final int devType = parameter[0];
+        final int devIdx = parameter[1];
+        final int state = parameter[2];
         if(Protocol.DEVICE_TYPE_OUTPUT == devType)
         {
             if((-1 < devIdx) && (devIdx < hw.getNumberOutput()))
@@ -446,13 +447,13 @@ public class ProtocolClient
     private void handleOrderRequestInput() throws IOException
     {
         // TODO handle more than one switch reading at once
-        int devType = parameter[0];
-        int devIdx = parameter[1];
+        final int devType = parameter[0];
+        final int devIdx = parameter[1];
         if(Protocol.DEVICE_TYPE_INPUT == devType)
         {
             if((-1 < devIdx) && (devIdx < hw.getNumberInput()))
             {
-                int value = hw.getInputValue(devIdx);
+                final int value = hw.getInputValue(devIdx);
                 sendByte(value);
             }
             else
@@ -470,8 +471,8 @@ public class ProtocolClient
 
     private void handleOrderSetHeaterTargetTemperature() throws IOException
     {
-        int devIdx = parameter[0];
-        int targetTemp = parameter[1] * 256 + parameter[2];
+        final int devIdx = parameter[0];
+        final int targetTemp = parameter[1] * 256 + parameter[2];
         if((-1 < devIdx) &&(devIdx < hw.getNumberHeaters()))
         {
             hw.setTargetTemperatureOfHeater(devIdx, targetTemp);
@@ -486,8 +487,8 @@ public class ProtocolClient
 
     private void handleOrderConfigureHeater() throws IOException
     {
-        int devIdx = parameter[0];
-        int tempSensor = parameter[1];
+        final int devIdx = parameter[0];
+        final int tempSensor = parameter[1];
         if((-1 < devIdx) &&(devIdx < hw.getNumberHeaters()))
         {
             hw.setConfigurationOfHeater(devIdx, tempSensor);
@@ -502,10 +503,10 @@ public class ProtocolClient
 
     private void handleOrderGetHeaterConfiguration() throws IOException
     {
-        int devIdx = parameter[0];
+        final int devIdx = parameter[0];
         if((-1 < devIdx) &&(devIdx < hw.getNumberHeaters()))
         {
-            byte[] cfg = hw.getConfigurationOfHeater(devIdx);
+            final byte[] cfg = hw.getConfigurationOfHeater(devIdx);
             sendByteArray(cfg);
         }
         else
@@ -518,13 +519,13 @@ public class ProtocolClient
     private void handleOrderRequestTemperature() throws IOException
     {
         // TODO handle more than one temperature requested
-        int devType = parameter[0];
-        int devIdx = parameter[1];
+        final int devType = parameter[0];
+        final int devIdx = parameter[1];
         if(Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR == devType)
         {
             if((-1 < devIdx) &&(devIdx < hw.getNumberTempSensor()))
             {
-                int temperature = hw.getTemperatureFromSensor(devIdx);
+                final int temperature = hw.getTemperatureFromSensor(devIdx);
                 sendI16(temperature);
             }
             else
