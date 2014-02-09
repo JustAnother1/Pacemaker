@@ -23,11 +23,20 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class Slot
 {
-    private String typeDescription;
-    private String dataDescription;
+    protected String dataDescription;
+    protected String typeDescription;
+    private int type;
+    private int[] data;
+
+    protected Slot()
+    {
+
+    }
 
     public Slot(int type, int[] data)
     {
+        this.type = type;
+        this.data = data;
         switch(type)
         {
         case Protocol.MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER:
@@ -38,11 +47,6 @@ public class Slot
         case Protocol.MOVEMENT_BLOCK_TYPE_DELAY:
             typeDescription = "Delay";
             dataDescription = parseDelay(data);
-            break;
-
-        case Protocol.MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE:
-            typeDescription = "basic linear move";
-            dataDescription = parseBasicLinearMove(data);
             break;
 
         case Protocol.MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD:
@@ -61,123 +65,6 @@ public class Slot
         return "" + data[0];
     }
 
-    private String parseBasicLinearMove(int[] data)
-    {
-        final StringBuffer res = new StringBuffer();
-        boolean twoByteAxisFormat;
-        if(0 == (0x80 & data[0]))
-        {
-            twoByteAxisFormat = false;
-        }
-        else
-        {
-            twoByteAxisFormat = true;
-        }
-        int AxisSelection;
-        int nextByte;
-        if(false == twoByteAxisFormat)
-        {
-            AxisSelection = (0x7f & data[0]);
-            nextByte = 1;
-        }
-        else
-        {
-            AxisSelection = (0x7f & data[0])<<8 + (0xff & data[1]);
-            nextByte = 2;
-        }
-        boolean twoByteStepCount;
-        if(0 == (0x80 & data[nextByte]))
-        {
-            twoByteStepCount = false;
-        }
-        else
-        {
-            twoByteStepCount = true;
-        }
-        int AxisDirection;
-        if(false == twoByteAxisFormat)
-        {
-            AxisDirection = (0x7f & data[nextByte]);
-            nextByte = nextByte + 1;
-        }
-        else
-        {
-            AxisDirection = (0x7f & data[nextByte])<<8 + (0xff & data[nextByte + 1]);
-            nextByte = nextByte + 2;
-        }
-        final int primaryAxis = (0x0f & data[nextByte]);
-        res.append(" primaryAxis=" + primaryAxis);
-        if(0 == (0x10 & data[nextByte]))
-        {
-            // normal move
-        }
-        else
-        {
-            // homing move
-            res.append(" homing");
-        }
-        nextByte++;
-        final int nominalSpeed = (0xff & data[nextByte]);
-        res.append(" nominalSpeed=" + nominalSpeed);
-        nextByte++;
-        final int endSpeed = (0xff & data[nextByte]);
-        res.append(" endSpeed=" + endSpeed);
-        nextByte++;
-        int accelerationSteps;
-        if(true == twoByteStepCount)
-        {
-            accelerationSteps = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
-            nextByte = nextByte + 2;
-        }
-        else
-        {
-            accelerationSteps = (0xff & data[nextByte]);
-            nextByte ++;
-        }
-        res.append(" accelSteps=" + accelerationSteps);
-        int decelerationSteps;
-        if(true == twoByteStepCount)
-        {
-            decelerationSteps = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
-            nextByte = nextByte + 2;
-        }
-        else
-        {
-            decelerationSteps = (0xff & data[nextByte]);
-            nextByte ++;
-        }
-        res.append(" decelSteps=" + decelerationSteps);
-        for(int i = 0; i < 16; i++)
-        {
-            final int pattern = 0x1<<i;
-            if(pattern == (AxisSelection & pattern))
-            {
-                int StepsOnAxis;
-                if(true == twoByteStepCount)
-                {
-                    StepsOnAxis = (0xff & data[nextByte])*256 + (0xff & data[nextByte + 1]);
-                    nextByte = nextByte + 2;
-                }
-                else
-                {
-                    StepsOnAxis = (0xff & data[nextByte]);
-                    nextByte ++;
-                }
-                res.append("(" + StepsOnAxis + " Steps on Axis " + i);
-                if(pattern == (AxisDirection & pattern))
-                {
-                    res.append(" direction increasing)");
-                }
-                else
-                {
-                    res.append(" direction decreasing)");
-                }
-            }
-            // else this axis is not selected
-        }
-        return res.toString();
-    }
-
     private String parseDelay(int[] data)
     {
         final int time = ((data[0] * 256) + data[1]) *10;
@@ -194,6 +81,31 @@ public class Slot
     public String toString()
     {
         return "Slot [" + typeDescription + " : " + dataDescription + "]";
+    }
+
+    public void validate()
+    {
+        switch(type)
+        {
+        case Protocol.MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER:
+            System.out.println("Command : " + Tool.fromByteBufferToHexString(data));
+            //TODO improve
+            break;
+
+        case Protocol.MOVEMENT_BLOCK_TYPE_DELAY:
+            System.out.println("Delay : " + Tool.fromByteBufferToHexString(data));
+            //TODO improve
+            break;
+
+        case Protocol.MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD:
+            System.out.println("active Toolhead : " + Tool.fromByteBufferToHexString(data));
+            //TODO improve
+            break;
+
+        default:
+            System.err.println("ERROR: invalid(" + type + ") !");
+            break;
+        }
     }
 
 

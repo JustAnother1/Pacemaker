@@ -77,7 +77,8 @@ public class CommandQueue
                 System.arraycopy(parameter, 2 + usedBytes,
                                  slotData, 0,
                                  length -1);
-                final Slot theSlot = new Slot(type, slotData);
+                final Slot theSlot = SlotFactory.getSlot(type, slotData);
+                validate(theSlot);
                 System.out.println("adding : " + theSlot);
                 queue.add(theSlot);
                 usedBytes = usedBytes + length + 1;
@@ -89,6 +90,22 @@ public class CommandQueue
             }
         } while((usedBytes + 2) < ParameterLength);
         return sendOKReply();
+    }
+
+    private void validate(Slot theSlot)
+    {
+        if(null == theSlot)
+        {
+            System.err.println("ERROR: invalid Data !");
+        }
+        if(theSlot instanceof BasicLinearMoveSlot)
+        {
+
+        }
+        else
+        {
+            theSlot.validate();
+        }
     }
 
     public Slot remove()

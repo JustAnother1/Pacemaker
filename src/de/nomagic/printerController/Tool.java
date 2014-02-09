@@ -49,11 +49,15 @@ public final class Tool
         return fromByteBufferToHexString(buf, buf.length, 0);
     }
 
+    public static String fromByteBufferToHexString(final int[] buf)
+    {
+        return fromByteBufferToHexString(buf, buf.length, 0);
+    }
+
     public static String fromByteBufferToHexString(final byte[] buf, int length)
     {
         return fromByteBufferToHexString(buf, length, 0);
     }
-
 
     public static String fromByteBufferToHexString(int[] buf, int length, int offset)
     {
