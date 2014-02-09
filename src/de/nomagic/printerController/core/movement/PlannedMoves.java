@@ -290,7 +290,7 @@ public class PlannedMoves
             // we need to use all the steps to achieve the end speed.
             if(steps < stepsToAchiveEndSpeed)
             {
-                log.warn("Not enougth steps to achieve end speed (steps={}, end speed={})",
+                log.warn("Not enough steps to achieve end speed (steps={}, end speed={})",
                           steps, desiredEndSpeed);
                 aMove.setEndSpeed(aMove.getSpeedChangeForSteps(steps));
                 desiredEndSpeed = aMove.getEndSpeed();
