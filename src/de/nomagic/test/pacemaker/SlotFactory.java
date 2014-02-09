@@ -12,11 +12,11 @@ public final class SlotFactory
     {
         switch(type)
         {
-        case Protocol.MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER:
+        case Protocol.MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE:
             return new BasicLinearMoveSlot(data);
 
+        case Protocol.MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER:
         case Protocol.MOVEMENT_BLOCK_TYPE_DELAY:
-        case Protocol.MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE:
         case Protocol.MOVEMENT_BLOCK_TYPE_SET_ACTIVE_TOOLHEAD:
             return new Slot(type, data);
 
