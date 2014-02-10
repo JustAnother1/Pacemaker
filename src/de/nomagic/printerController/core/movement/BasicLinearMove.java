@@ -441,12 +441,20 @@ public class BasicLinearMove
         SpeedPerMmSec = SpeedPerMmSec * Math.abs(distances.get(AxisMapping.get(primaryAxis)));
 
         final int maxSpeed = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
+        log.trace("ID{}: Max Speed = {}", myId, maxSpeed);
         double maxEndSpeed = maxSpeed * endSpeedFactor;
         if(maxEndSpeed < maxJerk)
         {
-            maxEndSpeed = maxJerk;
+            if(maxSpeed > maxJerk)
+            {
+                maxEndSpeed = maxJerk;
+            }
+            else
+            {
+                maxEndSpeed = maxSpeed;
+            }
         }
-        log.trace("ID{}: Max Speed = {}", myId, maxSpeed);
+        log.trace("ID{}: Max end speed = {}", myId, maxEndSpeed);
         // Test if this speed is ok for the other axis
         // speed on primary Axis / steps on primary axis = a
         // a * steps on the axis = speed on that axis
