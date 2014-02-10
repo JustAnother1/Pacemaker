@@ -73,6 +73,9 @@ public class BasicLinearMove
     private double travelSpeed = 0.0;
     private int AccelerationSteps = 0;
     private int DecelerationSteps = 0;
+    // this speed in mm/s can be reduced to 0 in an instant( with an allowed Jerk)
+    private double maxJerk = 0;
+    private boolean JerkIsSet = false;
 
     private int myId;
 
@@ -198,6 +201,18 @@ public class BasicLinearMove
             primaryAxis = number;
             PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
             PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
+        }
+        final double jerk = stepper.getMaxJerkSpeedMmS();
+        if(false == JerkIsSet)
+        {
+            JerkIsSet = true; // first jerk setting for this move
+            maxJerk = jerk;
+        }
+        if(maxJerk > jerk)
+        {
+            // this axis can not do as much Jerk as the other Axis
+            // so the Jerk for this move needs to be reduced
+            maxJerk = jerk;
         }
         activeAxises.add(number);
         if(false == stepper.isDirectionInverted())
@@ -413,10 +428,6 @@ public class BasicLinearMove
 
     public double getMaxEndSpeed()
     {
-        if(MOVEMENT_SPEED_TOLERANCE_MM_SECOND > endSpeedFactor)
-        {
-            return 0.0;
-        }
         double distanceOnXYZMm = 0.0;
         final Iterator<Double> it = distances.values().iterator();
         while(it.hasNext())
@@ -431,6 +442,10 @@ public class BasicLinearMove
 
         final int maxSpeed = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
         double maxEndSpeed = maxSpeed * endSpeedFactor;
+        if(maxEndSpeed < maxJerk)
+        {
+            maxEndSpeed = maxJerk;
+        }
         log.trace("ID{}: Max Speed = {}", myId, maxSpeed);
         // Test if this speed is ok for the other axis
         // speed on primary Axis / steps on primary axis = a

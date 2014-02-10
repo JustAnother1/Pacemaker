@@ -127,7 +127,8 @@ public class Movement
                                      maxAccelerationOfThisStepper,
                                      maxStepsPerSecond,
                                      cfg.isMovementDirectionInverted(ClientNumber, i),
-                                     cfg.getStepsPerMillimeterFor(ClientNumber, i));
+                                     cfg.getStepsPerMillimeterFor(ClientNumber, i),
+                                     cfg.getMaxJerkMmSfor(ClientNumber, i));
                     table.addStepper(ae, motor);
                     connectEndSwitchesToStepper(ae, motor, switches, pro);
                     configureStepperMaxSpeed(motor, pro);

@@ -29,19 +29,22 @@ public class Stepper
     private int maxPossibleStepsPerSecond;
     private boolean DirectionInverted;
     private Double StepsPerMillimeter;
+    private double maxJerkSpeedMmS;
 
 
     public Stepper(int StepperNumber ,
                    double maxAccelleration,
                    int maxPossibleStepsPerSecond,
                    boolean DirectionInverted,
-                   double StepsPerMillimeter)
+                   double StepsPerMillimeter,
+                   double maxJerkSpeedMmS)
     {
         this.StepperNumber = StepperNumber;
         this.MaxAccelleration = maxAccelleration;
         this.maxPossibleStepsPerSecond = maxPossibleStepsPerSecond;
         this.DirectionInverted = DirectionInverted;
         this.StepsPerMillimeter = StepsPerMillimeter;
+        this.maxJerkSpeedMmS = maxJerkSpeedMmS;
     }
 
     public Stepper(Stepper src)
@@ -50,6 +53,7 @@ public class Stepper
         this.MaxAccelleration = src.MaxAccelleration;
         this.DirectionInverted = src.DirectionInverted;
         this.StepsPerMillimeter = src.StepsPerMillimeter;
+        this.maxJerkSpeedMmS = src.maxJerkSpeedMmS;
     }
 
     public void setStepsPerMillimeter(Double steps)
@@ -90,6 +94,11 @@ public class Stepper
     public double getMaxAccelerationStepsPerSecond()
     {
         return MaxAccelleration;
+    }
+
+    public double getMaxJerkSpeedMmS()
+    {
+        return maxJerkSpeedMmS;
     }
 
 }

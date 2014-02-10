@@ -51,6 +51,7 @@ public class Cfg
     public static final String STEPPER_MAXIMUM_ACCELLERATION = "maximum acceleration";
     public static final String STEPPER_MAXIMUM_SPEED = "maximum steps per second";
     public static final String STEPPER_STEPS_PER_MILLIMETER = "steps per millimeter";
+    public static final String STEPPER_MAXIMUM_JERK = "maximum Jerk";
 
     private enum Sect
     {GENERAL, TEMPERATURES, HEATERS, FANS, OUTPUTS, SWITCHES, STEPPER, FIRMWARE_CONFIGURATION, INVALID}
@@ -98,6 +99,9 @@ public class Cfg
     = new HashMap<Integer,HashMap<Integer,Integer>>();
     private HashMap<Integer,HashMap<Integer,Double>> StepperStepsPerMillimeter
       = new HashMap<Integer,HashMap<Integer,Double>>();
+    private HashMap<Integer,HashMap<Integer,Double>> StepperMaxJerkMmS
+    = new HashMap<Integer,HashMap<Integer,Double>>();
+
 
     private HashMap<Integer,Vector<Setting>> firmwareCfg = new HashMap<Integer,Vector<Setting>>();
 
@@ -461,6 +465,32 @@ public class Cfg
         }
     }
 
+    public void setMaxJerkMmSFor(int clientNumber, int stepperNumber, double Jerk)
+    {
+        HashMap<Integer,Double> maxJerkSpeed = StepperMaxJerkMmS.get(clientNumber);
+        if(null == maxJerkSpeed)
+        {
+            maxJerkSpeed = new HashMap<Integer,Double>();
+        }
+        maxJerkSpeed.put(stepperNumber, Jerk);
+        StepperStepsPerMillimeter.put(clientNumber, maxJerkSpeed);
+    }
+
+    public double getMaxJerkMmSfor(int clientNumber, int stepperNumber)
+    {
+        final HashMap<Integer,Double> jerk = StepperMaxJerkMmS.get(clientNumber);
+        if(null == jerk)
+        {
+            return 0.0;
+        }
+        else
+        {
+            return jerk.get(stepperNumber);
+        }
+    }
+
+
+
     // Firmware Configuration
     public void addFirmwareConfiguration(Integer ClientNumber, String Setting, String Value)
     {
@@ -632,6 +662,7 @@ public class Cfg
                     final HashMap<Integer,Double> maxAccelMap = StepperMaxAcceleration.get(ConnectionNum);
                     final HashMap<Integer,Integer> maxSpeedMap = StepperMaxSpeed.get(ConnectionNum);
                     final HashMap<Integer,Double> StepsMap = StepperStepsPerMillimeter.get(ConnectionNum);
+                    final HashMap<Integer,Double> maxJerkMap = StepperMaxJerkMmS.get(ConnectionNum);
                     for(int i = 0; i <= maxStepperIndex; i++)
                     {
                         final Axis_enum axis = axisMap.get(i);
@@ -647,6 +678,7 @@ public class Cfg
                             ow.write(STEPPER_MAXIMUM_ACCELLERATION + SEPERATOR + maxAccelMap.get(i)  + "\n");
                             ow.write(STEPPER_STEPS_PER_MILLIMETER +SEPERATOR + StepsMap.get(i)  + "\n");
                             ow.write(STEPPER_MAXIMUM_SPEED + SEPERATOR + maxSpeedMap.get(i)  + "\n");
+                            ow.write(STEPPER_MAXIMUM_JERK + SEPERATOR + maxJerkMap.get(i)  + "\n");
                         }
                     }
                 }
@@ -959,6 +991,14 @@ public class Cfg
                                                               curStepper,
                                                               value);
                                     log.trace("Steppers #{} Steps/mm: {}", curStepper, value);
+                                }
+                                else if(true == curLine.startsWith(STEPPER_MAXIMUM_JERK))
+                                {
+                                    final double value = getDoubleValueFrom(curLine);
+                                    setMaxJerkMmSFor(connectionNumber,
+                                                     curStepper,
+                                                     value);
+                                    log.trace("Steppers #{} maximum Jerk speed mm/s: {}", curStepper, value);
                                 }
                                 else
                                 {
