@@ -468,7 +468,7 @@ The first byte of the Parameter indicates the cause of the error. The following 
 | 0x8 | Failed
 | 0x9 | Firmware Error
 | 0xa | Device Unavailable
-|============================
+|=============================
 
 Following the first byte of the Parameter, an optional UTF8 string is expected giving the human readable reason for the error.
 
