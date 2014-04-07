@@ -75,8 +75,8 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
         functionNames[Heater_enum.Extruder_2.ordinal()] = t.t("HeaterSelector_func_e3");
 
         tab = new JTable(tableData);
-        TableColumn usageColumn = tab.getColumnModel().getColumn(USED_FOR_COLUMN);
-        JComboBox<String> usageBox = new JComboBox<String>();
+        final TableColumn usageColumn = tab.getColumnModel().getColumn(USED_FOR_COLUMN);
+        final JComboBox<String> usageBox = new JComboBox<String>();
         unknown = t.t("HeaterSelector_unknown");
         usageBox.addItem(unknown);
         for(int i = 0; i< functionNames.length; i++)
@@ -85,10 +85,10 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
         }
         usageColumn.setCellEditor(new DefaultCellEditor(usageBox));
 
-        JScrollPane tabelePane = new JScrollPane(tab);
+        final JScrollPane tabelePane = new JScrollPane(tab);
         tab.setFillsViewportHeight(true);
 
-        JLabel Instruction = new JLabel(t.t("HeaterSelector_select"));
+        final JLabel Instruction = new JLabel(t.t("HeaterSelector_select"));
         slide.setLayout(new BoxLayout(slide, BoxLayout.PAGE_AXIS));
         slide.add(Instruction);
         slide.add(tabelePane);
@@ -118,17 +118,17 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
             if(true == obj instanceof Vector)
             {
                 @SuppressWarnings("unchecked")
-                Vector<Integer> activeTempSensors = (Vector<Integer>) obj;
+                final Vector<Integer> activeTempSensors = (Vector<Integer>) obj;
                 // TODO Thread Start:
                 if(activeTempSensors.size() > 0)
                 {
-                    TableColumnModel tcm = tab.getColumnModel();
-                    TableColumn sensorColumn = tcm.getColumn(USED_SENSOR_COLUMN);
-                    JComboBox<String> sensorBox = new JComboBox<String>();
+                    final TableColumnModel tcm = tab.getColumnModel();
+                    final TableColumn sensorColumn = tcm.getColumn(USED_SENSOR_COLUMN);
+                    final JComboBox<String> sensorBox = new JComboBox<String>();
                     sensorBox.addItem(unknown);
                     for(int i = 0; i < activeTempSensors.size(); i++)
                     {
-                        int sensorIdx = activeTempSensors.get(i);
+                        final int sensorIdx = activeTempSensors.get(i);
                         sensorBox.addItem("" + sensorIdx);
                     }
                     sensorColumn.setCellEditor(new DefaultCellEditor(sensorBox));
@@ -158,25 +158,25 @@ public class HeaterSelectionSlide extends OneNextWizardSlide
     @Override
     public DataStore actionOnClose(DataStore ds)
     {
-        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        final Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
         Cfg cfg = null;
         if(true == obj instanceof Cfg)
         {
             cfg = (Cfg)obj;
-            Vector<Integer> activeHeaters = new Vector<Integer>();
+            final Vector<Integer> activeHeaters = new Vector<Integer>();
             for(int i = 0; i < tableData.getRowCount(); i++)
             {
-                Boolean active = (Boolean)tableData.getValueAt(i, USED_COLUMN);
+                final Boolean active = (Boolean)tableData.getValueAt(i, USED_COLUMN);
                 if(true == active.booleanValue())
                 {
                     activeHeaters.add(i);
-                    String function = (String)tableData.getValueAt(i, USED_FOR_COLUMN);
+                    final String function = (String)tableData.getValueAt(i, USED_FOR_COLUMN);
                     cfg.addHeater(0, i, Heater_enum.valueOf(function));
                     // if we can map the function then we can also map the sensor if the sensor is given
-                    String Sensor = (String)tableData.getValueAt(i, USED_SENSOR_COLUMN);
+                    final String Sensor = (String)tableData.getValueAt(i, USED_SENSOR_COLUMN);
                     try
                     {
-                        int sensorIdx = Integer.parseInt(Sensor);
+                        final int sensorIdx = Integer.parseInt(Sensor);
                         cfg.addTemperatureSensor(0, sensorIdx,  Heater_enum.valueOf(function));
                     }
                     catch(NumberFormatException e)

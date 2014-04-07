@@ -72,14 +72,14 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
     {
         slide.setLayout(new GridLayout(0,2));
         // Port
-        JLabel portLabel = new JLabel(t.t("Interface_uart_port"));
-        Properties systemProperties = System.getProperties();
+        final JLabel portLabel = new JLabel(t.t("Interface_uart_port"));
+        final Properties systemProperties = System.getProperties();
         systemProperties.setProperty("jna.nosys", "true");
         @SuppressWarnings("rawtypes")
-        Enumeration ports = CommPortIdentifier.getPortIdentifiers();
+        final Enumeration ports = CommPortIdentifier.getPortIdentifiers();
         while (ports.hasMoreElements())
         {
-          CommPortIdentifier port = (CommPortIdentifier)ports.nextElement();
+          final CommPortIdentifier port = (CommPortIdentifier)ports.nextElement();
           if(CommPortIdentifier.PORT_SERIAL == port.getPortType())
           {
               portList.add(port.getName());
@@ -90,25 +90,25 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
         slide.add(portLabel, BorderLayout.WEST);
         slide.add(portName, BorderLayout.EAST);
         // Baudrate
-        JLabel baudLabel = new JLabel(t.t("Interface_uart_baudrate"));
+        final JLabel baudLabel = new JLabel(t.t("Interface_uart_baudrate"));
         slide.add(baudLabel, BorderLayout.WEST);
         slide.add(baudInput, BorderLayout.EAST);
         // databits
-        JLabel bitLabel = new JLabel(t.t("Interface_uart_databits"));
+        final JLabel bitLabel = new JLabel(t.t("Interface_uart_databits"));
         dataBitsUsed.setSelectedIndex(3); // 8 bits
         slide.add(bitLabel, BorderLayout.WEST);
         slide.add(dataBitsUsed, BorderLayout.EAST);
         // parity
-        JLabel parityLabel = new JLabel(t.t("Interface_uart_parity"));
+        final JLabel parityLabel = new JLabel(t.t("Interface_uart_parity"));
         slide.add(parityLabel, BorderLayout.WEST);
         slide.add(parityUsed, BorderLayout.EAST);
         // stopbit
-        JLabel stopLabel = new JLabel(t.t("Interface_uart_stopbits"));
+        final JLabel stopLabel = new JLabel(t.t("Interface_uart_stopbits"));
         slide.add(stopLabel, BorderLayout.WEST);
         slide.add(stopBits, BorderLayout.EAST);
         // Flowcontrol
-        JLabel flowLabel = new JLabel(t.t("Interface_uart_flowcontrol"));
-        JPanel buttonPane = new JPanel();
+        final JLabel flowLabel = new JLabel(t.t("Interface_uart_flowcontrol"));
+        final JPanel buttonPane = new JPanel();
         buttonPane.setLayout(new BoxLayout(buttonPane, BoxLayout.PAGE_AXIS));
         buttonPane.add(rts_cts_in);
         buttonPane.add(rts_cts_out);
@@ -133,16 +133,16 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
     @Override
     public DataStore actionOnShow(DataStore ds)
     {
-        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        final Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
         Cfg cfg = null;
         if(true == obj instanceof Cfg)
         {
             cfg = (Cfg)obj;
-            String configuredConnection = cfg.getConnectionDefinitionOfClient(0);
+            final String configuredConnection = cfg.getConnectionDefinitionOfClient(0);
             if(true == configuredConnection.startsWith(ClientConnectionFactory.UART_PREFIX))
             {
                 final String data = configuredConnection.substring(ClientConnectionFactory.UART_PREFIX.length());
-                String pn = UartClientConnection.getPortNameFromDescriptor(data);
+                final String pn = UartClientConnection.getPortNameFromDescriptor(data);
                 int idx = portList.indexOf(pn);
                 if(0 > idx)
                 {
@@ -167,7 +167,7 @@ public class InterfaceTypeUartSlide extends OneNextWizardSlide
     @Override
     public DataStore actionOnClose(DataStore ds)
     {
-        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        final Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
         Cfg cfg = null;
         if(true == obj instanceof Cfg)
         {

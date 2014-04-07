@@ -133,7 +133,7 @@ public class Reply
         }
         else
         {
-            byte[] res = new byte[length - 2];
+            final byte[] res = new byte[length - 2];
             for(int i = 0; i < length - 2; i ++)
             {
                 res[i] = data[i + POS_OF_PARAMETER_START];

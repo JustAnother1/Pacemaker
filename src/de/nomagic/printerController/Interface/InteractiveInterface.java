@@ -73,13 +73,13 @@ public abstract class InteractiveInterface extends Thread
         {
             while(false == isInterrupted())
             {
-                int ci = readIn.read();
+                final int ci = readIn.read();
                 if(-1 == ci)
                 {
                     log.error("Read -1");
                     return;
                 }
-                char c = (char)ci;
+                final char c = (char)ci;
                 if((c != '\r') && (c != '\n'))
                 {
                     curLineBuffer.append(c);
@@ -88,7 +88,7 @@ public abstract class InteractiveInterface extends Thread
                 {
                     if(0 < curLineBuffer.length())
                     {
-                        String line = curLineBuffer.toString();
+                        final String line = curLineBuffer.toString();
                         curLineBuffer = new StringBuffer();
                         out.write(parseString(line).getBytes("UTF-8"));
                         out.write("\r\n".getBytes());

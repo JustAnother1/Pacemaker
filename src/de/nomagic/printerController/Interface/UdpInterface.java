@@ -45,20 +45,20 @@ public class UdpInterface extends InteractiveInterface
             e.printStackTrace();
             return;
         }
-        byte[] receiveData = new byte[MAX_PACKET_SIZE];
+        final byte[] receiveData = new byte[MAX_PACKET_SIZE];
         byte[] sendData = new byte[MAX_PACKET_SIZE];
         while(false == isInterrupted())
         {
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+            final DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
             try
             {
                 serverSocket.receive(receivePacket);
-                String sentence = new String( receivePacket.getData());
-                InetAddress IPAddress = receivePacket.getAddress();
-                int port = receivePacket.getPort();
-                String capitalizedSentence = parseString(sentence);
-                sendData = capitalizedSentence.getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+                final String gCodeLine = new String( receivePacket.getData());
+                final InetAddress IPAddress = receivePacket.getAddress();
+                final int port = receivePacket.getPort();
+                final String gCodeResult = parseString(gCodeLine);
+                sendData = gCodeResult.getBytes();
+                final DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
                 serverSocket.send(sendPacket);
             }
             catch(IOException e)

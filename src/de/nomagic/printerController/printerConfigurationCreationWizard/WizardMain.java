@@ -63,14 +63,14 @@ public class WizardMain implements CancelAction
         //1. create the slides
         hello = new WelcomeSlide(t);
         // Client Interface
-        InterfaceTypeSelectionSlide interfaceSelect= new InterfaceTypeSelectionSlide(t);
-        InterfaceTypeUartSlide iUart = new InterfaceTypeUartSlide(t);
-        InterfaceTypeExperimental iExperimental = new InterfaceTypeExperimental(t);
-        InterfaceConnectSlide iConnect = new InterfaceConnectSlide(t, ConfigCreator);
+        final InterfaceTypeSelectionSlide interfaceSelect= new InterfaceTypeSelectionSlide(t);
+        final InterfaceTypeUartSlide iUart = new InterfaceTypeUartSlide(t);
+        final InterfaceTypeExperimental iExperimental = new InterfaceTypeExperimental(t);
+        final InterfaceConnectSlide iConnect = new InterfaceConnectSlide(t, ConfigCreator);
         // Temperature Sensors
-        TemperatureSensorSelectionSlide tempSensorSlide = new TemperatureSensorSelectionSlide(t);
+        final TemperatureSensorSelectionSlide tempSensorSlide = new TemperatureSensorSelectionSlide(t);
         // Heaters
-        HeaterSelectionSlide heatSelectSlide = new HeaterSelectionSlide(t);
+        final HeaterSelectionSlide heatSelectSlide = new HeaterSelectionSlide(t);
         // more slides created here
 
         //2. Link the Slides
@@ -103,9 +103,9 @@ public class WizardMain implements CancelAction
     public void addConfigurationFrom(InputStream in)
     {
         log.info("Reading provided Configuration !");
-        Cfg c = new Cfg();
+        final Cfg c = new Cfg();
         c.readFrom(in);
-        DataStore ds = new DataStore();
+        final DataStore ds = new DataStore();
         ds.putObject(DS_CONFIGURATION_NAME, c);
         ConfigCreator.setDatatStore(ds);
     }
@@ -113,11 +113,11 @@ public class WizardMain implements CancelAction
 
     public static void main(String[] args)
     {
-        WizardMain wm = new WizardMain();
+        final WizardMain wm = new WizardMain();
         for(int i = 0; i < args.length; i++)
         {
-            String h = args[i];
-            File f = new File(h);
+            final String h = args[i];
+            final File f = new File(h);
             if(true == f.canRead())
             {
                 FileInputStream fin;
@@ -144,13 +144,13 @@ public class WizardMain implements CancelAction
         Object obj = ds.getObject(DS_CONFIGURATION_NAME);
         if(true == obj instanceof Cfg)
         {
-            Cfg cfg = (Cfg)obj;
+            final Cfg cfg = (Cfg)obj;
             if(fc.showSaveDialog(null) == JFileChooser.APPROVE_OPTION)
             {
-                File file = fc.getSelectedFile();
+                final File file = fc.getSelectedFile();
                 try
                 {
-                    FileOutputStream fout = new FileOutputStream(file);
+                    final FileOutputStream fout = new FileOutputStream(file);
                     cfg.saveTo(fout);
                 }
                 catch(FileNotFoundException e)
@@ -163,7 +163,7 @@ public class WizardMain implements CancelAction
         obj = ds.getObject(DS_CLIENT_CONNECTION_NAME);
         if(true == obj instanceof ClientConnection)
         {
-            ClientConnection cc = (ClientConnection)obj;
+            final ClientConnection cc = (ClientConnection)obj;
             cc.close();
         }
         System.exit(0);

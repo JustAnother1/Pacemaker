@@ -35,7 +35,7 @@ public class InterfaceTypeSelectionSlide implements WizardSlide, ActionListener
     public InterfaceTypeSelectionSlide(Translator t)
     {
         slide.setLayout(new BoxLayout(slide, BoxLayout.PAGE_AXIS));
-        JTextArea pleaseChoose = new JTextArea();
+        final JTextArea pleaseChoose = new JTextArea();
         pleaseChoose.setText(t.t("Interface_Selection_ChooseOne"));
         pleaseChoose.setEditable(false);
         pleaseChoose.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -51,13 +51,13 @@ public class InterfaceTypeSelectionSlide implements WizardSlide, ActionListener
     @Override
     public Component getComponent()
     {
-        Iterator<String> it = interfaces.keySet().iterator();
+        final Iterator<String> it = interfaces.keySet().iterator();
         boolean first = true;
-        ButtonGroup group = new ButtonGroup();
+        final ButtonGroup group = new ButtonGroup();
         while(it.hasNext())
         {
-            String name = it.next();
-            JRadioButton aChoice = new JRadioButton(name);
+            final String name = it.next();
+            final JRadioButton aChoice = new JRadioButton(name);
             aChoice.setActionCommand(name);
             aChoice.addActionListener(this);
             if(true == first)
@@ -94,10 +94,10 @@ public class InterfaceTypeSelectionSlide implements WizardSlide, ActionListener
     @Override
     public DataStore actionOnClose(DataStore ds)
     {
-        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        final Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
         if(null == obj)
         {
-            Cfg c = new Cfg();
+            final Cfg c = new Cfg();
             ds.putObject(WizardMain.DS_CONFIGURATION_NAME, c);
         }
         return ds;

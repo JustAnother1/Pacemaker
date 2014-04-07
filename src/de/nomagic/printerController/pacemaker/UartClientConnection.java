@@ -61,44 +61,44 @@ public final class UartClientConnection extends ClientConnection
                                           boolean use_xon_xoff_in,
                                           boolean use_xon_xoff_out)
     {
-        String res = DeviceName
-                + OPTION_SEPERATOR + baudrate
-                + OPTION_SEPERATOR + bits[dataBitsIdx]
-                + OPTION_SEPERATOR + parityOptions[parityIdx]
-                + OPTION_SEPERATOR + stop[stopBitsIdx]
-                + OPTION_SEPERATOR + use_rts_cts_in
-                + OPTION_SEPERATOR + use_rts_cts_out
-                + OPTION_SEPERATOR + use_xon_xoff_in
-                + OPTION_SEPERATOR + use_xon_xoff_out ;
+        final String res = DeviceName
+                           + OPTION_SEPERATOR + baudrate
+                           + OPTION_SEPERATOR + bits[dataBitsIdx]
+                           + OPTION_SEPERATOR + parityOptions[parityIdx]
+                           + OPTION_SEPERATOR + stop[stopBitsIdx]
+                           + OPTION_SEPERATOR + use_rts_cts_in
+                           + OPTION_SEPERATOR + use_rts_cts_out
+                           + OPTION_SEPERATOR + use_xon_xoff_in
+                           + OPTION_SEPERATOR + use_xon_xoff_out ;
         return res;
     }
 
     public static String getPortNameFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
-        String res = sc.next();
+        final String res = sc.next();
         sc.close();
         return res;
     }
 
     public static int getBaudrateFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
-        int res = Integer.parseInt(sc.next());
+        final int res = Integer.parseInt(sc.next());
         sc.close();
         return res;
     }
 
     public static int getDataBitIdxFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
-        String help = sc.next();
+        final String help = sc.next();
         sc.close();
         int i;
         for(i = 0; i < bits.length; i++)
@@ -113,12 +113,12 @@ public final class UartClientConnection extends ClientConnection
 
     public static int getParityIdxFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
-        String help = sc.next();
+        final String help = sc.next();
         sc.close();
         for(int i = 0; i < parityOptions.length; i++)
         {
@@ -132,13 +132,13 @@ public final class UartClientConnection extends ClientConnection
 
     public static int getStopBitIdxFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
         sc.next(); // skip parity
-        String help = sc.next();
+        final String help = sc.next();
         sc.close();
         for(int i = 0; i < stop.length; i++)
         {
@@ -152,22 +152,22 @@ public final class UartClientConnection extends ClientConnection
 
     public static boolean getRtsCtsInFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
         sc.next(); // skip data bits
         sc.next(); // skip parity
         sc.next(); // skip stop bits
-        String help = sc.next();
-        boolean res = Boolean.getBoolean(help);
+        final String help = sc.next();
+        final boolean res = Boolean.getBoolean(help);
         sc.close();
         return res;
     }
 
     public static boolean getRtsCtsOutFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
@@ -175,15 +175,15 @@ public final class UartClientConnection extends ClientConnection
         sc.next(); // skip parity
         sc.next(); // skip stop bits
         sc.next(); // skip RTS / CTS In
-        String help = sc.next();
-        boolean res = Boolean.getBoolean(help);
+        final String help = sc.next();
+        final boolean res = Boolean.getBoolean(help);
         sc.close();
         return res;
     }
 
     public static boolean getXonXoffInFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
@@ -192,15 +192,15 @@ public final class UartClientConnection extends ClientConnection
         sc.next(); // skip stop bits
         sc.next(); // skip RTS / CTS In
         sc.next(); // skip RTS / CTS Out
-        String help = sc.next();
-        boolean res = Boolean.getBoolean(help);
+        final String help = sc.next();
+        final boolean res = Boolean.getBoolean(help);
         sc.close();
         return res;
     }
 
     public static boolean getXonXoffOutFromDescriptor(String data)
     {
-        Scanner sc = new Scanner(data);
+        final Scanner sc = new Scanner(data);
         sc.useDelimiter(OPTION_SEPERATOR);
         sc.next(); // skip Port Name
         sc.next(); // skip Baudrate
@@ -210,15 +210,15 @@ public final class UartClientConnection extends ClientConnection
         sc.next(); // skip RTS / CTS In
         sc.next(); // skip RTS / CTS Out
         sc.next(); // skip Xon / Xoff In
-        String help = sc.next();
-        boolean res = Boolean.getBoolean(help);
+        final String help = sc.next();
+        final boolean res = Boolean.getBoolean(help);
         sc.close();
         return res;
     }
 
     public static ClientConnection establishConnectionTo(String data)
     {
-        UartClientConnection res = new UartClientConnection(data);
+        final UartClientConnection res = new UartClientConnection(data);
         if(true == res.isConnected())
         {
             return res;
@@ -237,12 +237,12 @@ public final class UartClientConnection extends ClientConnection
     public UartClientConnection(String data)
     {
         super("UartClientConnection");
-        Properties systemProperties = System.getProperties();
+        final Properties systemProperties = System.getProperties();
         systemProperties.setProperty("jna.nosys", "true");
-        String PortName = getPortNameFromDescriptor(data);
+        final String PortName = getPortNameFromDescriptor(data);
         try
         {
-            CommPortIdentifier portId = CommPortIdentifier.getPortIdentifier(PortName);
+            final CommPortIdentifier portId = CommPortIdentifier.getPortIdentifier(PortName);
             if(CommPortIdentifier.PORT_SERIAL != portId.getPortType())
             {
                 log.error("Specified Port {} is not a Serial Port ({})!", PortName, portId.getPortType());
@@ -284,7 +284,7 @@ public final class UartClientConnection extends ClientConnection
             port.setFlowControlMode(flowControl);
 
             int spDataBits;
-            int dataBitIdx = getDataBitIdxFromDescriptor(data);
+            final int dataBitIdx = getDataBitIdxFromDescriptor(data);
             switch(dataBitIdx)
             {
             case 0: spDataBits = SerialPort.DATABITS_5;break;
@@ -294,7 +294,7 @@ public final class UartClientConnection extends ClientConnection
             default: spDataBits = SerialPort.DATABITS_8;break;
             }
             int spStopBits;
-            int stopBitIdx = getStopBitIdxFromDescriptor(data);
+            final int stopBitIdx = getStopBitIdxFromDescriptor(data);
             switch(stopBitIdx)
             {
             case 0:spStopBits = SerialPort.STOPBITS_1;break;
@@ -303,7 +303,7 @@ public final class UartClientConnection extends ClientConnection
             default: spStopBits = SerialPort.STOPBITS_1;break;
             }
             int spParity;
-            int parityIdx = getParityIdxFromDescriptor(data);
+            final int parityIdx = getParityIdxFromDescriptor(data);
             switch(parityIdx)
             {
             case 0: spParity = SerialPort.PARITY_NONE; break;

@@ -47,7 +47,7 @@ public class TcpInterface extends InteractiveInterface
         {
             try
             {
-                Socket connectionSocket = welcomeSocket.accept();
+                final Socket connectionSocket = welcomeSocket.accept();
                 in = connectionSocket.getInputStream();
                 out = connectionSocket.getOutputStream();
                 out.write("start\r\n".getBytes());

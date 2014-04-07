@@ -57,11 +57,11 @@ public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
         tableData.addColumn(t.t("TemperatureSensor_cur_temp"), false, String.class);
         tableData.addColumn(t.t("TemperatureSensor_use"), true, Boolean.class);
 
-        JTable tab = new JTable(tableData);
-        JScrollPane tabelePane = new JScrollPane(tab);
+        final JTable tab = new JTable(tableData);
+        final JScrollPane tabelePane = new JScrollPane(tab);
         tab.setFillsViewportHeight(true);
 
-        JLabel Instruction = new JLabel(t.t("TemperatureSensor_select"));
+        final JLabel Instruction = new JLabel(t.t("TemperatureSensor_select"));
         slide.setLayout(new BoxLayout(slide, BoxLayout.PAGE_AXIS));
         slide.add(Instruction);
         slide.add(tabelePane);
@@ -90,13 +90,13 @@ public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
             obj = ds.getObject(WizardMain.DS_PROTOCOL_NAME);
             if(true == obj instanceof Protocol)
             {
-                Protocol proto = (Protocol) obj;
+                final Protocol proto = (Protocol) obj;
                 // TODO Thread Start:
                 for(int i = 0; i < di.getNumberTemperatureSensors(); i++)
                 {
                     tableData.setValueAt(new Integer(i), i, 0);
                     tableData.setValueAt(di.getTemperatureSensorConnectorName(i), i, 1);
-                    double measuredTemp = proto.readTemperatureFrom(i);
+                    final double measuredTemp = proto.readTemperatureFrom(i);
                     tableData.setValueAt(String.format("%3.1f °C", measuredTemp) , i, 2);
                     if((MIN_TEMPERATURE < measuredTemp) && (MAX_TEMPERATURE > measuredTemp))
                     {
@@ -124,10 +124,10 @@ public class TemperatureSensorSelectionSlide extends OneNextWizardSlide
     @Override
     public DataStore actionOnClose(DataStore ds)
     {
-        Vector<Integer> activeTempSensors = new Vector<Integer>();
+        final Vector<Integer> activeTempSensors = new Vector<Integer>();
         for(int i = 0; i < tableData.getRowCount(); i++)
         {
-            Boolean active = (Boolean)tableData.getValueAt(i, SENSOR_ACTIVE_COLUMN);
+            final Boolean active = (Boolean)tableData.getValueAt(i, SENSOR_ACTIVE_COLUMN);
             if(true == active.booleanValue())
             {
                 activeTempSensors.add(i);

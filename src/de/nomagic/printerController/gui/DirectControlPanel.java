@@ -44,6 +44,8 @@ public class DirectControlPanel implements ActionListener
     public static final String ACTION_COMMAND_PREFIX = "Macro";
     public static final String ACTION_COMMAND_REMOVE = "remove";
 
+    public static final double DEFAULT_FEEDRATE = 9000.0;
+
     private final JPanel myPanel = new JPanel();
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -110,7 +112,7 @@ public class DirectControlPanel implements ActionListener
     {
         RelativeMove rm = new RelativeMove();
         rm.setX(1.0);
-        rm.setF(9000.0);
+        rm.setF(DEFAULT_FEEDRATE);
         ExecutorMacro em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
         em.setName("X+");
         em.updateCore(pp);
@@ -118,7 +120,7 @@ public class DirectControlPanel implements ActionListener
 
         rm = new RelativeMove();
         rm.setX(-1.0);
-        rm.setF(9000.0);
+        rm.setF(DEFAULT_FEEDRATE);
         em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
         em.setName("X-");
         em.updateCore(pp);
@@ -126,7 +128,7 @@ public class DirectControlPanel implements ActionListener
 
         rm = new RelativeMove();
         rm.setY(1.0);
-        rm.setF(9000.0);
+        rm.setF(DEFAULT_FEEDRATE);
         em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
         em.setName("Y+");
         em.updateCore(pp);
@@ -134,7 +136,7 @@ public class DirectControlPanel implements ActionListener
 
         rm = new RelativeMove();
         rm.setY(-1.0);
-        rm.setF(9000.0);
+        rm.setF(DEFAULT_FEEDRATE);
         em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
         em.setName("Y-");
         em.updateCore(pp);
@@ -142,7 +144,7 @@ public class DirectControlPanel implements ActionListener
 
         rm = new RelativeMove();
         rm.setZ(1.0);
-        rm.setF(9000.0);
+        rm.setF(DEFAULT_FEEDRATE);
         em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
         em.setName("Z+");
         em.updateCore(pp);
@@ -150,7 +152,7 @@ public class DirectControlPanel implements ActionListener
 
         rm = new RelativeMove();
         rm.setZ(-1.0);
-        rm.setF(9000.0);
+        rm.setF(DEFAULT_FEEDRATE);
         em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
         em.setName("Z-");
         em.updateCore(pp);
@@ -158,7 +160,7 @@ public class DirectControlPanel implements ActionListener
 
         rm = new RelativeMove();
         rm.setE(1.0);
-        rm.setF(9000.0);
+        rm.setF(DEFAULT_FEEDRATE);
         em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
         em.setName("E+");
         em.updateCore(pp);
@@ -166,7 +168,7 @@ public class DirectControlPanel implements ActionListener
 
         rm = new RelativeMove();
         rm.setE(-1.0);
-        rm.setF(9000.0);
+        rm.setF(DEFAULT_FEEDRATE);
         em = new ExecutorMacro(ExecutorMacro.FUNC_ADD_MOVE_TO, rm);
         em.setName("E-");
         em.updateCore(pp);

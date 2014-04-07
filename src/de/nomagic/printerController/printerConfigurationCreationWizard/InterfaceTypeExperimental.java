@@ -44,7 +44,7 @@ public class InterfaceTypeExperimental extends OneNextWizardSlide
 
     public InterfaceTypeExperimental(Translator t)
     {
-        JLabel label = new JLabel(t.t("Interface_Type_Experimental_Device"));
+        final JLabel label = new JLabel(t.t("Interface_Type_Experimental_Device"));
         slide.add(label, BorderLayout.WEST);
         slide.add(desscriptionField, BorderLayout.EAST);
     }
@@ -64,14 +64,14 @@ public class InterfaceTypeExperimental extends OneNextWizardSlide
     @Override
     public DataStore actionOnShow(DataStore ds)
     {
-        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        final Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
         Cfg cfg = null;
         if(true == obj instanceof Cfg)
         {
             cfg = (Cfg)obj;
             desscriptionField.setText(cfg.getConnectionDefinitionOfClient(0));
         }
-        String text = desscriptionField.getText();
+        final String text = desscriptionField.getText();
         if(1 > text.length())
         {
             // Simulator on same PC as default.
@@ -84,7 +84,7 @@ public class InterfaceTypeExperimental extends OneNextWizardSlide
     @Override
     public DataStore actionOnClose(DataStore ds)
     {
-        Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
+        final Object obj = ds.getObject(WizardMain.DS_CONFIGURATION_NAME);
         Cfg cfg = null;
         if(true == obj instanceof Cfg)
         {

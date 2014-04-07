@@ -180,7 +180,7 @@ public class GCode
 
     public Double getWordValue(final Character word)
     {
-        Double res = words.get(word);
+        final Double res = words.get(word);
         if(null == res)
         {
             return 0.0;

@@ -77,16 +77,16 @@ public class GCodeDecoder
             // This line has a Line Number and Checksum
 
             // read checksum
-            int readCheckSum = (code.getWordValue('*')).intValue();
+            final int readCheckSum = (code.getWordValue('*')).intValue();
             // calculate checksum
-            int calculatedCheckSum = getCalculatedChecksum(line);
+            final int calculatedCheckSum = getCalculatedChecksum(line);
             // compare
             if(readCheckSum != calculatedCheckSum)
             {
                 return "rs " + lastLineNumber + 1;
             }
             // read line Number
-            int lineNumber = (code.getWordValue('N')).intValue();
+            final int lineNumber = (code.getWordValue('N')).intValue();
 
             // check line Number
             if(false == firstLine)
@@ -366,7 +366,7 @@ public class GCodeDecoder
 
         case 28: // Home
         case 30:
-            Vector<Axis_enum> homingAxis = new Vector<Axis_enum>();
+            final Vector<Axis_enum> homingAxis = new Vector<Axis_enum>();
             for(Axis_enum axel : Axis_enum.values())
             {
                 if(true == code.hasWord(axel.getChar()))
@@ -472,7 +472,7 @@ public class GCodeDecoder
 
     private RelativeMove getRelativeMovefor(final GCode code)
     {
-        RelativeMove move = new RelativeMove();
+        final RelativeMove move = new RelativeMove();
         if(true == code.hasWord('X'))
         {
             move.setX(getRelativeMoveForAxis(code, 'X'));
