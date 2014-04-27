@@ -122,7 +122,7 @@ public abstract class ClientConnection extends Thread
 
     /** sends a request frame to the client.
      *
-     * @param order The Order byte.
+     * @param Order The Order byte.
      * @param parameter the parameter data. May be null !
      * @param offset parameter starts at this offset in the buffer.
      * @param length send only this many bytes. May be 0 !

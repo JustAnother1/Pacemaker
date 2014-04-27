@@ -246,7 +246,6 @@ public class Movement
 
     /** This causes all axis to decelerate to a full stop.
      *
-     * @return
      */
     public boolean letMovementStop()
     {

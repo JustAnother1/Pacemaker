@@ -891,7 +891,6 @@ public class Protocol
 
     /** only needed to implement M17
      *
-     * @return
      */
     public boolean enableAllStepperMotors()
     {
@@ -1193,7 +1192,6 @@ public class Protocol
     /** adds a pause to the Queue.
      *
      * @param ticks allowed 0..65535 (0xffff)
-     * @return
      */
     public boolean addPauseToQueue(final int ticks)
     {

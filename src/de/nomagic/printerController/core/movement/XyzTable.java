@@ -325,7 +325,6 @@ public class XyzTable
 
     /** This causes all axis to decelerate to a full stop.
     *
-    * @return
     */
    public void letMovementStop()
    {
