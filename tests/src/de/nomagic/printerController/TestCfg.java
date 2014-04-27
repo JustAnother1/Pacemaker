@@ -29,14 +29,22 @@ import org.junit.Test;
 public class TestCfg
 {
 
+    private final double ALLOWED_DELTA = 0.0001;
+
     @Test
     public void testGetGeneralSetting()
     {
         Cfg dut = new Cfg();
         assertTrue(dut.getGeneralSetting("test", true)); //creates setting in configuration and returns the default value
         assertTrue(dut.getGeneralSetting("test", false)); // setting is read, so default is not used !
-        dut.setValueOfSetting("test", "false");
+        dut.setValueOfSetting("test", "foo");
         assertFalse(dut.getGeneralSetting("test", true));
+        assertEquals("aValue", dut.getGeneralSetting("testString", "aValue"));
+        assertEquals("aValue", dut.getGeneralSetting("testString", "not found"));
+        assertEquals(7, dut.getGeneralSetting("testInt", 7));
+        assertEquals(7, dut.getGeneralSetting("testInt", 18));
+        assertEquals(3.14, dut.getGeneralSetting("testDouble", 3.14), ALLOWED_DELTA);
+        assertEquals(3.14, dut.getGeneralSetting("testDouble", 47.11), ALLOWED_DELTA);
     }
 
     @Test
