@@ -56,7 +56,6 @@ public class ResourceBundleTranslator extends Translator
     @Override
     public String t(String key)
     {
-        // TODO Auto-generated method stub
         if(null == messages)
         {
             return key;
