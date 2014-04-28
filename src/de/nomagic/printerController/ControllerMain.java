@@ -46,7 +46,8 @@ import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.core.Executor;
 import de.nomagic.printerController.gui.MainWindow;
 
-/**
+/** Main Class to start Pacemaker Host.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
