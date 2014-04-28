@@ -38,6 +38,7 @@ import de.nomagic.printerController.core.devices.Movement;
 import de.nomagic.printerController.core.devices.Printer;
 import de.nomagic.printerController.core.devices.Switch;
 import de.nomagic.printerController.core.devices.TemperatureSensor;
+import de.nomagic.printerController.pacemaker.ClientConnectionFactory;
 import de.nomagic.printerController.pacemaker.DeviceInformation;
 import de.nomagic.printerController.pacemaker.Protocol;
 import de.nomagic.printerController.pacemaker.Reply;
@@ -191,7 +192,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
             {
                 log.info("Client Definition: " + clientDefinition);
             }
-            final Protocol pro = new Protocol(clientDefinition);
+            final Protocol pro = new Protocol(ClientConnectionFactory.establishConnectionTo(clientDefinition));
             if(false == pro.isOperational())
             {
                 log.error("Client connection failed ! " + clientDefinition);

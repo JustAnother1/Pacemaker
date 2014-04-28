@@ -222,9 +222,9 @@ public class Protocol
     private int hostTimeout = 2;
 
 
-    public Protocol(String ConnectionDefinition)
+    public Protocol(ClientConnection Client)
     {
-        this.cc = ClientConnectionFactory.establishConnectionTo(ConnectionDefinition);
+        this.cc = Client;
         if(null == cc)
         {
             isOperational = false;
