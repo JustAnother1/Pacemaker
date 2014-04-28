@@ -46,12 +46,26 @@ public final class Tool
 
     public static String fromByteBufferToHexString(final byte[] buf)
     {
-        return fromByteBufferToHexString(buf, buf.length, 0);
+        if(null == buf)
+        {
+            return "[]";
+        }
+        else
+        {
+            return fromByteBufferToHexString(buf, buf.length, 0);
+        }
     }
 
     public static String fromByteBufferToHexString(final int[] buf)
     {
-        return fromByteBufferToHexString(buf, buf.length, 0);
+        if(null == buf)
+        {
+            return "[]";
+        }
+        else
+        {
+            return fromByteBufferToHexString(buf, buf.length, 0);
+        }
     }
 
     public static String fromByteBufferToHexString(final byte[] buf, int length)

@@ -354,7 +354,15 @@ public class Cfg
         }
         else
         {
-            return axInv.get(stepper);
+            final Boolean res = axInv.get(stepper);
+            if(null == res)
+            {
+                return false;
+            }
+            else
+            {
+                return res;
+            }
         }
     }
 
@@ -402,7 +410,15 @@ public class Cfg
         }
         else
         {
-            return speed.get(stepperNumber);
+            final Integer res = speed.get(stepperNumber);
+            if(null == res)
+            {
+                return 0;
+            }
+            else
+            {
+                return res;
+            }
         }
     }
 
@@ -433,11 +449,19 @@ public class Cfg
         final HashMap<Integer,Double> accel = StepperMaxAcceleration.get(clientNumber);
         if(null == accel)
         {
-            return 0;
+            return 0.0;
         }
         else
         {
-            return accel.get(stepperNumber);
+            final Double res = accel.get(stepperNumber);
+            if(null == res)
+            {
+                return 0.0;
+            }
+            else
+            {
+                return res;
+            }
         }
     }
 
@@ -461,7 +485,15 @@ public class Cfg
         }
         else
         {
-            return steps.get(stepperNumber);
+            final Double res = steps.get(stepperNumber);
+            if(null == res)
+            {
+                return 0.0;
+            }
+            else
+            {
+                return res;
+            }
         }
     }
 
@@ -473,7 +505,7 @@ public class Cfg
             maxJerkSpeed = new HashMap<Integer,Double>();
         }
         maxJerkSpeed.put(stepperNumber, Jerk);
-        StepperStepsPerMillimeter.put(clientNumber, maxJerkSpeed);
+        StepperMaxJerkMmS.put(clientNumber, maxJerkSpeed);
     }
 
     public double getMaxJerkMmSfor(int clientNumber, int stepperNumber)
@@ -485,11 +517,17 @@ public class Cfg
         }
         else
         {
-            return jerk.get(stepperNumber);
+            final Double res = jerk.get(stepperNumber);
+            if(null == res)
+            {
+                return 0.0;
+            }
+            else
+            {
+                return res;
+            }
         }
     }
-
-
 
     // Firmware Configuration
     public void addFirmwareConfiguration(Integer ClientNumber, String Setting, String Value)
@@ -506,7 +544,15 @@ public class Cfg
 
     public Vector<Setting> getAllFirmwareSettingsFor(Integer ClientNumber)
     {
-        return firmwareCfg.get(ClientNumber);
+        final Vector<Setting> res = firmwareCfg.get(ClientNumber);
+        if(null == res)
+        {
+            return new Vector<Setting>();
+        }
+        else
+        {
+            return res;
+        }
     }
 
     // Save and Load
@@ -527,16 +573,14 @@ public class Cfg
 
             // Macros
             Macro m = null;
-            Integer idx = 0;
-            do
+            for(Integer idx = 0; idx < macroMap.size(); idx++)
             {
                 m = macroMap.get(idx);
                 if(null != m)
                 {
-                    ow.write(MACRO_PREFIX + idx + Macro.SEPERATOR + m.getDefinition() + "\n");
-                    idx ++;
+                    ow.write(MACRO_PREFIX + idx + SEPERATOR + m.getDefinition() + "\n");
                 }
-            }while(null != m);
+            }
 
             final Set<Integer> connectionSet = ConnectionDefinition.keySet();
             final Iterator<Integer> connectionIterator = connectionSet.iterator();
@@ -583,7 +627,7 @@ public class Cfg
                     while(heatorsIterator.hasNext())
                     {
                         final Integer curHeater = heatorsIterator.next();
-                        final Heater_enum function = sensors.get(curHeater);
+                        final Heater_enum function = heat.get(curHeater);
                         ow.write(curHeater + SEPERATOR +  function + "\n");
                     }
                 }
@@ -652,7 +696,7 @@ public class Cfg
 
 // Stepper Motors :
                 ow.write(STEPPER_SECTION + "\n");
-                ow.write(STEPPER_ENALED + SEPERATOR + useSteppers.get(ConnectionNum));
+                ow.write(STEPPER_ENALED + SEPERATOR + useSteppers.get(ConnectionNum) + "\n");
 
                 final int maxStepperIndex = getMaxStepperIndexfor(ConnectionNum);
                 final HashMap<Integer, Boolean> invertedMap = movementDirectionInverted.get(ConnectionNum);
@@ -673,12 +717,30 @@ public class Cfg
                         else
                         {
                             ow.write(STEPPER_SECTION_OPEN + "." + i  + "]\n");
-                            ow.write(STEPPER_INVERTED + SEPERATOR + invertedMap.get(i)  + "\n");
-                            ow.write(STEPPER_AXIS + SEPERATOR + axisMap.get(i)  + "\n");
-                            ow.write(STEPPER_MAXIMUM_ACCELLERATION + SEPERATOR + maxAccelMap.get(i)  + "\n");
-                            ow.write(STEPPER_STEPS_PER_MILLIMETER +SEPERATOR + StepsMap.get(i)  + "\n");
-                            ow.write(STEPPER_MAXIMUM_SPEED + SEPERATOR + maxSpeedMap.get(i)  + "\n");
-                            ow.write(STEPPER_MAXIMUM_JERK + SEPERATOR + maxJerkMap.get(i)  + "\n");
+                            if(null != invertedMap)
+                            {
+                                ow.write(STEPPER_INVERTED + SEPERATOR + invertedMap.get(i)  + "\n");
+                            }
+                            if(null != axisMap)
+                            {
+                                ow.write(STEPPER_AXIS + SEPERATOR + axisMap.get(i)  + "\n");
+                            }
+                            if(null != maxAccelMap)
+                            {
+                                ow.write(STEPPER_MAXIMUM_ACCELLERATION + SEPERATOR + maxAccelMap.get(i)  + "\n");
+                            }
+                            if(null != StepsMap)
+                            {
+                                ow.write(STEPPER_STEPS_PER_MILLIMETER +SEPERATOR + StepsMap.get(i)  + "\n");
+                            }
+                            if(null != maxSpeedMap)
+                            {
+                                ow.write(STEPPER_MAXIMUM_SPEED + SEPERATOR + maxSpeedMap.get(i)  + "\n");
+                            }
+                            if(null != maxJerkMap)
+                            {
+                                ow.write(STEPPER_MAXIMUM_JERK + SEPERATOR + maxJerkMap.get(i)  + "\n");
+                            }
                         }
                     }
                 }
@@ -811,13 +873,13 @@ public class Cfg
                                     if(true == curLine.contains(SEPERATOR))
                                     {
                                         final String numStr = curLine.substring(MACRO_PREFIX.length(),
-                                                                                curLine.indexOf(Macro.SEPERATOR));
+                                                                                curLine.indexOf(SEPERATOR));
                                         final String MacroString = curLine.substring(
                                                                    curLine.indexOf(
-                                                                           Macro.SEPERATOR) +Macro.SEPERATOR.length());
+                                                                           SEPERATOR) +SEPERATOR.length());
+                                        log.trace("Found the Macro: {}", MacroString);
                                         final Macro m = MacroFactory.getMacroFromLine(MacroString);
                                         macroMap.put(Integer.parseInt(numStr), m);
-                                        log.trace("Found the Macro: {}", MacroString);
                                     }
                                     else
                                     {
@@ -1127,16 +1189,16 @@ public class Cfg
     {
         final Vector<Macro> res = new Vector<Macro>();
         Macro m = null;
-        int i = 0;
-        do
+        final Set<Integer> MacrosSet = macroMap.keySet();
+        final Iterator<Integer> MacroIterator = MacrosSet.iterator();
+        while(MacroIterator.hasNext())
         {
-            m = macroMap.get(i);
+            m = macroMap.get(MacroIterator.next());
             if(null != m)
             {
                 res.add(m);
-                i++;
             }
-        }while(null != m);
+        }
         return res;
     }
 
