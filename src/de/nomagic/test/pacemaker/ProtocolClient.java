@@ -21,6 +21,7 @@ import java.nio.charset.Charset;
 
 import de.nomagic.printerController.Tool;
 import de.nomagic.printerController.pacemaker.ClientConnection;
+import de.nomagic.printerController.pacemaker.ClientConnectionBase;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 
@@ -76,7 +77,7 @@ public class ProtocolClient
         {
             data[i + Protocol.ORDER_POS_OF_START_OF_PARAMETER] = (byte)parameter[i];
         }
-        final int res =  0xff & ClientConnection.getCRCfor(data, length + Protocol.ORDER_POS_OF_START_OF_PARAMETER - 2);
+        final int res =  0xff & ClientConnectionBase.getCRCfor(data, length + Protocol.ORDER_POS_OF_START_OF_PARAMETER - 2);
         System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data)
                            + " -> " + String.format("%02X", res));
         return res;
@@ -858,7 +859,7 @@ public class ProtocolClient
         {
             response[Protocol.REPLY_POS_OF_CONTROL] = (byte)(Protocol.SEQUENCE_NUMBER_MASK & control);
         }
-        response[cspos] = ClientConnection.getCRCfor(response, cspos);
+        response[cspos] = ClientConnectionBase.getCRCfor(response, cspos);
         System.out.println("sending : " + Tool.fromByteBufferToHexString(response, bytesToSend));
         out.write(response, 0, bytesToSend);
         out.flush();

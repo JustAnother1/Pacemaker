@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class TcpClientConnection extends ClientConnection
+public class TcpClientConnection extends ClientConnectionBase
 {
     private static final Logger log = LoggerFactory.getLogger("TcpClientConnection");
     private final Socket pms;

@@ -605,7 +605,7 @@ public class Protocol
     @Override
     public String toString()
     {
-        return "operational =" + isOperational + " , Client Location = " + cc.toString();
+        return "operational =" + isOperational + " , Client Location = " + cc;
     }
 
     /**
@@ -619,7 +619,10 @@ public class Protocol
 
     public void closeConnection()
     {
-        cc.close();
+        if(null != cc)
+        {
+            cc.close();
+        }
         isOperational = false;
     }
 

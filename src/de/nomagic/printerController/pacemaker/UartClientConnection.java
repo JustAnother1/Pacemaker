@@ -33,7 +33,7 @@ import purejavacomm.UnsupportedCommOperationException;
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public final class UartClientConnection extends ClientConnection
+public final class UartClientConnection extends ClientConnectionBase
 {
     public static final String OPTION_SEPERATOR = ":";
 
