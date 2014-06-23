@@ -21,7 +21,7 @@ import java.net.UnknownHostException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** TCP Communiocation to test protocol. Protocol Layer is UART !
+/** TCP Communication to test protocol. Protocol Layer is UART !
  *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)

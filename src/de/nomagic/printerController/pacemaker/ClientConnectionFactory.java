@@ -17,7 +17,8 @@ package de.nomagic.printerController.pacemaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
+/** creates ClientConnections from parameters.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */

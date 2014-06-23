@@ -16,7 +16,8 @@ package de.nomagic.printerController.Interface;
 
 import java.io.IOException;
 
-/**
+/** allows to send G-Codes to Input Stream of executable.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *

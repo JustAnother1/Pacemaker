@@ -6,6 +6,11 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Information about the Client.
+*
+* @author Lars P&ouml;tter
+* (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
+*/
 public class DeviceInformation
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());

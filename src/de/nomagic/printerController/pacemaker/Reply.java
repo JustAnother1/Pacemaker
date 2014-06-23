@@ -18,7 +18,8 @@ import java.nio.charset.Charset;
 
 import de.nomagic.printerController.Tool;
 
-/**
+/** represents a frame received from the client.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */

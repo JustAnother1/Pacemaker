@@ -26,7 +26,8 @@ import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Tool;
 
-/**
+/** implements basic functionality shred by all ClientConnections.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */

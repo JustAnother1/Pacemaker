@@ -26,7 +26,8 @@ import org.slf4j.LoggerFactory;
 import de.nomagic.printerController.CloseApplication;
 import de.nomagic.printerController.core.CoreStateMachine;
 
-/**
+/** base for G-Code Interfaces.
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
