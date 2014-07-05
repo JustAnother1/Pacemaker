@@ -26,6 +26,7 @@ public class CommandQueue
     public static final int totalSlots = 500;
     private int executedSlots = 0;
     private LinkedList<Slot> queue = new LinkedList<Slot>();
+    @SuppressWarnings("unused")
     private Thread worker;
 
     public CommandQueue()
