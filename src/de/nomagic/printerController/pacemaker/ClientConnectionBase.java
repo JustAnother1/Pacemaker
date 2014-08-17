@@ -44,7 +44,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
  // Sync, length and CRC are not included in length
     public static final int RESPONSE_PACKET_ENVELOPE_NUM_BYTES = 3;
 
-    private static final Logger log = LoggerFactory.getLogger("ClientConnection");
+    private static final Logger log = LoggerFactory.getLogger("ClientConnectionBase");
     private static final boolean useNonBlocking = true;
 
     private static byte[] crc_array =
