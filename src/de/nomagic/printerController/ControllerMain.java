@@ -259,7 +259,23 @@ public class ControllerMain implements CloseApplication
         {
             final InputStream s = ControllerMain.class.getResourceAsStream("/commit-id");
             final BufferedReader in = new BufferedReader(new InputStreamReader(s));
-            return in.readLine();
+            String commitId = in.readLine();
+            String changes = in.readLine();
+            if(null != changes)
+            {
+            	if(0 < changes.length())
+            	{
+            		return commitId + "-(" + changes + ")";
+            	}
+            	else
+            	{
+            		return commitId;
+            	}
+            }
+            else
+            {
+            	return commitId;
+            }
         }
         catch( Exception e )
         {

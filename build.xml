@@ -60,9 +60,15 @@
             <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
         </tstamp>
         <mkdir dir="${destDir}"/>
+    	<!-- Gets the Head commit id-->
         <exec executable = "git" output="${destDir}/commit-id" failifexecutionfails="no">
             <arg value = "rev-parse" />
             <arg value = "HEAD" />
+        </exec>    	
+    	<!-- checks if changes to Head have been made in the working copy -->
+        <exec executable = "git" output="${destDir}/commit-id" append="true" failifexecutionfails="no">
+            <arg value = "diff" />
+            <arg value = "--shortstat" />
         </exec>
     </target>
 
