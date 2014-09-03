@@ -268,6 +268,7 @@ public class BasicLinearMove
 
         final int maxSpeedStepsPerSecond = stepper.getMaxPossibleSpeedStepsPerSecond();
         MaxSpeedStepsPerSecondOnAxis.put(number, maxSpeedStepsPerSecond);
+        log.trace("ID{}: Stepper {} for Axis {} has a max Steps/sec of {} !", myId, number, ax, maxSpeedStepsPerSecond);
     }
 
     public int getActiveSteppersMap()
@@ -445,11 +446,11 @@ public class BasicLinearMove
             final int speed = (int) (a * steps);
             if(speed > MaxSpeedStepsPerSecondOnAxis.get(axisNumber))
             {
-                log.error("ID{}: Speed of{}to high for this Axis !", myId, speed);
+                log.error("ID{}: Speed of {} to high for this Axis !", myId, speed);
                 // calculate new possible max Speed
                 a = MaxSpeedStepsPerSecondOnAxis.get(axisNumber) / steps;
                 maxSpeed = a * Math.abs(StepsOnAxis.get(primaryAxis));
-                log.error("ID{}: max Speed of{} (a={}) for this Axis !",myId, maxSpeed, a);
+                log.error("ID{}: max Speed of {} (a={}) for this Axis !",myId, maxSpeed, a);
                 if(MIN_MOVEMENT_SPEED_MM_SECOND > maxSpeed)
                 {
                     maxSpeed = MIN_MOVEMENT_SPEED_MM_SECOND;
