@@ -167,41 +167,8 @@ public class BasicLinearMove
         return primaryAxis;
     }
 
-    public void addMovingAxis(Stepper stepper, Axis_enum ax)
+    private void addSteppersJerk(Stepper stepper)
     {
-        if(null == stepper)
-        {
-            return;
-        }
-        final Integer number = stepper.getStepperNumber();
-        log.debug("ID{}: adding Stepper {} for Axis {}", myId, number, ax);
-        AxisMapping.put(number, ax);
-        if(maxStepperNumber < number)
-        {
-            maxStepperNumber = number;
-        }
-        final double exactSteps = roundingError.get(ax) + (distances.get(ax) * stepper.getStepsPerMm());
-        final int steps = (int) Math.round(exactSteps);
-        log.debug("ID{}: exact Steps = {}, got rounded to {}", myId, exactSteps, steps);
-        final Double difference = exactSteps - steps;
-        roundingError.put(ax, difference);
-        if(0 == steps)
-        {
-            return;
-        }
-        hasMovement = true;
-        if(255 < Math.abs(steps))
-        {
-            log.debug("ID{}: we will need 2 bytes for steps", myId);
-            NumBytesNeeededForSteps = 2;
-        }
-        if(StepsOnPrimaryAxis < Math.abs(steps))
-        {
-            StepsOnPrimaryAxis = Math.abs(steps);
-            primaryAxis = number;
-            PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
-            PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
-        }
         final double jerk = stepper.getMaxJerkSpeedMmS();
         if(false == JerkIsSet)
         {
@@ -214,7 +181,10 @@ public class BasicLinearMove
             // so the Jerk for this move needs to be reduced
             maxJerk = jerk;
         }
-        activeAxises.add(number);
+    }
+
+    private void addSteppersSteps(Stepper stepper, Integer number, int steps)
+    {
         if(false == stepper.isDirectionInverted())
         {
             if(0 < steps)
@@ -238,6 +208,64 @@ public class BasicLinearMove
             }
         }
         StepsOnAxis.put(number, Math.abs(steps));
+    }
+
+    private int getSteps(Stepper stepper, Axis_enum ax)
+    {
+        final double exactSteps = roundingError.get(ax) + (distances.get(ax) * stepper.getStepsPerMm());
+        final int steps = (int) Math.round(exactSteps);
+        log.debug("ID{}: exact Steps = {}, got rounded to {}", myId, exactSteps, steps);
+        final Double difference = exactSteps - steps;
+        roundingError.put(ax, difference);
+        if(0 == steps)
+        {
+            return 0;
+        }
+        hasMovement = true;
+        if(255 < Math.abs(steps))
+        {
+            log.debug("ID{}: we will need 2 bytes for steps", myId);
+            NumBytesNeeededForSteps = 2;
+        }
+        if(StepsOnPrimaryAxis < Math.abs(steps))
+        {
+            StepsOnPrimaryAxis = Math.abs(steps);
+            int number = stepper.getStepperNumber();
+            log.trace("ID{}: primary Axis is {} !", myId, number);
+            primaryAxis = number;
+            PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
+            PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
+        }
+        return steps;
+    }
+
+    public void addMovingAxis(Stepper stepper, Axis_enum ax)
+    {
+        if(null == stepper)
+        {
+            return;
+        }
+
+        final Integer number = stepper.getStepperNumber();
+        log.debug("ID{}: adding Stepper {} for Axis {}", myId, number, ax);
+        AxisMapping.put(number, ax);
+        if(maxStepperNumber < number)
+        {
+            maxStepperNumber = number;
+        }
+
+        final int steps = getSteps(stepper, ax);
+        if(1 > Math.abs(steps))
+        {
+            return;
+        }
+
+        addSteppersJerk(stepper);
+
+        activeAxises.add(number);
+
+        addSteppersSteps(stepper, number, steps);
+
         final int maxSpeedStepsPerSecond = stepper.getMaxPossibleSpeedStepsPerSecond();
         MaxSpeedStepsPerSecondOnAxis.put(number, maxSpeedStepsPerSecond);
     }
@@ -268,7 +296,12 @@ public class BasicLinearMove
 
     public int getTravelSpeedFraction()
     {
-        final int fraction = (int)((travelSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeedInStepsPerSecond);
+        int fraction = (int)((travelSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeedInStepsPerSecond);
+        if(1 > fraction)
+        {
+            log.error("ID{}: Increased Travel Speed Fraction to 1 !", myId);
+            fraction = 1;
+        }
         log.trace("ID{}: travel speed = {} mm/s -> fraction = {}", myId, travelSpeed, fraction);
         return fraction;
     }
@@ -354,7 +387,7 @@ public class BasicLinearMove
         endSpeed = Math.abs(endSpeed);
         final double distanceMm = Math.abs(getBrakingDistance(startSpeed, endSpeed, getMaxAcceleration()));
         final int res = (int)(distanceMm * PrimaryAxisStepsPerMm);
-        log.trace("We need {} steps to accelerate from {} mm/s to {} mms/s", res, startSpeed, endSpeed);
+        log.trace("ID{}: We need {} steps to accelerate from {} mm/s to {} mms/s", myId, res, startSpeed, endSpeed);
         return res;
     }
 
@@ -367,11 +400,11 @@ public class BasicLinearMove
     {
         // V = sqr(2 * s* a)
         final double change = Math.sqrt(2 * (steps/PrimaryAxisStepsPerMm) * getMaxAcceleration());
-        log.trace("Speed change of {} mm/s possible with {} steps", change, steps);
+        log.trace("ID{}: Speed change of {} mm/s possible with {} steps", myId, change, steps);
         return change;
     }
 
-    public double getMaxPossibleSpeed()
+    private double getDistanceOnXYZinMm()
     {
         double distanceOnXYZMm = 0.0;
         final Iterator<Double> it = distances.values().iterator();
@@ -380,16 +413,29 @@ public class BasicLinearMove
             distanceOnXYZMm = distanceOnXYZMm + Math.abs(it.next());
         }
         log.trace("ID{}: distance on X Y Z = {} mm", myId, distanceOnXYZMm);
+        return distanceOnXYZMm;
+    }
 
+    private double getFeedrateOnPrimaryAxis()
+    {
+        // TODO : Currently 10mm on Y and 10mm on X lead to a Speed on primary axis of ß.5 of the Feedrate.
+        // But the Distance traveled in such a move is not 20mm but only about 14mm. So the Feedrate could be higher.
+        // TODO The angle of the move has to be taken into account.
+        final double distanceOnXYZMm = getDistanceOnXYZinMm();
         double SpeedPerMmSec = (feedrateMmPerMinute/60) / distanceOnXYZMm;
         log.trace("ID{}: Speed Factor = {} mm/second", myId, SpeedPerMmSec);
         SpeedPerMmSec = SpeedPerMmSec * Math.abs(distances.get(AxisMapping.get(primaryAxis)));
+        log.trace("ID{}: Feedrate on primary Axis = {}", myId, SpeedPerMmSec);
+        return SpeedPerMmSec;
+    }
 
+    public double getMaxPossibleSpeed()
+    {
         double maxSpeed = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
         log.trace("ID{}: Max Speed = {}", myId, maxSpeed);
         // Test if this speed is ok for the other axis
-        // speed on primary Axis / steps on primary axis = a
-        // a * steps on the axis = speed on that axis
+        // (speed on primary Axis) / (steps on primary axis) = a
+        // a * (steps on the axis) = (speed on that axis)
         // speed on each axis must be smaller than the max speed on that axis
         double a = maxSpeed / Math.abs(StepsOnAxis.get(primaryAxis));
         for(int i = 0; i < activeAxises.size(); i++)
@@ -399,17 +445,24 @@ public class BasicLinearMove
             final int speed = (int) (a * steps);
             if(speed > MaxSpeedStepsPerSecondOnAxis.get(axisNumber))
             {
-                log.error("ID{}: Speed to high for other Axis !", myId);
+                log.error("ID{}: Speed of{}to high for this Axis !", myId, speed);
                 // calculate new possible max Speed
                 a = MaxSpeedStepsPerSecondOnAxis.get(axisNumber) / steps;
                 maxSpeed = a * Math.abs(StepsOnAxis.get(primaryAxis));
+                log.error("ID{}: max Speed of{} (a={}) for this Axis !",myId, maxSpeed, a);
+                if(MIN_MOVEMENT_SPEED_MM_SECOND > maxSpeed)
+                {
+                    maxSpeed = MIN_MOVEMENT_SPEED_MM_SECOND;
+                }
+                log.error("ID{}: Reduced Speed to {} !", myId, maxSpeed);
                 // try again
                 i = 0;
                 continue;
             }
             // else ok
         }
-        log.trace("ID{}: Feedrate on primary Axis = {}", myId, SpeedPerMmSec);
+
+        final double SpeedPerMmSec = getFeedrateOnPrimaryAxis();
         if(maxSpeed > SpeedPerMmSec)
         {
             // speed is restricted by Feedrate
@@ -428,18 +481,6 @@ public class BasicLinearMove
 
     public double getMaxEndSpeed()
     {
-        double distanceOnXYZMm = 0.0;
-        final Iterator<Double> it = distances.values().iterator();
-        while(it.hasNext())
-        {
-            distanceOnXYZMm = distanceOnXYZMm + Math.abs(it.next());
-        }
-        log.trace("ID{}: distance on X Y Z = {} mm", myId, distanceOnXYZMm);
-
-        double SpeedPerMmSec = (feedrateMmPerMinute/60) / distanceOnXYZMm;
-        log.trace("ID{}: Speed Factor = {} mm/second", myId, SpeedPerMmSec);
-        SpeedPerMmSec = SpeedPerMmSec * Math.abs(distances.get(AxisMapping.get(primaryAxis)));
-
         final int maxSpeed = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
         log.trace("ID{}: Max Speed = {}", myId, maxSpeed);
         double maxEndSpeed = maxSpeed * endSpeedFactor;
@@ -477,7 +518,8 @@ public class BasicLinearMove
             }
             // else ok
         }
-        log.trace("ID{}: Feedrate on primary Axis = {}", myId, SpeedPerMmSec);
+
+        final double SpeedPerMmSec = getFeedrateOnPrimaryAxis();
         if(maxEndSpeed > SpeedPerMmSec)
         {
             // speed is restricted by Feedrate
