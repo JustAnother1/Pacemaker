@@ -84,7 +84,7 @@ public class ControllerMain implements CloseApplication
         // configure Logging
         switch(numOfV)
         {
-        case 0: setLogLevel("info"); break;
+        case 0: setLogLevel("warn"); break;
         case 1: setLogLevel("debug");break;
         case 2:
         default:
@@ -99,7 +99,7 @@ public class ControllerMain implements CloseApplication
         System.out.println("Printer Controller for Pacemaker");
         System.out.println("Parameters:");
         System.out.println("-h                         : print this message.");
-        System.out.println("-p <G-Code File>           : print the file and exit(does not start other interfaces");
+        System.out.println("-p <G-Code File>           : print the file and exit(does not start other interfaces)");
         System.out.println("-r <Configuration File>    : read configuration from file\n"
                          + "                           : defaults to " + DEFAULT_CONFIGURATION_FILE_NAME);
         System.out.println("-c TCP:<host or ip>:<port> : connect to client using TCP");
@@ -263,18 +263,18 @@ public class ControllerMain implements CloseApplication
             String changes = in.readLine();
             if(null != changes)
             {
-            	if(0 < changes.length())
-            	{
-            		return commitId + "-(" + changes + ")";
-            	}
-            	else
-            	{
-            		return commitId;
-            	}
+                if(0 < changes.length())
+                {
+                    return commitId + "-(" + changes + ")";
+                }
+                else
+                {
+                    return commitId;
+                }
             }
             else
             {
-            	return commitId;
+                return commitId;
             }
         }
         catch( Exception e )
@@ -394,19 +394,20 @@ public class ControllerMain implements CloseApplication
         {
             final TcpInterface tcp = new TcpInterface();
             tcp.addPacemakerCore(core);
-            tcp.addCloser(Closer);
             tcp.start();
             interfaces.add(tcp);
         }
         if(true == schallStartUdp)
         {
             final UdpInterface udp = new UdpInterface();
+            udp.addPacemakerCore(core);
             udp.start();
             interfaces.add(udp);
         }
         if(true == schallStartStandardStreams)
         {
             final StandardStreamInterface stdStream = new StandardStreamInterface();
+            stdStream.addPacemakerCore(core);
             stdStream.start();
             interfaces.add(stdStream);
         }

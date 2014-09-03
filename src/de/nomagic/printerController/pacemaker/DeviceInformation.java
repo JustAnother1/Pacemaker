@@ -121,7 +121,7 @@ public class DeviceInformation
         final int res = requestInteger(which);
         if(0 > res)
         {
-            log.error("Could not read the {} !", Name);
+            log.debug("Could not read the {} !", Name);
         }
         return res;
     }

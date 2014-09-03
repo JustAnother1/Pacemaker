@@ -23,7 +23,6 @@ import java.io.UnsupportedEncodingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.nomagic.printerController.CloseApplication;
 import de.nomagic.printerController.core.CoreStateMachine;
 
 /** base for G-Code Interfaces.
@@ -36,7 +35,6 @@ public abstract class InteractiveInterface extends Thread
 {
     protected InputStream in;
     protected OutputStream out;
-    protected CloseApplication closer;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -47,14 +45,16 @@ public abstract class InteractiveInterface extends Thread
         this.core = core;
     }
 
-    public void addCloser(CloseApplication closer)
-    {
-        this.closer = closer;
-    }
-
     protected String parseString(String line)
     {
-        return core.executeGCode(line);
+        if(null == core)
+        {
+            return "No Core Statemachine available !";
+        }
+        else
+        {
+            return core.executeGCode(line);
+        }
     }
 
     protected void readFromStreams()
@@ -77,6 +77,13 @@ public abstract class InteractiveInterface extends Thread
                 final int ci = readIn.read();
                 if(-1 == ci)
                 {
+                    // This happens whenever the interface closes.
+                    // This can be the end of a TCP Connection or
+                    // the end of a file piped into the standard Input Stream.
+                    //
+                    // Right now the policy should be to keep the interface open for another connection to come in.
+                    // This might mean that the user has t close this application by force.
+                    // Is a better strategy comes up this would be the place to implement it ;-)
                     log.error("Read -1");
                     return;
                 }
