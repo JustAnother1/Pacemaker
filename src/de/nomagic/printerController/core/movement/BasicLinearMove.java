@@ -230,7 +230,7 @@ public class BasicLinearMove
         if(StepsOnPrimaryAxis < Math.abs(steps))
         {
             StepsOnPrimaryAxis = Math.abs(steps);
-            int number = stepper.getStepperNumber();
+            final int number = stepper.getStepperNumber();
             log.trace("ID{}: primary Axis is {} !", myId, number);
             primaryAxis = number;
             PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
