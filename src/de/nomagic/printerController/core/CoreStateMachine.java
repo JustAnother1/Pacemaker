@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Cfg;
+import de.nomagic.printerController.GCodeResultStream;
 
 /** Public API of Pacemaker Core.
  *
@@ -66,7 +67,7 @@ public final class CoreStateMachine
         return exe;
     }
 
-    public String executeGCode(final String line)
+    public String executeGCode(final String line, final GCodeResultStream resultStream)
     {
         if(false == isOperational)
         {
@@ -74,7 +75,7 @@ public final class CoreStateMachine
         }
         else
         {
-            return decoder.sendLine(line);
+            return decoder.sendLine(line, resultStream);
         }
     }
 

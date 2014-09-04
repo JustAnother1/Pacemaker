@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.core.CoreStateMachine;
 
 /** base for G-Code Interfaces.
@@ -31,7 +32,7 @@ import de.nomagic.printerController.core.CoreStateMachine;
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public abstract class InteractiveInterface extends Thread
+public abstract class InteractiveInterface extends Thread implements GCodeResultStream
 {
     protected InputStream in;
     protected OutputStream out;
@@ -53,7 +54,39 @@ public abstract class InteractiveInterface extends Thread
         }
         else
         {
-            return core.executeGCode(line);
+            return core.executeGCode(line, this);
+        }
+    }
+
+    public void write(String msg)
+    {
+        try
+        {
+            out.write(msg.getBytes("UTF-8"));
+        }
+        catch(UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public void writeLine(String msg)
+    {
+        try
+        {
+            out.write((msg + "\r\n").getBytes("UTF-8"));
+        }
+        catch(UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
         }
     }
 
@@ -98,8 +131,7 @@ public abstract class InteractiveInterface extends Thread
                     {
                         final String line = curLineBuffer.toString();
                         curLineBuffer = new StringBuffer();
-                        out.write(parseString(line).getBytes("UTF-8"));
-                        out.write("\r\n".getBytes());
+                        writeLine(parseString(line));
                     }
                     // else empty line or \r\n -> ignore
                 }
@@ -107,7 +139,6 @@ public abstract class InteractiveInterface extends Thread
         }
         catch(IOException e)
         {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }

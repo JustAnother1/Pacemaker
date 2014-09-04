@@ -20,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
+import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.Switch_enum;
 
 /** Decodes Strings and gives the result to the Executor.
@@ -57,7 +58,7 @@ public class GCodeDecoder
         }
     }
 
-    public String sendLine(final String line)
+    public String sendLine(final String line, final GCodeResultStream resultStream)
     {
         LastErrorReason = null;
         if(null == line) {return "";}
@@ -113,7 +114,7 @@ public class GCodeDecoder
         }
         else if(true == code.hasWord('M'))
         {
-            result = decode_Miscellaneous_Function_Code(code);
+            result = decode_Miscellaneous_Function_Code(code, resultStream);
         }
         else if(true == code.hasWord('T'))
         {
@@ -178,7 +179,7 @@ public class GCodeDecoder
         return cs;
     }
 
-    private int decode_Miscellaneous_Function_Code(final GCode code)
+    private int decode_Miscellaneous_Function_Code(final GCode code, GCodeResultStream resultStream)
     {
         final Double Number = code.getWordValue('M');
         final int num = Number.intValue();
@@ -249,7 +250,14 @@ public class GCodeDecoder
             }
 
         case 109: // Set Extruder Temperature and wait
-            if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'), resultStream))
+            {
+                return RESULT_ERROR;
+            }
+            else
+            {
+                return RESULT_OK;
+            }
 
         case 110: // Set current Line Number
             if(true == code.hasWord('N'))
@@ -276,7 +284,14 @@ public class GCodeDecoder
             return RESULT_VALUE;
 
         case 116: // wait for Heaters
-            if(false == exe.waitForEverythingInLimits()){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.waitForEverythingInLimits(resultStream))
+            {
+                return RESULT_ERROR;
+            }
+            else
+            {
+                return RESULT_OK;
+            }
 
         case 119: // interpreted status of end stop switches
         {
@@ -324,7 +339,14 @@ public class GCodeDecoder
             if(false == exe.setChamberTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 190: // set Bed Temperature - and do wait
-            if(false == exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'), resultStream))
+            {
+                return RESULT_ERROR;
+            }
+            else
+            {
+                return RESULT_OK;
+            }
 
         default:
             LastErrorReason = "M" + num + " not yet implemented !";

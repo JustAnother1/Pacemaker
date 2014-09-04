@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
+import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
 import de.nomagic.printerController.core.CoreStateMachine;
@@ -32,7 +33,7 @@ import de.nomagic.printerController.core.RelativeMove;
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public class ExecutorMacro extends Macro
+public class ExecutorMacro extends Macro implements GCodeResultStream
 {
     public static final String TYPE_DEFINITION = "Executor";
 
@@ -183,11 +184,11 @@ public class ExecutorMacro extends Macro
                 break;
 
             case FUNC_SET_CURRENT_EXTRUDER_TEMPERATURE_AND_DO_WAIT:
-                res = exe.setCurrentExtruderTemperatureAndDoWait((Double)parameter[i]);
+                res = exe.setCurrentExtruderTemperatureAndDoWait((Double)parameter[i], this);
                 break;
 
             case FUNC_WAIT_FOR_EVERYTHING_IN_LIMITS:
-                res = exe.waitForEverythingInLimits();
+                res = exe.waitForEverythingInLimits(this);
                 break;
 
             case FUNC_SET_PRINT_BED_TEMPERATURE_NO_WAIT:
@@ -199,7 +200,7 @@ public class ExecutorMacro extends Macro
                 break;
 
             case FUNC_SET_PRINT_BED_TEMPERATURE_AND_DO_WAIT:
-                res = exe.setPrintBedTemperatureAndDoWait((Double)parameter[i]);
+                res = exe.setPrintBedTemperatureAndDoWait((Double)parameter[i], this);
                 break;
 
             case FUNC_GET_CURRENT_EXTRUDER_TEMPERATURE:
@@ -241,7 +242,7 @@ public class ExecutorMacro extends Macro
                 break;
 
             case FUNC_WAIT_FOR_CLIENT_QUEUE_EMPTY:
-                exe.waitForEverythingInLimits();
+                exe.waitForEverythingInLimits(this);
                 res = true;
                 break;
 
@@ -455,4 +456,16 @@ public class ExecutorMacro extends Macro
         return res;
     }
 
+    @Override
+    public void write(String msg)
+    {
+        // We can not do a log without an end of line :-(
+        log.debug(msg);
+    }
+
+    @Override
+    public void writeLine(String msg)
+    {
+        log.debug(msg);
+    }
 }

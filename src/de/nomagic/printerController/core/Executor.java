@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
+import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
 import de.nomagic.printerController.pacemaker.Protocol;
@@ -259,7 +260,8 @@ public class Executor
         }
     }
 
-    public boolean setCurrentExtruderTemperatureAndDoWait(final Double temperature)
+    public boolean setCurrentExtruderTemperatureAndDoWait(final Double temperature,
+                                                          final GCodeResultStream resultStream)
     {
         if(false == letMovementStop())
         {
@@ -267,7 +269,7 @@ public class Executor
         }
         if(true == setCurrentExtruderTemperatureNoWait(temperature))
         {
-            return waitForEverythingInLimits();
+            return waitForEverythingInLimits(resultStream);
         }
         else
         {
@@ -276,11 +278,11 @@ public class Executor
     }
 
     /** waits until all heaters created the required Temperatures. */
-    public boolean waitForEverythingInLimits()
+    public boolean waitForEverythingInLimits(final GCodeResultStream resultStream)
     {
         for(Heater_enum heater : Heater_enum.values())
         {
-            if(false == waitForHeaterInLimits(heater))
+            if(false == waitForHeaterInLimits(heater, resultStream))
             {
                 return false;
             }
@@ -298,7 +300,7 @@ public class Executor
         return setTemperatureNoWait(Heater_enum.Chamber, temperature);
     }
 
-    public boolean setPrintBedTemperatureAndDoWait(final Double temperature)
+    public boolean setPrintBedTemperatureAndDoWait(final Double temperature, final GCodeResultStream resultStream)
     {
         if(false == letMovementStop())
         {
@@ -306,7 +308,7 @@ public class Executor
         }
         if(true == setTemperatureNoWait(Heater_enum.Print_Bed, temperature))
         {
-            return waitForHeaterInLimits(Heater_enum.Print_Bed);
+            return waitForHeaterInLimits(Heater_enum.Print_Bed, resultStream);
         }
         else
         {
@@ -314,7 +316,7 @@ public class Executor
         }
     }
 
-    private boolean waitForHeaterInLimits(final Heater_enum heater)
+    private boolean waitForHeaterInLimits(final Heater_enum heater, final GCodeResultStream resultStream)
     {
         double lastTemperature = 0.0;
         double curTemperature = 0.0;
@@ -351,6 +353,7 @@ public class Executor
             else
             {
                 curTemperature = response.getTemperature();
+                resultStream.writeLine("T : " + curTemperature + " °C");
                 if(lastTemperature != curTemperature)
                 {
                     log.debug("Temperature at {} is {} !", heater, curTemperature);

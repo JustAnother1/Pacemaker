@@ -37,13 +37,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Cfg;
+import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.core.CoreStateMachine;
 
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class MachineControlPanel
+public class MachineControlPanel implements GCodeResultStream
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
@@ -153,7 +154,7 @@ public class MachineControlPanel
                 String curLine = br.readLine();
                 while(null != curLine)
                 {
-                    final String res = pp.executeGCode(curLine);
+                    final String res = pp.executeGCode(curLine, this);
                     if(true == res.startsWith("!!"))
                     {
                         return;
@@ -234,4 +235,16 @@ public class MachineControlPanel
         clientPane.updateCfg(cfg);
     }
 
+    @Override
+    public void write(String msg)
+    {
+        // We can not do a log without an end of line :-(
+        log.debug(msg);
+    }
+
+    @Override
+    public void writeLine(String msg)
+    {
+        log.debug(msg);
+    }
 }

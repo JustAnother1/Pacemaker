@@ -51,7 +51,7 @@ import de.nomagic.printerController.gui.MainWindow;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class ControllerMain implements CloseApplication
+public class ControllerMain implements CloseApplication, GCodeResultStream
 {
     public static final String DEFAULT_CONFIGURATION_FILE_NAME = "pacemaker.cfg";
     private final Logger log = (Logger) LoggerFactory.getLogger(this.getClass().getName());
@@ -259,8 +259,8 @@ public class ControllerMain implements CloseApplication
         {
             final InputStream s = ControllerMain.class.getResourceAsStream("/commit-id");
             final BufferedReader in = new BufferedReader(new InputStreamReader(s));
-            String commitId = in.readLine();
-            String changes = in.readLine();
+            final String commitId = in.readLine();
+            final String changes = in.readLine();
             if(null != changes)
             {
                 if(0 < changes.length())
@@ -309,8 +309,8 @@ public class ControllerMain implements CloseApplication
             {
                 System.out.print("\rNow sending Line " + linecount + "  ");
                 linecount ++;
-                final String lineResult = pp.executeGCode(line);
-                log.debug(lineResult);
+                final String lineResult = pp.executeGCode(line, this);
+                writeLine(lineResult);
                 if(true  == lineResult.startsWith("!!"))
                 {
                     log.error("Failed to send the Line : {} !", line);
@@ -445,6 +445,19 @@ public class ControllerMain implements CloseApplication
         {
             core.close();
         }
+    }
+
+    @Override
+    public void write(String msg)
+    {
+        // We can not do a log without an end of line :-(
+        log.debug(msg);
+    }
+
+    @Override
+    public void writeLine(String msg)
+    {
+        log.debug(msg);
     }
 
 }

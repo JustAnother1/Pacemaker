@@ -15,6 +15,7 @@
 package de.nomagic.printerController.Interface;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -30,13 +31,17 @@ public class UdpInterface extends InteractiveInterface
 {
     public static final int PORT = 2342;
     public static final int MAX_PACKET_SIZE = 1024;
+
+    private InetAddress IPAddress;
+    private int port;
+    private DatagramSocket serverSocket;
+
     public UdpInterface()
     {
     }
 
     public void run()
     {
-        DatagramSocket serverSocket;
         try
         {
             serverSocket = new DatagramSocket(PORT);
@@ -47,7 +52,6 @@ public class UdpInterface extends InteractiveInterface
             return;
         }
         final byte[] receiveData = new byte[MAX_PACKET_SIZE];
-        byte[] sendData = new byte[MAX_PACKET_SIZE];
         while(false == isInterrupted())
         {
             final DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -55,12 +59,10 @@ public class UdpInterface extends InteractiveInterface
             {
                 serverSocket.receive(receivePacket);
                 final String gCodeLine = new String( receivePacket.getData());
-                final InetAddress IPAddress = receivePacket.getAddress();
-                final int port = receivePacket.getPort();
+                IPAddress = receivePacket.getAddress();
+                port = receivePacket.getPort();
                 final String gCodeResult = parseString(gCodeLine);
-                sendData = gCodeResult.getBytes();
-                final DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
-                serverSocket.send(sendPacket);
+                writeLine(gCodeResult);
             }
             catch(IOException e)
             {
@@ -68,6 +70,45 @@ public class UdpInterface extends InteractiveInterface
             }
         }
         serverSocket.close();
+    }
+
+    @Override
+    public void write(String msg)
+    {
+        try
+        {
+            final byte[] sendData = (msg + "\r\n").getBytes("UTF-8");
+            final DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+            serverSocket.send(sendPacket);
+        }
+        catch(UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void writeLine(String msg)
+    {
+        try
+        {
+            final byte[] sendData = (msg + "\r\n").getBytes("UTF-8");
+            final DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
+            serverSocket.send(sendPacket);
+        }
+        catch(UnsupportedEncodingException e)
+        {
+            e.printStackTrace();
+        }
+        catch(IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
 }

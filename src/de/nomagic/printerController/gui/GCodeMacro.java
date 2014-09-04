@@ -19,6 +19,7 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.core.CoreStateMachine;
 
 /**
@@ -26,7 +27,7 @@ import de.nomagic.printerController.core.CoreStateMachine;
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public class GCodeMacro extends Macro
+public class GCodeMacro extends Macro implements GCodeResultStream
 {
     public static final String TYPE_DEFINITION = "G-Code";
 
@@ -61,7 +62,7 @@ public class GCodeMacro extends Macro
         {
             for(int i = 0; i < lines.length; i++)
             {
-                log.info(core.executeGCode(lines[i]));
+                log.info(core.executeGCode(lines[i], this));
             }
         }
     }
@@ -106,6 +107,19 @@ public class GCodeMacro extends Macro
         final GCodeMacro res = new GCodeMacro(vec.toArray(new String[0]));
         res.setValuesFromPrefix(prefix);
         return res;
+    }
+
+    @Override
+    public void write(String msg)
+    {
+        // We can not do a log without an end of line :-(
+        log.debug(msg);
+    }
+
+    @Override
+    public void writeLine(String msg)
+    {
+        log.debug(msg);
     }
 
 }
