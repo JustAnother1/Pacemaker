@@ -180,10 +180,15 @@ public class GCode
 
     public Double getWordValue(final Character word)
     {
+        return getWordValue(word, 0.0);
+    }
+
+    public Double getWordValue(final Character word, double defaultValue)
+    {
         final Double res = words.get(word);
         if(null == res)
         {
-            return 0.0;
+            return defaultValue;
         }
         else
         {

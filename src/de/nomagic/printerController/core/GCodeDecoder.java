@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.GCodeResultStream;
+import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
 
 /** Decodes Strings and gives the result to the Executor.
@@ -340,6 +341,33 @@ public class GCodeDecoder
 
         case 190: // set Bed Temperature - and do wait
             if(false == exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'), resultStream))
+            {
+                return RESULT_ERROR;
+            }
+            else
+            {
+                return RESULT_OK;
+            }
+        case 303:
+            Heater_enum ext = Heater_enum.Extruder_0;
+            double extruder = code.getWordValue('E', 1.0);
+            if(0 > extruder)
+            {
+                ext = Heater_enum.Print_Bed;
+            }
+            if(1.5 > extruder)
+            {
+                ext = Heater_enum.Extruder_1;
+            }
+            if(2.5 > extruder)
+            {
+                ext = Heater_enum.Extruder_2;
+            }
+
+            if(false == exe.runPIDautotune(ext,
+                                           code.getWordValue('S'),
+                                           (int)Math.round(code.getWordValue('C', 3.0)),
+                                           resultStream))
             {
                 return RESULT_ERROR;
             }

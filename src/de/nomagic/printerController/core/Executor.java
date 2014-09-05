@@ -549,4 +549,13 @@ public class Executor
         return usedSlots;
     }
 
+    public boolean runPIDautotune(Heater_enum Extruder,
+                                  Double Temperature,
+                                  int numCycles,
+                                  GCodeResultStream resultStream)
+    {
+        // TODO Auto-generated method stub
+        return false;
+    }
+
 }
