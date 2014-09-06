@@ -14,6 +14,8 @@
  */
 package de.nomagic.printerController.core;
 
+import java.util.Vector;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,12 +36,6 @@ public class Executor
     public static final int SWITCH_STATE_CLOSED = 1;
     public static final int SWITCH_STATE_NOT_AVAILABLE = 2;
 
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
-    private final ActionHandler handler;
-    private String lastErrorReason = null;
-    private int currentExtruder = 0; // Max 3 Extruders (0..2)
-    private double[] targetTemperatures = new double[Heater_enum.size];
-
     // allowed difference to target temperature in degree Celsius.
     private final double ACCEPTED_TEMPERATURE_DEVIATION = 0.4;
 
@@ -50,6 +46,13 @@ public class Executor
     // until the next command will be started.
     // The time is the POLL_INTERVALL multiplied by HEATER_SETTLING_TIME_IN_POLLS.
     private final int HEATER_SETTLING_TIME_IN_POLLS = 10;
+
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private final ActionHandler handler;
+    private String lastErrorReason = null;
+    private int currentExtruder = 0; // Max 3 Extruders (0..2)
+    private double[] targetTemperatures = new double[Heater_enum.size];
+    private Vector<TemperatureObserver> observers = new Vector<TemperatureObserver>();
 
 
     public Executor(ActionHandler handler)
@@ -354,6 +357,11 @@ public class Executor
             {
                 curTemperature = response.getTemperature();
                 resultStream.writeLine("T : " + curTemperature + " °C");
+                for(int i = 0; i < observers.size(); i++)
+                {
+                    TemperatureObserver watcher = observers.get(i);
+                    watcher.update(heater, curTemperature);
+                }
                 if(lastTemperature != curTemperature)
                 {
                     log.debug("Temperature at {} is {} !", heater, curTemperature);
@@ -388,9 +396,36 @@ public class Executor
         }
     }
 
-    public String getCurrentExtruderTemperature()
+    public double requestTemperatureOfHeater(Heater_enum pos)
     {
         double curTemperature = 0.0;
+        final ActionResponse response = handler.getValue(Action_enum.getTemperature, pos);
+        if(null == response)
+        {
+            log.error("Did not get a response to get Heater Temperature Action !");
+        }
+        else
+        {
+            if(false == response.wasSuccessful())
+            {
+                lastErrorReason = handler.getLastErrorReason();
+                log.error(lastErrorReason);
+            }
+            else
+            {
+                curTemperature = response.getTemperature();
+                for(int i = 0; i < observers.size(); i++)
+                {
+                    TemperatureObserver watcher = observers.get(i);
+                    watcher.update(pos, curTemperature);
+                }
+            }
+        }
+        return curTemperature;
+    }
+
+    public String getCurrentExtruderTemperature()
+    {
         Heater_enum h;
         switch(currentExtruder)
         {
@@ -399,48 +434,16 @@ public class Executor
         case 2: h = Heater_enum.Extruder_2; break;
         default: h = Heater_enum.Extruder_0; break;
         }
-        final ActionResponse response = handler.getValue(Action_enum.getTemperature, h);
-        if(null == response)
-        {
-            log.error("Did not get a response to get Heater Temperature Action !");
-        }
-        else
-        {
-            if(false == response.wasSuccessful())
-            {
-                lastErrorReason = handler.getLastErrorReason();
-                log.error(lastErrorReason);
-            }
-            else
-            {
-                curTemperature = response.getTemperature();
-            }
-        }
-        return  String.valueOf(curTemperature);
+        return  String.valueOf(requestTemperatureOfHeater(h));
     }
 
     public String getHeatedBedTemperature()
     {
-        double curTemperature = 0.0;
-        final ActionResponse response = handler.getValue(Action_enum.getTemperature, Heater_enum.Print_Bed);
-        if(null == response)
-        {
-            log.error("Did not get a response to get Heater Temperature Action !");
-        }
-        else
-        {
-            if(false == response.wasSuccessful())
-            {
-                lastErrorReason = handler.getLastErrorReason();
-                log.error(lastErrorReason);
-            }
-            else
-            {
-                curTemperature = response.getTemperature();
-            }
-        }
-        return  String.valueOf(curTemperature);
+        return  String.valueOf(requestTemperatureOfHeater(Heater_enum.Print_Bed));
     }
+
+
+// Switches
 
     public int getStateOfSwitch(Switch_enum theSwitch)
     {
@@ -557,5 +560,21 @@ public class Executor
         // TODO Auto-generated method stub
         return false;
     }
+
+    public void registerTemperatureObserver(TemperatureObserver observer)
+    {
+        observers.add(observer);
+    }
+
+    public TimeoutHandler getTimeoutHandler()
+    {
+        return handler;
+    }
+
+    public boolean istheHeaterConfigured(Heater_enum ele)
+    {
+        return handler.istheHeaterConfigured(ele);
+    }
+
 
 }

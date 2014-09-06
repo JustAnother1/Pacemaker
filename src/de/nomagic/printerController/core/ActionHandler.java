@@ -384,6 +384,19 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         }
     }
 
+    public boolean istheHeaterConfigured(Heater_enum func)
+    {
+        final Heater h = heaters.get(func);
+        if(null == h)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
     private void handleShutDown(Event e)
     {
         boolean success = true;
@@ -737,6 +750,14 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
             handleSendRawOrderFrame(e);
             break;
 
+        case timeOut:
+            final EventSource src = e.getSrc();
+            if(null != src)
+            {
+                src.reportEventStatus(new ActionResponse(e.getParameter()));
+            }
+            break;
+
         default:
             lastErrorReason = "Invalid Event Type ! " + e.getType();
             log.error(lastErrorReason);
@@ -806,7 +827,7 @@ public class ActionHandler extends Thread implements EventSource, TimeoutHandler
         }
         else
         {
-            return -1;
+            return ERROR_FAILED_TO_CREATE_TIMEOUT;
         }
     }
 

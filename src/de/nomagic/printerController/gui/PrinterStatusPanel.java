@@ -39,6 +39,7 @@ public class PrinterStatusPanel
     private final JPanel myPanel = new JPanel();
     private final JTextArea statusText = new JTextArea();
     private final JScrollPane scrollPane;
+    private final TemperaturePanel tempPanel;
     private Executor exe;
 
     public PrinterStatusPanel(Executor exe)
@@ -48,6 +49,12 @@ public class PrinterStatusPanel
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Printer Status"));
+
+        // Temperature plot
+        tempPanel = new TemperaturePanel(exe);
+        myPanel.add(tempPanel.getPanel(), BorderLayout.NORTH);
+
+        // Text Area for Log Messages
         statusText.setEditable(false);
         statusText.setFont(new Font(Font.MONOSPACED, Font.PLAIN, FONT_SIZE));
         statusText.setLineWrap(false);
@@ -56,7 +63,7 @@ public class PrinterStatusPanel
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         scrollPane = new JScrollPane(statusText);
         scrollPane.setViewportView(statusText);
-        myPanel.add(scrollPane, BorderLayout.CENTER);
+        myPanel.add(scrollPane, BorderLayout.SOUTH);
         GuiAppender.setTextArea(statusText);
     }
 
@@ -68,16 +75,18 @@ public class PrinterStatusPanel
     public void setToOffline()
     {
         statusText.setText(OFFLINE_MESSAGE);
+        tempPanel.setToOffline();
     }
 
     public void setToOnline()
     {
         statusText.setText("Connected to Pacemaker client !\n");
+        tempPanel.setToOnline();
     }
 
     public void close()
     {
-
+        tempPanel.close();
     }
 
     public void setViewMode(int mode)
@@ -93,11 +102,13 @@ public class PrinterStatusPanel
         default:
             break;
         }
+        tempPanel.setViewMode(mode);
     }
 
     public void updateExecutor(Executor executor)
     {
         exe = executor;
+        tempPanel.updateExecutor(executor);
     }
 
 }

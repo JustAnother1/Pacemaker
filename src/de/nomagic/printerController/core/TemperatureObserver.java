@@ -12,29 +12,17 @@
  * with this program; if not, see <http://www.gnu.org/licenses/>
  *
  */
-package de.nomagic.printerController;
+package de.nomagic.printerController.core;
 
-/** supported Functions of Heaters.
- *
+import de.nomagic.printerController.Heater_enum;
+
+/**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public enum Heater_enum
+public interface TemperatureObserver
 {
-    Extruder_0(0), Extruder_1(1), Extruder_2(2), Print_Bed(3), Chamber(4);
+    void update(Heater_enum position, double temperature);
 
-    public static final int size = Heater_enum.values().length;
-
-    private final int index;
-
-    Heater_enum(int idx)
-    {
-        this.index = idx;
-    }
-
-    public int getValue()
-    {
-        return index;
-    }
 }
