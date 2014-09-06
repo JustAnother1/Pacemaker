@@ -93,6 +93,7 @@ public class MainWindow extends JFrame implements ActionListener
             @Override
             public void windowClosing(WindowEvent e)
             {
+                log.debug("Window Close Event detected !");
                 try
                 {
                     printerStatusPanel.close();
@@ -109,6 +110,7 @@ public class MainWindow extends JFrame implements ActionListener
                 {
                     log.error(Tool.fromExceptionToString(e1));
                 }
+                log.debug("Window Close Event handled !");
                 System.exit(0);
             }
 
