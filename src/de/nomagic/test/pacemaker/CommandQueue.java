@@ -98,6 +98,7 @@ public class CommandQueue
         if(null == theSlot)
         {
             System.err.println("ERROR: invalid Data !");
+            return;
         }
         if(theSlot instanceof BasicLinearMoveSlot)
         {

@@ -343,7 +343,9 @@ public class Executor
             catch(InterruptedException e)
             {
             }
+            log.trace("Requesting new Temperature reading...");
             final ActionResponse response = handler.getValue(Action_enum.getTemperature, heater);
+            log.trace("...received new Temperature reading");
             if(null == response)
             {
                 return false;
@@ -359,7 +361,7 @@ public class Executor
                 resultStream.writeLine("T : " + curTemperature + " °C");
                 for(int i = 0; i < observers.size(); i++)
                 {
-                    TemperatureObserver watcher = observers.get(i);
+                    final TemperatureObserver watcher = observers.get(i);
                     watcher.update(heater, curTemperature);
                 }
                 if(lastTemperature != curTemperature)
@@ -379,6 +381,7 @@ public class Executor
                 settleCounter++;
             }
         } while(settleCounter < HEATER_SETTLING_TIME_IN_POLLS);
+        log.trace("Heater is in Limits");
         return true;
     }
 
@@ -416,7 +419,7 @@ public class Executor
                 curTemperature = response.getTemperature();
                 for(int i = 0; i < observers.size(); i++)
                 {
-                    TemperatureObserver watcher = observers.get(i);
+                    final TemperatureObserver watcher = observers.get(i);
                     watcher.update(pos, curTemperature);
                 }
             }
@@ -558,6 +561,19 @@ public class Executor
                                   GCodeResultStream resultStream)
     {
         // TODO Auto-generated method stub
+        // configure Heater to Bang Bang
+        // switch Heater on 100%
+        // measure temperature as fast as possible
+        // start of cycle
+        // wait for temperature to reach target temperature
+        // switch heater completely off == 0%
+        // wait for temperature to go below target temperature
+        // switch Heater on 100%
+        // end of cycle
+        // after defined number of cycles calculate PID values
+        // from measurements of delta T and time between high and low.
+        // switch heater completely off == 0%
+        // stop measuring the temperature
         return false;
     }
 

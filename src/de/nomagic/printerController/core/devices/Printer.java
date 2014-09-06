@@ -24,7 +24,6 @@ import de.nomagic.printerController.pacemaker.Reply;
  */
 public class Printer
 {
-    private String lastErrorReason = null;
     private final Protocol pro;
 
     public Printer(final Protocol pro)
@@ -34,7 +33,7 @@ public class Printer
 
     public String getLastErrorReason()
     {
-        return lastErrorReason;
+        return pro.getLastErrorReason();
     }
 
     public void closeConnection()

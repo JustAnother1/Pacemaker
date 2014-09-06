@@ -58,6 +58,7 @@ public class MachineControlPanel implements GCodeResultStream
     private final PrinterStatusPanel printerStatusPanel;
     private final JFileChooser fc = new JFileChooser();
     private CoreStateMachine pp;
+    private final Cfg cfg;
 
     public MachineControlPanel(final CoreStateMachine pp,
                                final Cfg cfg,
@@ -66,6 +67,7 @@ public class MachineControlPanel implements GCodeResultStream
                                JFrame ParentWindow)
     {
         this.pp = pp;
+        this.cfg = cfg;
         this.printerStatusPanel = printerStatusPanel;
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
@@ -117,25 +119,43 @@ public class MachineControlPanel implements GCodeResultStream
         printButton.setEnabled(false);
     }
 
+    public void setToOffline()
+    {
+        log.trace("connection to client is now closed !");
+        clientPane.updateButtons();
+        printerStatusPanel.setToOffline();
+        directControlPane.setToOffline();
+        printButton.setEnabled(false);
+    }
+
+    public void setToOnline()
+    {
+        log.trace("connection to client is now open !");
+        clientPane.updateButtons();
+        printerStatusPanel.setToOnline();
+        directControlPane.setToOnline();
+        printButton.setEnabled(true);
+    }
+
     public void handleActionOpenClient()
     {
         log.info("User requests to open the connection to the client!");
-        /* TODO
-        cfg.setClientDeviceString(clientPane.getConnectionDefinition());
-        pp.setCfg(cfg);
-        if(true == pp.connectToPacemaker())
+        cfg.setClientDeviceString(0, clientPane.getConnectionDefinition());
+        if(null != pp)
         {
-            log.trace("connection to client is now open !");
-            clientPane.updateButtons();
-            printerStatusPanel.setToOnline();
-            directControlPane.setToOnline();
-            printButton.setEnabled(true);
+            pp.close();
+        }
+        pp = new CoreStateMachine(cfg);
+        if(true == pp.isOperational())
+        {
+            setToOnline();
         }
         else
         {
             log.info("connection failed !");
+            setToOffline();
         }
-        */
+
     }
 
     public void handleActionPrint()
@@ -143,58 +163,8 @@ public class MachineControlPanel implements GCodeResultStream
         log.trace("User wants to print a G-Code file,..");
         if(fc.showOpenDialog(myPanel) == JFileChooser.APPROVE_OPTION)
         {
-            //TODO move to own task
-            final File file = fc.getSelectedFile();
-            BufferedReader br = null;
-            FileInputStream fin = null;
-            try
-            {
-                fin = new FileInputStream(file);
-                br = new BufferedReader(new InputStreamReader(fin, Charset.forName("UTF-8")));
-                String curLine = br.readLine();
-                while(null != curLine)
-                {
-                    final String res = pp.executeGCode(curLine, this);
-                    if(true == res.startsWith("!!"))
-                    {
-                        return;
-                    }
-                    curLine = br.readLine();
-                }
-            }
-            catch (FileNotFoundException e1)
-            {
-                e1.printStackTrace();
-            }
-            catch (IOException e1)
-            {
-                e1.printStackTrace();
-            }
-            finally
-            {
-                if(null != br)
-                {
-                    try
-                    {
-                        br.close();
-                    }
-                    catch (IOException e1)
-                    {
-                        e1.printStackTrace();
-                    }
-                }
-                if(null != fin)
-                {
-                    try
-                    {
-                        fin.close();
-                    }
-                    catch (IOException e1)
-                    {
-                        e1.printStackTrace();
-                    }
-                }
-            }
+            final PrintWorker pw = new PrintWorker(fc.getSelectedFile(), pp, this);
+            pw.execute();
         }
     }
 

@@ -14,12 +14,12 @@
  */
 package de.nomagic.printerController.gui;
 
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -45,14 +45,14 @@ public class PrinterStatusPanel
     public PrinterStatusPanel(Executor exe)
     {
         this.exe = exe;
-        myPanel.setLayout(new BorderLayout());
+        myPanel.setLayout(new BoxLayout(myPanel, BoxLayout.PAGE_AXIS));
         myPanel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(Color.black),
                 "Printer Status"));
 
         // Temperature plot
         tempPanel = new TemperaturePanel(exe);
-        myPanel.add(tempPanel.getPanel(), BorderLayout.NORTH);
+        myPanel.add(tempPanel.getPanel());
 
         // Text Area for Log Messages
         statusText.setEditable(false);
@@ -63,7 +63,7 @@ public class PrinterStatusPanel
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         scrollPane = new JScrollPane(statusText);
         scrollPane.setViewportView(statusText);
-        myPanel.add(scrollPane, BorderLayout.SOUTH);
+        myPanel.add(scrollPane);
         GuiAppender.setTextArea(statusText);
     }
 
@@ -108,7 +108,7 @@ public class PrinterStatusPanel
     public void updateExecutor(Executor executor)
     {
         exe = executor;
-        tempPanel.updateExecutor(executor);
+        tempPanel.updateExecutor(exe);
     }
 
 }

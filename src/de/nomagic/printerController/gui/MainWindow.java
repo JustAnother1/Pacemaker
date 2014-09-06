@@ -134,6 +134,17 @@ public class MainWindow extends JFrame implements ActionListener
         // Set view Mode
         setViewMode();
 
+        if(true == core.isOperational())
+        {
+            machineControlPanel.setToOnline();
+            printerStatusPanel.setToOnline();
+        }
+        else
+        {
+            machineControlPanel.setToOffline();
+            printerStatusPanel.setToOffline();
+        }
+
         this.setVisible(true);
     }
 

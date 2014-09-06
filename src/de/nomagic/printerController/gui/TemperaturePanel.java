@@ -23,6 +23,8 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.core.ActionResponse;
 import de.nomagic.printerController.core.Action_enum;
@@ -43,6 +45,7 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
     public static final int MAXIMUM_ITEM_COUNT = 1000;
     public static final int MAXIMUM_TIME_BETWEEN_TEMPERATURE_MEASUREMENT_MS = 1000;
 
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final JPanel myPanel;
     private final String chartTitle = "Temperature Chart";
     private final String xAxisLabel = "Time";
@@ -55,7 +58,6 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
     private int[] timeOutId = new int[Heater_enum.size];
     private Executor exe;
 
-
     public TemperaturePanel(Executor exe)
     {
         updateExecutor(exe);
@@ -65,7 +67,6 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
                                                dataset);
         myPanel = new ChartPanel(chart);
     }
-
 
     public void updateExecutor(Executor exe)
     {
@@ -80,12 +81,14 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
         {
             if(true == exe.istheHeaterConfigured(ele))
             {
+                log.debug("Printer has a {} Heater !", ele);
                 final Event e = new Event(Action_enum.timeOut, ele, this);
                 timeOutId[ele.getValue()] = timeOut.createTimeout(e, MAXIMUM_TIME_BETWEEN_TEMPERATURE_MEASUREMENT_MS);
                 timeOut.startTimeout(timeOutId[ele.getValue()]);
             }
             else
             {
+                log.debug("Printer does not have a {} Heater !", ele);
                 timeOutId[ele.getValue()] = TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT;
             }
         }
@@ -130,6 +133,10 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
             break;
         }
     }
+
+    /** a temperature reading arrived from the Client.
+     *
+     */
     @Override
     public void update(Heater_enum position, double temperature)
     {
@@ -147,6 +154,13 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
         long curTime = System.currentTimeMillis();
         curTime = curTime - startTime;
         curSeries.add(curTime, temperature);
+        if(TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT == timeOutId[position.getValue()])
+        {
+            // first Time this Heater reports a Temperature -> create a timeout
+            final Event e = new Event(Action_enum.timeOut, position, this);
+            timeOutId[position.getValue()] = timeOut.createTimeout(e, MAXIMUM_TIME_BETWEEN_TEMPERATURE_MEASUREMENT_MS);
+        }
+        timeOut.startTimeout(timeOutId[position.getValue()]);
     }
 
     /** Timeout occurred -> we need to request that temperature reading.
@@ -155,6 +169,7 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
     @Override
     public void reportEventStatus(ActionResponse response)
     {
+        log.debug("Timeout occured!");
         final Heater_enum pos = (Heater_enum)response.getObject();
         @SuppressWarnings("unused")
         final double curTemp = exe.requestTemperatureOfHeater(pos);

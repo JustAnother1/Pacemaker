@@ -169,7 +169,6 @@ public class GCode
                 log.error("Invalid value({}) given for Word {} in line: {} !", help, curWordType, line);
             }
             words.put(curWordType,d);
-            curNumber = new StringBuffer();
         }
     }
 
