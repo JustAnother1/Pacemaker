@@ -48,8 +48,8 @@ public final class UartClientConnection extends ClientConnectionBase
 
     private static final Logger log = LoggerFactory.getLogger("UartClientConnection");
 
-    private SerialPort port;
-    private boolean connected = false;
+    private volatile SerialPort port;
+    private volatile boolean connected = false;
 
     public static String getDescriptorFor(String DeviceName,
                                           int baudrate,
@@ -111,6 +111,21 @@ public final class UartClientConnection extends ClientConnectionBase
         return i; // Default -> 8 bits
     }
 
+    private int getSerialPortDataBitFromDescriptor(String data)
+    {
+        int spDataBits;
+        final int dataBitIdx = getDataBitIdxFromDescriptor(data);
+        switch(dataBitIdx)
+        {
+        case 0: spDataBits = SerialPort.DATABITS_5;break;
+        case 1: spDataBits = SerialPort.DATABITS_6;break;
+        case 2: spDataBits = SerialPort.DATABITS_7;break;
+        case 3: spDataBits = SerialPort.DATABITS_8;break;
+        default: spDataBits = SerialPort.DATABITS_8;break;
+        }
+        return spDataBits;
+    }
+
     public static int getParityIdxFromDescriptor(String data)
     {
         final Scanner sc = new Scanner(data);
@@ -128,6 +143,22 @@ public final class UartClientConnection extends ClientConnectionBase
             }
         }
         return 0; // default -> No Parity
+    }
+
+    private int getSerialPortParityFromDescriptor(String data)
+    {
+        int spParity;
+        final int parityIdx = getParityIdxFromDescriptor(data);
+        switch(parityIdx)
+        {
+        case 0: spParity = SerialPort.PARITY_NONE; break;
+        case 1: spParity = SerialPort.PARITY_EVEN; break;
+        case 2: spParity = SerialPort.PARITY_ODD; break;
+        case 3: spParity = SerialPort.PARITY_MARK; break;
+        case 4: spParity = SerialPort.PARITY_SPACE; break;
+        default: spParity = SerialPort.PARITY_NONE; break;
+        }
+        return spParity;
     }
 
     public static int getStopBitIdxFromDescriptor(String data)
@@ -150,6 +181,20 @@ public final class UartClientConnection extends ClientConnectionBase
         return 0; // default -> 1 Stop Bit
     }
 
+    private int getSerialPortStopBitFromDescriptor(String data)
+    {
+        int spStopBits;
+        final int stopBitIdx = getStopBitIdxFromDescriptor(data);
+        switch(stopBitIdx)
+        {
+        case 0:spStopBits = SerialPort.STOPBITS_1;break;
+        case 1:spStopBits = SerialPort.STOPBITS_1_5;break;
+        case 2:spStopBits = SerialPort.STOPBITS_2;break;
+        default: spStopBits = SerialPort.STOPBITS_1;break;
+        }
+        return spStopBits;
+    }
+
     public static boolean getRtsCtsInFromDescriptor(String data)
     {
         final Scanner sc = new Scanner(data);
@@ -163,6 +208,28 @@ public final class UartClientConnection extends ClientConnectionBase
         final boolean res = Boolean.getBoolean(help);
         sc.close();
         return res;
+    }
+
+    private int getFlowControlFromDescriptor(String data)
+    {
+        int flowControl = SerialPort.FLOWCONTROL_NONE;
+        if(true == getRtsCtsInFromDescriptor(data))
+        {
+            flowControl = flowControl | SerialPort.FLOWCONTROL_RTSCTS_IN;
+        }
+        if(true == getRtsCtsOutFromDescriptor(data))
+        {
+            flowControl = flowControl | SerialPort.FLOWCONTROL_RTSCTS_OUT;
+        }
+        if(true == getXonXoffInFromDescriptor(data))
+        {
+            flowControl = flowControl | SerialPort.FLOWCONTROL_XONXOFF_IN;
+        }
+        if(true == getXonXoffOutFromDescriptor(data))
+        {
+            flowControl = flowControl | SerialPort.FLOWCONTROL_XONXOFF_OUT;
+        }
+        return flowControl;
     }
 
     public static boolean getRtsCtsOutFromDescriptor(String data)
@@ -264,56 +331,12 @@ public final class UartClientConnection extends ClientConnectionBase
                 return;
             }
             port = (SerialPort)basePort;
-            int flowControl = SerialPort.FLOWCONTROL_NONE;
-            if(true == getRtsCtsInFromDescriptor(data))
-            {
-                flowControl = flowControl | SerialPort.FLOWCONTROL_RTSCTS_IN;
-            }
-            if(true == getRtsCtsOutFromDescriptor(data))
-            {
-                flowControl = flowControl | SerialPort.FLOWCONTROL_RTSCTS_OUT;
-            }
-            if(true == getXonXoffInFromDescriptor(data))
-            {
-                flowControl = flowControl | SerialPort.FLOWCONTROL_XONXOFF_IN;
-            }
-            if(true == getXonXoffOutFromDescriptor(data))
-            {
-                flowControl = flowControl | SerialPort.FLOWCONTROL_XONXOFF_OUT;
-            }
-            port.setFlowControlMode(flowControl);
+            port.setFlowControlMode(getFlowControlFromDescriptor(data));
 
-            int spDataBits;
-            final int dataBitIdx = getDataBitIdxFromDescriptor(data);
-            switch(dataBitIdx)
-            {
-            case 0: spDataBits = SerialPort.DATABITS_5;break;
-            case 1: spDataBits = SerialPort.DATABITS_6;break;
-            case 2: spDataBits = SerialPort.DATABITS_7;break;
-            case 3: spDataBits = SerialPort.DATABITS_8;break;
-            default: spDataBits = SerialPort.DATABITS_8;break;
-            }
-            int spStopBits;
-            final int stopBitIdx = getStopBitIdxFromDescriptor(data);
-            switch(stopBitIdx)
-            {
-            case 0:spStopBits = SerialPort.STOPBITS_1;break;
-            case 1:spStopBits = SerialPort.STOPBITS_1_5;break;
-            case 2:spStopBits = SerialPort.STOPBITS_2;break;
-            default: spStopBits = SerialPort.STOPBITS_1;break;
-            }
-            int spParity;
-            final int parityIdx = getParityIdxFromDescriptor(data);
-            switch(parityIdx)
-            {
-            case 0: spParity = SerialPort.PARITY_NONE; break;
-            case 1: spParity = SerialPort.PARITY_EVEN; break;
-            case 2: spParity = SerialPort.PARITY_ODD; break;
-            case 3: spParity = SerialPort.PARITY_MARK; break;
-            case 4: spParity = SerialPort.PARITY_SPACE; break;
-            default: spParity = SerialPort.PARITY_NONE; break;
-            }
-            port.setSerialPortParams(getBaudrateFromDescriptor(data), spDataBits, spStopBits, spParity);
+            port.setSerialPortParams(getBaudrateFromDescriptor(data),
+                                     getSerialPortDataBitFromDescriptor(data),
+                                     getSerialPortStopBitFromDescriptor(data),
+                                     getSerialPortParityFromDescriptor(data));
 
             in = port.getInputStream();
             out = port.getOutputStream();
