@@ -33,20 +33,15 @@ public final class CoreStateMachine
     private boolean isOperational = false;
     private Executor exe;
     private GCodeDecoder decoder;
-    private final ActionHandler handler;
 
     public CoreStateMachine(final Cfg cfg)
     {
-        log.info("starting Action Handler,...");
-        handler = new ActionHandler(cfg);
-        if(false == handler.isOperational())
+        log.info("starting Executor,...");
+        exe = new Executor(cfg);
+        if(false == exe.isOperational())
         {
             return;
         }
-        log.info(handler.toString());
-        handler.start();
-        log.info("starting Executor,...");
-        exe = new Executor(handler);
         log.info("starting G-Code Decoder,...");
         decoder = new GCodeDecoder(exe);
         // everything is now up and running
@@ -100,10 +95,6 @@ public final class CoreStateMachine
         if(null != exe)
         {
             exe.close();
-        }
-        if(null != handler)
-        {
-            handler.close();
         }
     }
 

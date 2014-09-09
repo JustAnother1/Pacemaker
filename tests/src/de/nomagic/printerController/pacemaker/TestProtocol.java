@@ -29,7 +29,7 @@ public class TestProtocol
     @Test
     public void testOperational()
     {
-        Protocol pro = new Protocol(null);
+        Protocol pro = new Protocol(null, null);
         assertFalse(pro.isOperational());
         pro.closeConnection();
         assertNull(pro.getLastErrorReason());
@@ -37,7 +37,7 @@ public class TestProtocol
         System.out.println(pro.toString());
 
         TestClientConnection connection = new TestClientConnection();
-        Protocol pro2 = new Protocol(connection);
+        Protocol pro2 = new Protocol(connection, null);
         assertTrue(pro2.isOperational());
         pro2.closeConnection();
         assertNull(pro2.getLastErrorReason());

@@ -32,11 +32,29 @@ This Module opens a TCP Socket. Other programs can send G-Code Lines by opening 
 ==== UDP Datagram Socket
 This Module listens to UDP Packets. Each Packet may contain one line of G-Code.
 
-== Wizard
+== Thread Structure
+The Pacemaker host consists of several Threads. It is important to be aware of the Threads involved to make the communication between these Threads safe.
+
+=== Main Thread
+The starting of the Jar File creates a Thread. This tread starts the Interfaces and the GUI. If The commandline specifies a File to print then this printing will be done by this thread.
+
+=== Swing Thread
+The GUI creates it's own Thread to deal with the Events of the User interacting with the GUI.
+
+=== Swing Worker Thread
+To keep the GUI responding it is necessary to move longer Tasks into Worker Threads. An Example for a longer Task is a Print of a G-Code File. The Worker Threads are created dynamically by the Swing Thread whenever the need arises.
+
+=== Interactive Interface Threads
+Each activated G-Code Interface (TCP, UDP, Standard Streams) is a Thread handling the communication on the interface.
+
+=== Client Connection Threads
+Each Client connection is a Thread that handles the communication with that client.
+
+== Additional Software Packages
+These additional Packages are also provided to help with certain aspects of the Pacemaker Host.
+
+=== Wizard
 The wizard creates a configuration file for the pacemaker host software by asking the user a series of questions and dosing some test with the connected client. This should be the easiest way to configure the pacemaker system.
 
-== Terminal
-The terminal gives a GUI to send single frames to a pacemaker client. It can be used to debug or test a client.
-
-== Client Simulator
+=== Client Simulator
 The client Simulator is a application that speaks the pacemaker protocol and acts as a pacemaker client. It can be used to test the pacemaker host

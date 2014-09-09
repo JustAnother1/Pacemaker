@@ -25,7 +25,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Tool;
+import de.nomagic.printerController.core.ActionResponse;
+import de.nomagic.printerController.core.Action_enum;
+import de.nomagic.printerController.core.Event;
+import de.nomagic.printerController.core.EventSource;
 import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.core.devices.Switch;
 import de.nomagic.printerController.core.movement.BasicLinearMove;
@@ -36,7 +41,7 @@ import de.nomagic.printerController.core.movement.BasicLinearMove;
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */
-public class Protocol
+public class Protocol implements EventSource
 {
     public static final int ORDER_POS_OF_SYNC               = 0;
     public static final int ORDER_POS_OF_LENGTH             = 1;
@@ -85,8 +90,8 @@ public class Protocol
     public static final byte ORDER_REQUEST_DEVICE_STATUS                            = 0x18; // 24
     public static final byte ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS = 0x19; // 25
     public static final byte ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES      = 0x1a; // 26
-    public static final byte ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES           = 0x1b;
-    public static final byte ORDER_RESET                                            = (byte)0x7f;
+    public static final byte ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES           = 0x1b; // 27
+    public static final byte ORDER_RESET                                            = (byte)0x7f; // 127
 
     public static final byte QUERY_STOPPED_STATE = 0;
     public static final byte CLEAR_STOPPED_STATE = 1;
@@ -201,28 +206,31 @@ public class Protocol
 
     private static final int QUEUE_SEND_BUFFER_SIZE = 200;
 
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
-    private String lastErrorReason = null;
-
     // the client needs at lest this(in milliseconds) time to free up one slot in the Queue
     private final long QUEUE_POLL_DELAY = 10;
     // blocking command will try not more than MAX_ENQUEUE_DELAY times to enqueue the block
     private final int MAX_ENQUEUE_DELAY = 100;
 
-    private ClientConnection cc;
-    private boolean isOperational = false;
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private final ClientConnection cc;
+
+    // TODO needs Syncronisation:
+    private volatile String lastErrorReason = null;
+    private volatile boolean isOperational = false;
+
     private DeviceInformation di = null;
 
     private final Vector<byte[]> sendQueue = new Vector<byte[]>();
-    private int ClientQueueFreeSlots = 0;
-    private int ClientQueueNumberOfEnqueuedCommands = 0;
-    private int ClientExecutedJobs = 0;
-    private int CommandsSendToClient = 0;
-    private long timeofLastClientQueueUpdate;
-    private int hostTimeout = 2;
+    private volatile int ClientQueueFreeSlots = 0;
+    private volatile int ClientQueueNumberOfEnqueuedCommands = 0;
+    private volatile int ClientExecutedJobs = 0;
+    private volatile int CommandsSendToClient = 0;
+    private volatile long timeofLastClientQueueUpdate;
+    private volatile int hostTimeout = 2;
+    private final TimeoutHandler timeout;
+    private final int timeoutId;
 
-
-    public Protocol(ClientConnection Client)
+    public Protocol(ClientConnection Client, TimeoutHandler timeout)
     {
         this.cc = Client;
         if(null == cc)
@@ -243,7 +251,36 @@ public class Protocol
             // take client out of Stopped Mode
             isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
         }
+        this.timeout = timeout;
+        final Event e = new Event(Action_enum.timeOut, null, this);
+        timeoutId = timeout.createTimeout(e, hostTimeout/2 * 1000);
+        if(TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT == timeoutId)
+        {
+            log.error("No Timeout available - can not send Keep Alives to Client!");
+        }
+        else
+        {
+            timeout.startTimeout(timeoutId);
+        }
     }
+
+    @Override
+    public void reportEventStatus(ActionResponse response)
+    {
+        if(true == isOperational)
+        {
+            final long now = System.currentTimeMillis();
+            long lastHearedOfClient = cc.getTimeOfLastSuccessfulReply();
+            lastHearedOfClient = lastHearedOfClient + (hostTimeout/2 * 1000) - 500;
+            if(lastHearedOfClient < now) // we haven't heard from the client since the last run
+            {
+                sendKeepAliveSignal();
+            }
+            // else communication active -> no need for keep alive signal.
+            timeout.startTimeout(timeoutId);
+        }
+    }
+
 
     public static String parse(byte[] buf)
     {
@@ -1649,27 +1686,6 @@ public class Protocol
     public Reply sendRawOrder(int order, Integer[] parameterBytes, int length)
     {
         return cc.sendRequest(order, parameterBytes, 0, length);
-    }
-
-    public void activateKeepAlive(ScheduledThreadPoolExecutor timedExecutor)
-    {
-        timedExecutor.scheduleAtFixedRate(new Runnable()
-        {
-            public void run()
-            {
-                if(true == isOperational)
-                {
-                    final long now = System.currentTimeMillis();
-                    long lastHearedOfClient = cc.getTimeOfLastSuccessfulReply();
-                    lastHearedOfClient = lastHearedOfClient + (hostTimeout/2 * 1000);
-                    if(lastHearedOfClient < now) // we haven't heard from the client since the last run
-                    {
-                        sendKeepAliveSignal();
-                    }
-                    // else communication active -> no need for keep alive signal.
-                }
-            }
-        }, hostTimeout/2, hostTimeout/2, TimeUnit.SECONDS);
     }
 
     private void sendKeepAliveSignal()

@@ -68,7 +68,6 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     /* F*/ (byte)0x90, (byte)0x36, (byte)0x7a, (byte)0xdc, (byte)0xe2, (byte)0x44, (byte)0x08, (byte)0xae, (byte)0x74, (byte)0xd2, (byte)0x9e, (byte)0x38, (byte)0x06, (byte)0xa0, (byte)0xec, (byte)0x4a
     };
 
-
     protected InputStream in;
     protected OutputStream out;
     protected byte sequenceNumber = 0;
@@ -129,7 +128,12 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
      * @param length send only this many bytes. May be 0 !
      * @return true= success false = no reply received - timeout
      */
-    public Reply sendRequest(final byte order, final byte[] parameter, int offset, int length)
+    public synchronized Reply sendRequest(final byte order, final byte[] parameter, int offset, int length)
+    // The synchronized makes sure that only one frame will bes send at a time.
+    // This function waits for the Reply to the frame.
+    // So the next frame can not be send before the reply for this frame has been received.
+    // Right now that is all the protocol can do.
+    // If a future version of the protocol allows more than one frame send to the client then this needs to be changed.
     {
         Reply r = null;
         numberOfTransmissions = 0;
@@ -158,7 +162,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         return r;
     }
 
-    private void logReply(Reply r)
+    private static void logReply(Reply r)
     {
         if(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR == r.getReplyCode())
         {
@@ -280,12 +284,12 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         }
     }
 
-    public static byte getCRCfor(final byte[] buf, final int length)
+    private static byte getCRCfor(final byte[] buf, final int length)
     {
         return getCRCfor(buf, length -1, 1/* Byte 0 is Sync and is not included in CRC*/);
     }
 
-    public static byte getCRCfor(final byte[] buf, int length, final int offset)
+    private static byte getCRCfor(final byte[] buf, int length, final int offset)
     {
         byte crc = 0;
         int pos = offset;
@@ -298,79 +302,90 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         return crc;
     }
 
-    @SuppressWarnings("unused")
-    protected int getAByte() throws IOException, TimeoutException, InterruptedException
+    private int getABlockingByte() throws IOException
     {
-        if(false == useNonBlocking)
+        // TODO Blocking read would be better, but we need the timeout feature,..
+        final int res =  in.read();
+        if(-1 == res)
         {
-            final int res =  in.read();
-            if(-1 == res)
+            throw new IOException("Channel closed");
+        }
+        return res;
+    }
+
+    private int getABNonlockingByte() throws IOException, TimeoutException, InterruptedException
+    {
+        if(null != readBuffer)
+        {
+            // we have some Bytes already in the in Buffer.
+            final int res = 0xff & readBuffer[readPos];
+            readPos++;
+            if(readPos > lastPos)
             {
-                throw new IOException("Channel closed");
+                readBuffer = null;
+                readPos = 0;
+                lastPos = 0;
             }
             return res;
         }
         else
         {
-            if(null != readBuffer)
+            int numAvail = in.available();
+            if(1 > numAvail)
             {
-                // we have some Bytes already in the in Buffer.
-                final int res = 0xff & readBuffer[readPos];
-                readPos++;
-                if(readPos > lastPos)
+                int timeoutCounter = 0;
+                do
                 {
-                    readBuffer = null;
-                    readPos = 0;
-                    lastPos = 0;
-                }
-                return res;
+                    Thread.sleep(1);
+                    if(true == isSynced)
+                    {
+                        timeoutCounter++;
+                        if(MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter)
+                        {
+                            throw new TimeoutException();
+                        }
+                    }
+                    // else pause between two frames can be as long as it wants to be.
+                    numAvail = in.available();
+                }while(1 > numAvail);
+            }
+            // else a byte is already available
+            readBuffer = new byte[numAvail];
+            lastPos = (in.read(readBuffer)) -1; // Index starts with 0 -> -1
+            if(-1 == lastPos)
+            {
+                throw new IOException("Channel closed");
+            }
+            final int res = readBuffer[0];
+            if(0 == lastPos)
+            {
+                // just a single Byte arrived
+                readPos = 0;
+                readBuffer = null;
             }
             else
             {
-                int numAvail = in.available();
-                if(1 > numAvail)
-                {
-                    int timeoutCounter = 0;
-                    do
-                    {
-                        Thread.sleep(1);
-                        if(true == isSynced)
-                        {
-                            timeoutCounter++;
-                            if(MAX_MS_BETWEEN_TWO_BYTES < timeoutCounter)
-                            {
-                                throw new TimeoutException();
-                            }
-                        }
-                        // else pause between two frames can be as long as it wants to be.
-                        numAvail = in.available();
-                    }while(1 > numAvail);
-                }
-                // else a byte is already available
-                readBuffer = new byte[numAvail];
-                lastPos = (in.read(readBuffer)) -1; // Index starts with 0 -> -1
-                if(-1 == lastPos)
-                {
-                    throw new IOException("Channel closed");
-                }
-                final int res = readBuffer[0];
-                if(0 == lastPos)
-                {
-                    // just a single Byte arrived
-                    readPos = 0;
-                    readBuffer = null;
-                }
-                else
-                {
-                    // more than one byte arrived
-                    readPos = 1;
-                }
-                return res;
+                // more than one byte arrived
+                readPos = 1;
             }
+            return res;
         }
     }
 
-    protected void incrementSequenceNumber()
+    @SuppressWarnings("unused")
+    private int getAByte() throws IOException, TimeoutException, InterruptedException
+    {
+        if(false == useNonBlocking)
+        {
+            return getABlockingByte();
+        }
+        else
+        {
+            return getABNonlockingByte();
+        }
+    }
+
+    private void incrementSequenceNumber()
     {
         sequenceNumber ++;
         if(sequenceNumber > Protocol.MAX_SEQUENCE_NUMBER)
@@ -379,7 +394,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         }
     }
 
-    protected Reply getReply()
+    private Reply getReply()
     {
         Reply r = null;
         r = receiveQueue.poll();
@@ -409,6 +424,35 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         return r;
     }
 
+    private void receiveSyncByte() throws IOException, InterruptedException
+    {
+        int sync;
+        do
+        {
+            try
+            {
+                sync = getAByte();
+                if((sync != Protocol.START_OF_CLIENT_FRAME) && (true == isSynced))
+                {
+                    // Protocol Error
+                    log.error("Frame did not start with sync byte !");
+                    isSynced = false;
+                }
+                else
+                {
+                    if(Protocol.START_OF_CLIENT_FRAME == sync)
+                    {
+                        isSynced = true;
+                    }
+                }
+            }
+            catch(TimeoutException e)
+            {
+                isSynced = false;
+            }
+        } while (false == isSynced);
+    }
+
     @Override
     public void run()
     {
@@ -417,31 +461,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
             while(false == isInterrupted())
             {
                 // Sync
-                int sync;
-                do
-                {
-                    try
-                    {
-                        sync = getAByte();
-                        if((sync != Protocol.START_OF_CLIENT_FRAME) && (true == isSynced))
-                        {
-                            // Protocol Error
-                            log.error("Frame did not start with sync byte !");
-                            isSynced = false;
-                        }
-                        else
-                        {
-                            if(Protocol.START_OF_CLIENT_FRAME == sync)
-                            {
-                                isSynced = true;
-                            }
-                        }
-                    }
-                    catch(TimeoutException e)
-                    {
-                        isSynced = false;
-                    }
-                } while (false == isSynced);
+                receiveSyncByte();
 
                 final int replyLength;
                 final int control;

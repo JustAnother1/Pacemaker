@@ -20,10 +20,7 @@ Facade and public API to other Modules.
 Takes a string and reads the G-Code from it. It then uses the Executor to create the appropriate actions.
 
 === Executor
-Creates Actions for the ActionHandler.
-
-=== Action Handler
-Central Event/ Action Handler. The First action of the Action Handler is to Create and open all the connections to the clients. It then uses Devices to map abstract printer features to concrete function of the connected clients.  The Devices are then used to talk to the client.
+The First action of the Executor is to Create and open all the connections to the clients. It then uses Devices to map abstract printer features to concrete function of the connected clients. The Devices are then used to talk to the client.
 The following Devices are used:
 - Fan
 - Heater
@@ -54,17 +51,12 @@ The Executor is a second API of the Core for non G-Code based Interfaces. Curren
 
 NOTE: The G-Code is a function call passing arguments to the Encoder.
 
-The Executor creates a instance of a Action class that correspondent to the requested action defined in the GCode. This action is then put into the Queue for the ActionHandler.
-Actions that can not be handled in a single non blocking action to the Action handler will be split into several actions. The responses to these actions will be handled by the Executor.
+Actions that can not be handled in a single non blocking action will be split into several actions. The responses to these actions will be handled by the Executor.
 The control logic that makes up complicated actions is located in the Executor.
-
-NOTE: The G-Code is one or more calls to ActionHandler.getValue() or ActionHandler.doAction() and the parameters that get passed to the functions.
-
-The ActionHandler is a Thread. It receives Actions through a Queue from the Executor. Is opens all connections to the clients. It Sends to and receives from the clients. The Action Handler is the heart of the process. Here is the logic that decides what actions have to be executes and how the host has to react to the data coming in from the clients.
 
 NOTE: The G-Code is now a call to a function of one of the devices.
 
-To do this in a clear manner the Action Handler has several Devices that represent the functions of the printer. These devices are connected to the features of the clients. These devices are therefore responsible to map the abstract functions of the printer like move X axis, heat up Extruder one, .. to the concrete actions of the clients like do steps on stepper 3 of the first client, set the target temperature of heater 0 on client 2,..
+To do this in a clear manner the Executor has several Devices that represent the functions of the printer. These devices are connected to the features of the clients. These devices are therefore responsible to map the abstract functions of the printer like move X axis, heat up Extruder one, .. to the concrete actions of the clients like do steps on stepper 3 of the first client, set the target temperature of heater 0 on client 2,..
 The devices use an instance of the protocol class for each connection to translate these concrete actions to the needed data packets to send out to the client.
 
 NOTE: The G-Code is now a call to a function of the Protocol for the correct client.
@@ -84,15 +76,11 @@ Received data frames are given to the Protocol.class.
 
 NOTE: The G-Code is a buffer with bytes.
 
-The Protocol decodes the data and gives the result to the ActionHandler.
+The Protocol decodes the data and gives the result to the Executor.
 
 NOTE: The G-Code is a return type of a function call.
 
-The ActionHandler reacts to the events and takes the appropriate actions. This may cause further calls to protocol. When all actions have been executed the Responses are handed back to the Executor.
-
-NOTE: The G-Code is a return type of a function call.
-
-The Executor hands the Result back to the G-Code Decoder. If the GUI Used the Executor directly the Result will be handed to the GUI and the handling is finished.
+The Executor reacts to the events and takes the appropriate actions. This may cause further calls to protocol. When all actions have been executed the Responses are handed back to the G-Code Decoder. If the GUI Used the Executor directly the Result will be handed to the GUI and the handling is finished.
 
 NOTE: The G-Code is a return type of a function call.
 
