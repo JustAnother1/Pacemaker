@@ -32,9 +32,11 @@ public class GCode
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final HashMap<Character,Double> words = new HashMap<Character,Double>();
     private boolean valid = true;
+    private final String OriginalLine;
 
     public GCode(String line)
     {
+        OriginalLine = line;
         line = line.toUpperCase(); // case insensitive
         line = line.trim(); // whitespace is ignored
         char curWordType = ' ';
@@ -170,6 +172,60 @@ public class GCode
             }
             words.put(curWordType,d);
         }
+    }
+
+    public String getLineWithoutCommentWithoutWord(final Character wordType)
+    {
+        final StringBuffer res = new StringBuffer();
+        for(int i = 0; i < OriginalLine.length(); i++)
+        {
+            final char  c = OriginalLine.charAt(i);
+            if(wordType == c)
+            {
+                // skip this word
+                boolean isANumber = false;
+                char nextChar;
+                do
+                {
+                    i++;
+                    nextChar = OriginalLine.charAt(i);
+                    if( ('1' == c) || ('2' == c) || ('3' == c) ||
+                        ('4' == c) || ('5' == c) || ('6' == c) ||
+                        ('7' == c) || ('8' == c) || ('9' == c) || ('0' == c) ||
+                        ('+' == c) || ('-' == c) || ('.' == c) || ('#' == c) )
+                    {
+                        isANumber = true;
+                    }
+                    else
+                    {
+                        isANumber = false;
+                    }
+                }
+                while((true != isANumber) && (i < OriginalLine.length()));
+            }
+            else if('(' == c)
+            {
+                // Comment start
+                char commentedChar;
+                do
+                {
+                    i++;
+                    commentedChar = OriginalLine.charAt(i);
+                }
+                while((commentedChar != ')') && (i < OriginalLine.length()));
+            }
+            else if(';' == c)
+            {
+                // non standard:
+                // comment until end of line -> we are done here
+                break;
+            }
+            else
+            {
+                res.append(c);
+            }
+        }
+        return res.toString();
     }
 
     public boolean hasWord(final Character wordType)

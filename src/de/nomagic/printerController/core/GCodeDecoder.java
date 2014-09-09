@@ -14,12 +14,14 @@
  */
 package de.nomagic.printerController.core;
 
+import java.io.File;
 import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
+import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
@@ -44,33 +46,62 @@ public class GCodeDecoder
     private final double[] curPosition= new double[Axis_enum.size + 1]; // last entry is Feedrate
     private boolean isRelative = false;
     private boolean isMetric = true;
-    private String LastErrorReason = null;
+    private String lastErrorReason = null;
     private String ResultValue = "";
+    private String selectedSDCardFile = "";
+    private boolean FileTransferModeActive = false;
 
     private boolean firstLine = true;
     private int lastLineNumber = 0;
+    private final SDCardSimulation sdCard;
+    private final SDCardPrinter sdPrinterWorker;
 
-    public GCodeDecoder(final Executor plan)
+    public GCodeDecoder(final Executor plan, Cfg cfg)
     {
         this.exe = plan;
         for(int i = 0; i < curPosition.length; i++)
         {
             curPosition[i] = 0.0;
         }
+        sdCard = new SDCardSimulation(new File(cfg.getGeneralSetting("sdcardfolder", "sdcard")));
+        sdPrinterWorker =  new SDCardPrinter(sdCard, this);
     }
 
     public String sendLine(final String line, final GCodeResultStream resultStream)
     {
-        LastErrorReason = null;
+        lastErrorReason = null;
         if(null == line) {return "";}
         if(1 > line.length()) {return "";}
         final GCode code = new GCode(line);
+        if(true == FileTransferModeActive)
+        {
+            final Double M = code.getWordValue('M');
+            if(29 == M.intValue()) // M29: Stop writing to SD Card
+            {
+                sdCard.closeFile();
+                FileTransferModeActive = false;
+                return "ok";
+            }
+            else
+            {
+                final boolean res = sdCard.appendToFile(line);
+                if(false == res)
+                {
+                    lastErrorReason = sdCard.getLastErrorReason();
+                    return "!! " + lastErrorReason;
+                }
+                else
+                {
+                    return "ok";
+                }
+            }
+        }
         if(true == code.isEmpty()) {return "";}
         if(false == code.isValid())
         {
-            LastErrorReason = "G-Code is invalid !";
-            log.error(LastErrorReason);
-            return "!! " + LastErrorReason;
+            lastErrorReason = "G-Code is invalid !";
+            log.error(lastErrorReason);
+            return "!! " + lastErrorReason;
         }
 
         int result = RESULT_ERROR;
@@ -123,9 +154,9 @@ public class GCodeDecoder
         }
         else
         {
-            LastErrorReason = "Line has no G, M or T Code !";
-            log.error(LastErrorReason);
-            return "!! " + LastErrorReason;
+            lastErrorReason = "Line has no G, M or T Code !";
+            log.error(lastErrorReason);
+            return "!! " + lastErrorReason;
         }
         if(RESULT_OK == result)
         {
@@ -133,7 +164,7 @@ public class GCodeDecoder
         }
         else if(RESULT_ERROR == result)
         {
-            return "!! " + LastErrorReason;
+            return "!! " + lastErrorReason;
         }
         else if(RESULT_VALUE == result)
         {
@@ -148,13 +179,13 @@ public class GCodeDecoder
 
     public String getLastErrorReason()
     {
-        if(null == LastErrorReason)
+        if(null == lastErrorReason)
         {
             return exe.getLastErrorReason();
         }
         else
         {
-            return LastErrorReason;
+            return lastErrorReason;
         }
     }
 
@@ -191,6 +222,78 @@ public class GCodeDecoder
 
         case 17: // Enable/Power all stepper motors
             if(false == exe.enableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
+
+        case 20: // List SD Card Files
+            final String[] files = sdCard.getListOfFiles();
+            if(1 >files.length)
+            {
+                ResultValue = "ok Files: {}";
+            }
+            else
+            {
+                final StringBuffer sb = new StringBuffer();
+                sb.append("Files:{ ");
+                for(int i = 0; i < files.length; i++)
+                {
+                    sb.append(files[i] + ",");
+                }
+                sb.append("}");
+                ResultValue = sb.toString();
+            }
+            return RESULT_OK;
+
+        case 21: // Initialize SD Card (   mount the SD Card
+        case 22: // Release the SD card (unmount the SD Card))
+            return RESULT_OK;
+
+        case 23: // select SD File
+            selectedSDCardFile = code.getLineWithoutCommentWithoutWord('M');
+            return RESULT_OK;
+
+        case 24: // start / resume SD print
+            if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile)){ return RESULT_ERROR;} else {return RESULT_OK;}
+
+        case 25: // pause SD print
+            sdPrinterWorker.pausePrinting();
+            return RESULT_OK;
+
+        case 26: // set SD position
+            Double bytePosition = code.getWordValue('S');
+            if(false == sdPrinterWorker.setSDCardPosition(bytePosition.longValue())){ return RESULT_ERROR;} else {return RESULT_OK;}
+
+        case 27: // report SD print status
+            ResultValue = sdPrinterWorker.getPrintStatus();
+            return RESULT_OK;
+
+        case 28: // begin write to SD Card
+            if(false == sdCard.createAndOpenNewFile(code.getLineWithoutCommentWithoutWord('M')))
+            {
+                lastErrorReason = sdCard.getLastErrorReason();
+                return RESULT_ERROR;
+            }
+            else
+            {
+                FileTransferModeActive = true;
+                return RESULT_OK;
+            }
+
+        case 29: // Stop writing to SD Card
+            return RESULT_ERROR; // not started
+
+        case 30: // delete a file on the SD Card
+            if(false == sdCard.deleteFile(code.getLineWithoutCommentWithoutWord('M')))
+            {
+                lastErrorReason = sdCard.getLastErrorReason();
+                return RESULT_ERROR;
+            }
+            else
+            {
+                return RESULT_OK;
+            }
+
+        case 32: // select file and start printing
+            selectedSDCardFile = code.getLineWithoutCommentWithoutWord('M');
+            if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile)){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 18: // Disable all stepper motors
         case 84: // Stop Idle hold
@@ -377,8 +480,8 @@ public class GCodeDecoder
             }
 
         default:
-            LastErrorReason = "M" + num + " not yet implemented !";
-            log.error(LastErrorReason);
+            lastErrorReason = "M" + num + " not yet implemented !";
+            log.error(lastErrorReason);
             return RESULT_ERROR;
         }
     }
@@ -453,8 +556,8 @@ public class GCodeDecoder
             return RESULT_OK;
 
         default:
-            LastErrorReason = "G" + num + " not yet implemented !";
-            log.error(LastErrorReason);
+            lastErrorReason = "G" + num + " not yet implemented !";
+            log.error(lastErrorReason);
             return RESULT_ERROR;
         }
     }
@@ -563,5 +666,4 @@ public class GCodeDecoder
             return "unknown";
         }
     }
-
 }

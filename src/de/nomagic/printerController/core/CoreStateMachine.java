@@ -43,7 +43,7 @@ public final class CoreStateMachine
             return;
         }
         log.info("starting G-Code Decoder,...");
-        decoder = new GCodeDecoder(exe);
+        decoder = new GCodeDecoder(exe, cfg);
         // everything is now up and running
         isOperational = true;
     }
