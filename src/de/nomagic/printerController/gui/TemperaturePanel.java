@@ -48,8 +48,8 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final JPanel myPanel;
     private final String chartTitle = "Temperature Chart";
-    private final String xAxisLabel = "Time";
-    private final String yAxisLabel = "Temperature";
+    private final String xAxisLabel = "Time (ms)";
+    private final String yAxisLabel = "Temperature (°C)";
     private XYSeriesCollection dataset = new XYSeriesCollection();
     private long startTime;
     private XYSeries[] data = new XYSeries[Heater_enum.size];
