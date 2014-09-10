@@ -397,6 +397,10 @@ public class GCodeDecoder
                 return RESULT_OK;
             }
 
+        case 117: // Display Message on LCD
+            log.info("Messahe for Display: " + code.getLineWithoutCommentWithoutWord('M'));
+            return RESULT_OK;
+
         case 119: // interpreted status of end stop switches
         {
             final StringBuffer sb = new StringBuffer();
