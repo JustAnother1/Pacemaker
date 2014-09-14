@@ -336,13 +336,13 @@ Some Orders can be applied to more than one device type. A common definition of 
 
 The following section described the different device types and which orders can be used on these device types. Note however that the "Request Device Count", "Request Device Name" and "Request Device Status" orders can be used with all device types.
 
-Aside: When firmware specific configuration is mentioned for a device type, this is referring to use of the generic "Write Firmware Configuration Value" order and is not referring to the provision of firmware specific Pacemaker orders, responses or Parameter values (the latter is discouraged because it makes the host implementation also firmware specific). 
+Aside: When firmware specific configuration is mentioned for a device type, this is referring to use of the generic "Write Firmware Configuration Value" order and is not referring to the provision of firmware specific Pacemaker orders, responses or Parameter values (the latter is discouraged because it makes the host implementation also firmware specific).
 
 The *Switch inputs* are digital input devices which are either in a "triggered" or "not triggered" state. The switch state is read using the "Request State of Switch" order. The interpretation of "triggered"/"not triggered" states depends on the device connected. For instance, the host understands what a triggered endstop switch means, regardless of whether the electrical switch is normally-open, normally-closed, active-high or active-low. Configuration between the input signal level and the triggered state is provided by client configuration including whether input pull-up needs to be provided or not.
 
 The *Switch outputs* are tri-state output devices. The "Switch an Output" order is used to change the output device state. In addition to Low and High logic levels, a switch output device also supports a tri-state/high-impedance output state. The high impedance state is the default initial state of these devices but this may be modified by client firmware configuration (and determined by reading the device status).
 
-The *PWM controlled outputs* are digital outputs which support hardware or software controlled pulse-width modulation. The duty cycle of the PWM output is controlled by the "Set PWM Output Value" order. The frequency of the PWM is implementation specific and may even be controllable through firmware specific configuration (for instance, if software controlled PWM is enabled on a pin, then this typically operates at a much low lower frequency). 
+The *PWM controlled outputs* are digital outputs which support hardware or software controlled pulse-width modulation. The duty cycle of the PWM output is controlled by the "Set PWM Output Value" order. The frequency of the PWM is implementation specific and may even be controllable through firmware specific configuration (for instance, if software controlled PWM is enabled on a pin, then this typically operates at a much low lower frequency).
 
 The *Stepper* devices are stepper motors controlled by the client. The actual control mechanism can be through a variety of technologies, for instance, dedicated Enable/Step/Direction to a stepper control module or SPI serial bus controlled motors. The Stepper devices are primarily controlled by the commands in Stepper Control and Basic Move protocol extensions.
 
@@ -354,7 +354,7 @@ A *Buzzer* device is a device which is capable of playing an audio tone of a spe
 
 A *Power off output" is a special case of digital output device. When the "Switch an Output" order is used to set the High output state of this device type (and there will only be one instance of this device type), then the client will turn itself off. Turning the client on again usually requires manual intervention. Power controls for auxiliary power supplies or auxiliary systems can usually be implemented using standard Switch Outputs as opposed to the client "Power off output". [The Power off output often requires special initialization as the device powers up, hence, the dedicated device type.]
 
-Other device types are planned for the future such as rotary encoders, GPIOs and displays. 
+Other device types are planned for the future such as rotary encoders, GPIOs and displays.
 
 ==== Experimental & Unapproved Functionality Identifiers
 
@@ -480,7 +480,7 @@ The *Bad Parameter Value* reply code is sent in response to any Order received w
 
 The *Invalid Device Type Specified* reply code is specific sub-case of the more generic "Bad Parameter Value". This code indicates that the Parameter value specified an invalid device type for this order.
 
-The *Invalid Device Number Specified* reply code is specific sub-case of the more generic "Bad Parameter Value". This code indicates that the Parameter value specified an invalid device number for this order. 
+The *Invalid Device Number Specified* reply code is specific sub-case of the more generic "Bad Parameter Value". This code indicates that the Parameter value specified an invalid device number for this order.
 
 The *Incorrect mode* reply code is sent in response to any Order received where the Order code is recognized but the mode or configuration of the client prevents the Order from being accepted. For example, receiving stepper control Orders when the client is not the SPI Master is one example for this case
 
@@ -785,7 +785,7 @@ The first byte of the Parameter indicates the device type. The second byte of th
 
 A status of *device active* indicates that the device currently has no detected hardware or configuration errors and has been enabled. The definition of "active" varies by device type. For instance:
 
-- Steppers are active when enabled using the Enable Disable Stepper command. 
+- Steppers are active when enabled using the Enable Disable Stepper command.
 - Output Switches are enabled when set to high.
 - Pwm Outputs and Buzzer devices are active when set to a non-zero value.
 - Heaters are active when set to a non-zero target temperature.
@@ -793,14 +793,14 @@ A status of *device active* indicates that the device currently has no detected 
 
 A status of *device inactive* indicates that there are currently no detected hardware or configuration errors and the device is enabled but not active.
 
-- Steppers are inactive when disabled using the Enable Disable Stepper command. 
+- Steppers are inactive when disabled using the Enable Disable Stepper command.
 - Output Switches are inactive when set low.
-- Pwm Outputs and Buzzer devices are inactive when set to a zero value. 
+- Pwm Outputs and Buzzer devices are inactive when set to a zero value.
 - Heaters are active when set to a zero target temperature.
 
 A status of *device disabled* indicates that there are currently no detected hardware or configuration errors but the device has been disabled.
 
-- Steppers are disabled when deactivated through the Activate Stepper Control or through initial state. 
+- Steppers are disabled when deactivated through the Activate Stepper Control or through initial state.
 - Output Switches are disabled when in the high impedance state.
 - Pwm Outputs, Buzzer & Heaters devices are not typically disabled.
 
@@ -900,7 +900,7 @@ This order can also be queued using the Queue Command Wrapper if the queued comm
 
 The Order shall report the state of the switch devices specified in the Parameter. The switch has two operational states which are: "Triggered/Active" (1) or "Not Triggered/Inactive" (0). These values do not necessarily map to the same voltage level on the input device pin. This arrangement provides a hardware abstraction to the host such that the host doesn't have to worry when the physical switch or wiring is normally open, normally closed, using active low, active high or requiring internal pullup.
 
-The context about what it means for a particular switch device to be "Triggered/Active" or "Not Triggered/Inactive" will vary for different switch uses or device types. 
+The context about what it means for a particular switch device to be "Triggered/Active" or "Not Triggered/Inactive" will vary for different switch uses or device types.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -1236,7 +1236,6 @@ All end-stops (including both maximum and minimum) for a single stepper number m
 | 1 | min or max endstop (0 = min endstop, 1 = max endstop)
 | 1 | input switch number [optional]
 | 1 | min or max endstop (0 = min endstop, 1 = max endstop) [optional]
-| .. |
 |================================================
 
 After the first byte (identifying the target stepper number), the following Parameter data is made up of byte pairs each of which configures an end-stop to be checked (if enabled) when the stepper is moving in the specified direction. More than one stepper can share the same end-stop - which is common in a CoreXY configuration.
