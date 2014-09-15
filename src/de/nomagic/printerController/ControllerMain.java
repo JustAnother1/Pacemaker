@@ -215,7 +215,7 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
                 }
                 else if(true == "-v".equals(args[i]))
                 {
-                    // already handeled -> ignore
+                    // already handled -> ignore
                 }
                 else if(true == "--no-gui".equals(args[i]))
                 {
