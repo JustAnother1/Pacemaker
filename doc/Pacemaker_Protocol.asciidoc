@@ -832,7 +832,7 @@ The first byte of the Parameter contains the device type (see Definitions), the 
 Currently two device types support temperature readings: temperature sensor and temperature-controlled heater devices. When a temperature reading is requested on a heater device, then the order returns the temperature reading from either the explicitly associated temperature sensor (i.e., associated using the Configure Heater order) or from the internally configured temperature sensor.
 
 .Replies
-- OK: Reports the measures temperature in units of 1/10degree Celsius as a signed 2 byte integer. This means a value of 234 equals 23.4 degrees centigrade. The Value section of this data item is 2 bytes long for each requested sensor reading. Any reading which returns a value of 0x7FFF indicates that there is a problem with the temperature sensor. An optional utf8 string may follow the last temperature reading to return an error string for the first failed reading.
+- OK: Reports the measured temperature in units of 1/10degree Celsius as a signed 2 byte integer. This means a value of 234 equals 23.4 degrees centigrade. The Value section of this data item is 2 bytes long for each requested sensor reading. Any reading which returns a value of 0x7FFF indicates that there is a problem with the temperature sensor. An optional utf8 string may follow the last temperature reading to return an error string for the first failed reading.
 
 ==== Get Heater Configuration (0x04)
 
