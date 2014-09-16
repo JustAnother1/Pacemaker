@@ -1135,6 +1135,12 @@ public class Cfg
 
     private int getIntKeyFrom(final String line)
     {
+        final int idx = line.indexOf(SEPERATOR_CHAR);
+        if(-1 ==  idx)
+        {
+            log.error("Failed to convert {} to a number !", line);
+            return 0;
+        }
         String hlp = line.substring(0, line.indexOf(SEPERATOR_CHAR));
         hlp = hlp.trim();
         try
