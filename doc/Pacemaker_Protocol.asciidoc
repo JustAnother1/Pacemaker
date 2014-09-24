@@ -320,7 +320,7 @@ Some Orders can be applied to more than one device type. A common definition of 
 .Device Type
 [width="50%",options="header", cols="30%,70%"]
 |================================================
-|Value| Extension
+|Value| Device Type
 | 0x0 | Reserved (to indicate invalid device type)
 | 0x1 | Switch inputs
 | 0x2 | Switch outputs
@@ -651,24 +651,24 @@ The requested Information is specified in the parameter as shown in the followin
 |=============================
 
 .Requestable Information
-[width="50%",options="header", cols="10%,90%"]
+[width="80%",options="header", cols="20%,60%,20%"]
 |================================================
-|Value| Information
-|   0 | firmware name string
-|   1 | serial number string
-|   2 | hardware name string
-|   3 | given name/identity string
-|   4 | major protocol version
-|   5 | minor protocol version
-|   6 | list of supported protocol extensions
-|   7 | firmware type
-|   8 | major firmware revision
-|   9 | minor firmware revision
-|  10 | hardware type
-|  11 | hardware revision
-|  12 | maximum supported step rate
-|  13 | host timeout
-| 0x80-0xfe | Experimental/unapproved requestable information
+|Value| Information | Data Type
+|   0 | firmware name string | string
+|   1 | serial number string | string
+|   2 | hardware name string | string
+|   3 | given name/identity string | string
+|   4 | major protocol version | int
+|   5 | minor protocol version | int
+|   6 | list of supported protocol extensions | int
+|   7 | firmware type | int
+|   8 | major firmware revision | int
+|   9 | minor firmware revision | int
+|  10 | hardware type | int
+|  11 | hardware revision | string
+|  12 | maximum supported step rate | int
+|  13 | host timeout | int
+| 0x80-0xfe | Experimental/unapproved requestable information | n/a
 |================================================
 
 NOTE: If a requested value is only expected to return a single integer value, then the length of the returned data indicates the length of the integer. For example, if 2 bytes are returned then the value should be interpreted as a 16-bit integer.
@@ -709,7 +709,7 @@ The *host timeout* returns the maximum allowed pause(in seconds) between two ord
 .Hardware Types
 [width="50%",options="header", cols="30%,70%"]
 |================================================
-|Value| Hardware
+|Value| Hardware Type
 |   0 | Pacemaker
 |   1 | Generic Arduino based
 |================================================
@@ -717,7 +717,7 @@ The *host timeout* returns the maximum allowed pause(in seconds) between two ord
 .Firmware Types
 [width="50%",options="header", cols="30%,70%"]
 |================================================
-|Value| Hardware Revision
+|Value| Firmware Type
 |   0 | Pacemaker
 |   1 | Minnow (Arduino based client implementation - https://github.com/minnow-pmc/Minnow )
 |================================================
@@ -774,7 +774,7 @@ The first byte of the Parameter indicates the device type. The second byte of th
 .Device Status values
 [width="50%",options="header", cols="30%,70%"]
 |=============================
-| value | meaning
+| Value | meaning
 | 0x0 | device active
 | 0x1 | device inactive
 | 0x2 | device disabled
