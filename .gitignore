@@ -3,13 +3,8 @@
 .settings
 bin
 README.html
-Pacemaker.jar
-PacemakerTest.jar
-/pacemaker.cfg
-/PacemakerWizard.jar
-/PacemakerTerminal.jar
-/PacemakerTerminal.cfg
 /*.gcode
 /*.sh
 /*.cfg
 /*.txt
+/*.jar
