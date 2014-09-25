@@ -109,10 +109,19 @@ public final class Tool
         {
             return "[]";
         }
-        final StringBuffer sb = new StringBuffer();
-        for(int i = 0; i < buf.length; i++)
+        return fromByteBufferToUtf8String(buf, buf.length, 0);
+    }
+
+    public static String fromByteBufferToUtf8String(final byte[] buf, int length, int offset)
+    {
+        if(null == buf)
         {
-            sb.append((char)buf[i]);
+            return "[]";
+        }
+        final StringBuffer sb = new StringBuffer();
+        for(int i = 0; i < length; i++)
+        {
+            sb.append((char)buf[i + offset]);
         }
         return "[" + (sb.toString()).trim() + "]";
     }

@@ -334,13 +334,31 @@ public class Protocol implements EventSource
                         final int offset = REPLY_POS_OF_START_OF_PARAMETER;
                         if(0 < length)
                         {
-                            res.append(Tool.fromByteBufferToHexString(buf, length, offset));
+                            res.append(parseReplyParameter(buf[REPLY_POS_OF_REPLY_CODE], buf, length, offset));
                         }
                     }
                 }
             }
         }
         return res.toString();
+    }
+
+    private static String parseReplyParameter(byte replyCode, byte[] buf, int length, int offset)
+    {
+        switch(replyCode)
+        {
+        case RESPONSE_FRAME_RECEIPT_ERROR:
+            switch(buf[offset])
+            {
+            case RESPONSE_BAD_FRAME: return "(bad frame)";
+            case RESPONSE_BAD_ERROR_CHECK_CODE: return "(bad error check code)";
+            case RESPONSE_UNABLE_TO_ACCEPT_FRAME: return "(unable to accept frame)";
+            default: return "(Invalid : " + Tool.fromByteBufferToHexString(buf, length, offset) + ")";
+            }
+
+        default:
+            return Tool.fromByteBufferToHexString(buf, length, offset);
+        }
     }
 
     private static String parseQueueBlock(byte[] buf, int length, int offset)
