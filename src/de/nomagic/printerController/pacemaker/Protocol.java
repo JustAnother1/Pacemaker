@@ -356,6 +356,25 @@ public class Protocol implements EventSource
             default: return "(Invalid : " + Tool.fromByteBufferToHexString(buf, length, offset) + ")";
             }
 
+        case RESPONSE_GENERIC_APPLICATION_ERROR:
+            switch(buf[offset])
+            {
+            case RESPONSE_UNKNOWN_ORDER: return "(unknown order)";
+            case RESPONSE_BAD_PARAMETER_FORMAT: return "(bad parameter format)";
+            case RESPONSE_BAD_PARAMETER_VALUE: return "(bad parameter value)";
+            case RESPONSE_INVALID_DEVICE_TYPE: return "(invalid device type)";
+            case RESPONSE_INVALID_DEVICE_NUMBER: return "(invalid device number)";
+            case RESPONSE_INCORRECT_MODE: return "(wrong mode)";
+            case RESPONSE_BUSY: return "(busy)";
+            case RESPONSE_FAILED: return "(failed)";
+            case RESPONSE_FIRMWARE_ERROR: return "(firmware error)";
+            case RESPONSE_CANNOT_ACTIVATE_DEVICE: return "(device unavailable)";
+            default: return "(Invalid : " + Tool.fromByteBufferToHexString(buf, length, offset) + ")";
+            }
+
+        case RESPONSE_DEBUG_FRAME_DEBUG_MESSAGE:
+            return Tool.fromByteBufferToUtf8String(buf, length, offset);
+
         default:
             return Tool.fromByteBufferToHexString(buf, length, offset);
         }
