@@ -1355,12 +1355,14 @@ If an empty Parameter is sent then no orders are queued but the order reply is s
 
 NOTE: if a queued command blocks is currently being executed, then this is treated as still being in the queue for the purposes of counting available queue slots and command blocks queue counts.
 
-NOTE: the reply to this order contains a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after this command is issued or a Stopped state entered. For the purposes of this count:
+[NOTE]
+=====================================================================
+the reply to this order contains a count of the executed command blocks since the last Stopped state was cleared. This rolling 16-bit value can be used to determine the state of the system after this command is issued or a Stopped state entered. For the purposes of this count:
 
 - Each movement block counts as 1 command. All other queued orders also count as 1 command.
 - The count of executed command blocks does not include command blocks which failed validation (and therefore were not inserted in the queue) or were flushed from the queue before execution.
 - The count does include all command blocks for which execution was attempted - regardless of whether or not they were successful.
-
+=====================================================================
 .Replies
 - OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply Parameter indicates the number of move block queue slots are available. Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
 
