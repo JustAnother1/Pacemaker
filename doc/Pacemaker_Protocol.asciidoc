@@ -1364,7 +1364,7 @@ the reply to this order contains a count of the executed command blocks since th
 - The count does include all command blocks for which execution was attempted - regardless of whether or not they were successful.
 =====================================================================
 .Replies
-- OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply Parameter indicates the number of move block queue slots are available. Bytes 3 & 4 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
+- OK: All blocks were queued successfully. Bytes 1 & 2 of the Reply Parameter indicates the number of move block queue slots are available. Bytes 3 & 4 indicates the number of command blocks currently in queue. Bytes 5 & 6 (a rolling 16-bit integer) indicates the number of executed command blocks since the last Stopped state was cleared.
 
 .OK Reply Parameter Content
 [width="50%",options="header", cols="35%,65%"]
