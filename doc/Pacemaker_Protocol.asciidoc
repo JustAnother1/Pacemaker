@@ -1015,7 +1015,7 @@ This command sends a configuration name and value to the firmware. The host shou
 
 The supported names and the expected values are firmware dependent. All configuration names and value are encoded as utf8 strings. If the parameter name is unrecognized or the value is malformed then a Bad Parameter Value error is returned. If the value is valid but the operation fails then a Failed error response is returned.
 
-Note: The client must ensure that writing the same value to a Volatile or Non-Volatile Configuration item more than once does not return failure on subsequent writes (even if the underlying value is one-time configurable). This is so that the host does not need to reset the client to reapply config.
+NOTE: The client must ensure that writing the same value to a Volatile or Non-Volatile Configuration item more than once does not return failure on subsequent writes (even if the underlying value is one-time configurable). This is so that the host does not need to reset the client to reapply config.
 
 .Example
 Setting the configuration named "Power" to "on" would result in this parameter value:
@@ -1214,6 +1214,8 @@ This will disable the stepper drivers so that the Axes can be moved manually.
 |=============================
 
 If a Parameter is provided the first byte will contain the stepper motors Number. The second byte will provide the new status of the motor. A value of 1 means enabled. A value of 0 means disabled. If no Parameter is provided all stepper motors will be disabled. The stepper motors will be enabled automatically with each command that needs to move them. This command is only allowed if the stepper control has been activated!
+
+This order can also be queued using the Queue Command Wrapper if the queued command extension is supported.
 
 .Replies
 - OK: No Parameter data.
