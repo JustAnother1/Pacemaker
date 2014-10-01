@@ -66,16 +66,11 @@ public class TimeOutTask extends Thread implements TimeoutHandler
                     if(true == countdowns.compareAndSet(i, 1, -1))
                     {
                         // timeout !
-                        log.trace("Timeout Event!");
                         final Event e = TimeoutEvents.get(i);
                         final EventSource src = e.getSrc();
                         if(null != src)
                         {
                             src.reportEventStatus(new ActionResponse(e.getParameter()));
-                        }
-                        else
-                        {
-                            log.trace("No Source !!");
                         }
                     }
                     else
