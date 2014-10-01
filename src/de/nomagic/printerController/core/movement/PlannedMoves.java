@@ -21,6 +21,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
+import de.nomagic.printerController.core.ActionResponse;
+import de.nomagic.printerController.core.Action_enum;
+import de.nomagic.printerController.core.Event;
+import de.nomagic.printerController.core.EventSource;
+import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
@@ -28,19 +33,32 @@ import de.nomagic.printerController.pacemaker.Protocol;
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public class PlannedMoves
+public class PlannedMoves implements EventSource
 {
+    public static final int QUEUE_FLUSH_TIMEOUT_MS = 50;
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
     private LinkedList<BasicLinearMove> entries = new LinkedList<BasicLinearMove>();
-
+    private volatile boolean needsFlushing = false;
     private Protocol pro;
     private int MaxClientStepsPerSecond;
     private double currentSpeed = 0.0;
+    private final int timeoutID;
+    private final TimeoutHandler to;
 
-    public PlannedMoves(int MaxClientStepsPerSecond)
+    public PlannedMoves(int MaxClientStepsPerSecond, TimeoutHandler to)
     {
         this.MaxClientStepsPerSecond = MaxClientStepsPerSecond;
+        this.to= to;
+        timeoutID = to.createTimeout(new Event(Action_enum.timeOut, null, this), QUEUE_FLUSH_TIMEOUT_MS);
+        if(TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT == timeoutID)
+        {
+            log.error("Failed to create Queue Flush Timeout !");
+        }
+        else
+        {
+            to.startTimeout(timeoutID);
+        }
     }
 
     @Override
@@ -54,9 +72,42 @@ public class PlannedMoves
         this.pro = pro;
     }
 
+    @Override
+    public void reportEventStatus(ActionResponse response)
+    {
+        to.startTimeout(timeoutID);
+        int size= 0;
+        synchronized(entries)
+        {
+            size = entries.size();
+        }
+        if(1 == size)
+        {
+            if(false == needsFlushing)
+            {
+                needsFlushing = true;
+            }
+            else
+            {
+                // OK the queue has been with a single move for two times -> flush the Queue
+                flushQueueToClient();
+                needsFlushing = false;
+            }
+        }
+        else
+        {
+            needsFlushing = false;
+        }
+    }
+
     public boolean flushQueueToClient()
     {
-        if(0 < entries.size())
+        int size= 0;
+        synchronized(entries)
+        {
+            size = entries.size();
+        }
+        if(0 < size)
         {
             sendAllPossibleMoves();
             return sendLastMoves();
@@ -68,7 +119,10 @@ public class PlannedMoves
     public void addMove(BasicLinearMove aMove)
     {
         addEndSpeedToLastMove(aMove);
-        entries.addLast(aMove);
+        synchronized(entries)
+        {
+            entries.addLast(aMove);
+        }
         sendAllPossibleMoves();
     }
 
@@ -78,7 +132,10 @@ public class PlannedMoves
         BasicLinearMove aMove = null;
         try
         {
-            aMove = entries.removeLast();
+            synchronized(entries)
+            {
+                aMove = entries.removeLast();
+            }
         }
         catch(NoSuchElementException e)
         {
@@ -90,76 +147,90 @@ public class PlannedMoves
             log.trace("created Move({}) to hold end stop command.", aMove.getId());
         }
         aMove.addEndStopOnOffCommand(on, switches);
-        entries.addLast(aMove);
+        synchronized(entries)
+        {
+            entries.addLast(aMove);
+        }
     }
 
     public boolean hasAllMovementFinished()
     {
-        return entries.isEmpty();
+        synchronized(entries)
+        {
+            return entries.isEmpty();
+        }
     }
 
     private void addEndSpeedToLastMove(BasicLinearMove aMove)
     {
-        if(false == entries.isEmpty())
+        synchronized(entries)
         {
-            if(true == aMove.hasMovementData())
+            if(false == entries.isEmpty())
             {
-                // we can now calculate the max end Speed for the last added move
-                int idxOfFirstMove = entries.size() -1; // last element
-                BasicLinearMove firstMove = entries.get(idxOfFirstMove);
-                if(false == firstMove.hasMovementData())
+                if(true == aMove.hasMovementData())
                 {
-                    idxOfFirstMove --;
-                    boolean found = false;
-                    while((false == found) && (-1 < idxOfFirstMove))
+                    // we can now calculate the max end Speed for the last added move
+                    int idxOfFirstMove = entries.size() -1; // last element
+                    BasicLinearMove firstMove = entries.get(idxOfFirstMove);
+                    if(false == firstMove.hasMovementData())
                     {
-                        firstMove = entries.get(idxOfFirstMove);
-                        if(true == firstMove.hasMovementData())
+                        idxOfFirstMove --;
+                        boolean found = false;
+                        while((false == found) && (-1 < idxOfFirstMove))
                         {
-                            found = true;
+                            firstMove = entries.get(idxOfFirstMove);
+                            if(true == firstMove.hasMovementData())
+                            {
+                                found = true;
+                            }
+                            else
+                            {
+                                idxOfFirstMove--;
+                            }
                         }
-                        else
+                        if(false == found)
                         {
-                            idxOfFirstMove--;
+                            // only one move with movement data -> can not calculate
+                            return;
                         }
                     }
-                    if(false == found)
+
+                    final double[] firstVector =new double[Axis_enum.size];
+                    for(Axis_enum axis: Axis_enum.values())
                     {
-                        // only one move with movement data -> can not calculate
-                        return;
+                        firstVector[axis.ordinal()] = firstMove.getMm(axis);
                     }
-                }
+                    log.trace("getting the move [{},{},z]",
+                              firstVector[Axis_enum.X.ordinal()],
+                              firstVector[Axis_enum.Y.ordinal()]);
 
-                final double[] firstVector =new double[Axis_enum.size];
-                for(Axis_enum axis: Axis_enum.values())
-                {
-                    firstVector[axis.ordinal()] = firstMove.getMm(axis);
-                }
-                log.trace("getting the move [{},{},z]",
-                          firstVector[Axis_enum.X.ordinal()],
-                          firstVector[Axis_enum.Y.ordinal()]);
+                    final double[] secondVector = new double[Axis_enum.size];
+                    for(Axis_enum axis: Axis_enum.values())
+                    {
+                        secondVector[axis.ordinal()] = aMove.getMm(axis);
+                    }
+                    log.trace("getting the move [{},{},z]", secondVector[Axis_enum.X.ordinal()],
+                                                            secondVector[Axis_enum.Y.ordinal()]);
 
-                final double[] secondVector = new double[Axis_enum.size];
-                for(Axis_enum axis: Axis_enum.values())
-                {
-                    secondVector[axis.ordinal()] = aMove.getMm(axis);
+                    // set end Speed
+                    final double endSpeedFactor = getMaxEndSpeedFactorFor(firstVector, secondVector);
+                    // send first move
+                    log.trace("endSpeedFactor = {}", endSpeedFactor);
+                    firstMove.setEndSpeedFactor(endSpeedFactor);
+                    entries.set(idxOfFirstMove, firstMove);
                 }
-                log.trace("getting the move [{},{},z]", secondVector[Axis_enum.X.ordinal()],
-                                                        secondVector[Axis_enum.Y.ordinal()]);
-
-                // set end Speed
-                final double endSpeedFactor = getMaxEndSpeedFactorFor(firstVector, secondVector);
-                // send first move
-                log.trace("endSpeedFactor = {}", endSpeedFactor);
-                firstMove.setEndSpeedFactor(endSpeedFactor);
-                entries.set(idxOfFirstMove, firstMove);
             }
         }
     }
 
     private void sendAllPossibleMoves()
     {
-        if(1 > entries.size())
+        int size= 0;
+        synchronized(entries)
+        {
+            size = entries.size();
+        }
+        if(1 > size)
         {
             // no moves available to send
             return;
@@ -174,33 +245,36 @@ public class PlannedMoves
 
     private boolean sendLastMoves()
     {
-        if(1 > entries.size())
+        synchronized(entries)
         {
-            // no moves available to send
+            if(1 > entries.size())
+            {
+                // no moves available to send
+                return true;
+            }
+            final BasicLinearMove aMove = entries.removeLast();
+            aMove.setEndSpeed(0.0);
+            entries.addLast(aMove);
+            boolean success = true;
+            do
+            {
+                success = sendOneMoveIfPossible();
+            }while(true == success);
+            // now the Queue _must_ be empty!
+            if(0 != entries.size())
+            {
+                log.error("Moves in Queue after flushing !");
+                for(int i = 0; i < entries.size(); i++)
+                {
+                    if(false == sendMove())
+                    {
+                        return false;
+                    }
+                }
+                return false;
+            }
             return true;
         }
-        final BasicLinearMove aMove = entries.removeLast();
-        aMove.setEndSpeed(0.0);
-        entries.addLast(aMove);
-        boolean success = true;
-        do
-        {
-            success = sendOneMoveIfPossible();
-        }while(true == success);
-        // now the Queue _must_ be empty!
-        if(0 != entries.size())
-        {
-            log.error("Moves in Queue after flushing !");
-            for(int i = 0; i < entries.size(); i++)
-            {
-                if(false == sendMove())
-                {
-                    return false;
-                }
-            }
-            return false;
-        }
-        return true;
     }
 
     private boolean sendMove()
@@ -212,16 +286,19 @@ public class PlannedMoves
         }
         try
         {
-            final BasicLinearMove aMove = entries.removeFirst();
-            if(false == pro.addBasicLinearMove(aMove))
+            synchronized(entries)
             {
-                return false;
+                final BasicLinearMove aMove = entries.removeFirst();
+                if(false == pro.addBasicLinearMove(aMove))
+                {
+                    return false;
+                }
+                if(true == aMove.hasACommand())
+                {
+                    return aMove.sendCommandTo(pro);
+                }
+                return true;
             }
-            if(true == aMove.hasACommand())
-            {
-                return aMove.sendCommandTo(pro);
-            }
-            return true;
         }
         catch(NoSuchElementException e)
         {
@@ -313,88 +390,94 @@ public class PlannedMoves
             }
         }
         currentSpeed = desiredEndSpeed;
-        entries.set(0, aMove);
+        synchronized(entries)
+        {
+            entries.set(0, aMove);
+        }
         sendMove();
     }
 
     private boolean sendOneMoveIfPossible()
     {
-        if(true == entries.isEmpty())
+        synchronized(entries)
         {
-            // no movement data to send
-            return false;
-        }
-        final BasicLinearMove aMove = entries.getFirst();
-        if(false == aMove.hasMovementData())
-        {
-            // no movement data only command
-            sendMove();
-            return true;
-        }
-        if(false == aMove.hasEndSpeedSet())
-        {
-            double maxEndSpeed = aMove.getMaxEndSpeed();
-            // we can send this move if we find a move that has a end Speed of 0,
-            // or if we have more steps in the Queue than needed to decelerate
-            // from the max end Speed of this move to 0.
-            int idx = 1;
-            boolean found = false;
-            int stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
-            log.trace("steps needed = {}", stepsNeeded);
-            int stepsSeen = 0;
-            boolean first = true;
-            while(idx < entries.size())
+            if(true == entries.isEmpty())
             {
-                final BasicLinearMove otherMove = entries.get(idx);
-                if(true == otherMove.hasMovementData())
-                {
-                    if(true == first)
-                    {
-                        first = false;
-                        final double maxSpeedNextMove = otherMove.getMaxPossibleSpeed();
-                        if(maxSpeedNextMove < maxEndSpeed)
-                        {
-                            // we need to reduce the end speed further
-                            // to avoid being to fast for the following move
-                            maxEndSpeed = maxSpeedNextMove;
-                            stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
-                            log.trace("steps needed = {}", stepsNeeded);
-                        }
-                    }
-                    stepsSeen = stepsSeen + otherMove.getStepsOnActiveStepper(aMove.getPrimaryAxis());
-                    if(stepsNeeded < stepsSeen)
-                    {
-                        log.trace("we have enough steps in the queue -> we can send this move");
-                        aMove.setEndSpeed(maxEndSpeed);
-                        found = true;
-                    }
-                    else if(true == otherMove.endSpeedIsZero())
-                    {
-                        log.trace("we found a move that ends with speed = 0.");
-                        final double possibleEndSpeed = aMove.getSpeedChangeForSteps(stepsSeen);
-                        if(possibleEndSpeed > maxEndSpeed)
-                        {
-                            aMove.setEndSpeed(maxEndSpeed);
-                        }
-                        else
-                        {
-                            aMove.setEndSpeed(possibleEndSpeed);
-                        }
-                        found = true;
-                    }
-                }
-                // else move without movement
-                idx++;
-            }
-            if(false == found)
-            {
-                // we can not send this move
+                // no movement data to send
                 return false;
             }
+            final BasicLinearMove aMove = entries.getFirst();
+            if(false == aMove.hasMovementData())
+            {
+                // no movement data only command
+                sendMove();
+                return true;
+            }
+            if(false == aMove.hasEndSpeedSet())
+            {
+                double maxEndSpeed = aMove.getMaxEndSpeed();
+                // we can send this move if we find a move that has a end Speed of 0,
+                // or if we have more steps in the Queue than needed to decelerate
+                // from the max end Speed of this move to 0.
+                int idx = 1;
+                boolean found = false;
+                int stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
+                log.trace("steps needed = {}", stepsNeeded);
+                int stepsSeen = 0;
+                boolean first = true;
+                while(idx < entries.size())
+                {
+                    final BasicLinearMove otherMove = entries.get(idx);
+                    if(true == otherMove.hasMovementData())
+                    {
+                        if(true == first)
+                        {
+                            first = false;
+                            final double maxSpeedNextMove = otherMove.getMaxPossibleSpeed();
+                            if(maxSpeedNextMove < maxEndSpeed)
+                            {
+                                // we need to reduce the end speed further
+                                // to avoid being to fast for the following move
+                                maxEndSpeed = maxSpeedNextMove;
+                                stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
+                                log.trace("steps needed = {}", stepsNeeded);
+                            }
+                        }
+                        stepsSeen = stepsSeen + otherMove.getStepsOnActiveStepper(aMove.getPrimaryAxis());
+                        if(stepsNeeded < stepsSeen)
+                        {
+                            log.trace("we have enough steps in the queue -> we can send this move");
+                            aMove.setEndSpeed(maxEndSpeed);
+                            found = true;
+                        }
+                        else if(true == otherMove.endSpeedIsZero())
+                        {
+                            log.trace("we found a move that ends with speed = 0.");
+                            final double possibleEndSpeed = aMove.getSpeedChangeForSteps(stepsSeen);
+                            if(possibleEndSpeed > maxEndSpeed)
+                            {
+                                aMove.setEndSpeed(maxEndSpeed);
+                            }
+                            else
+                            {
+                                aMove.setEndSpeed(possibleEndSpeed);
+                            }
+                            found = true;
+                        }
+                    }
+                    // else move without movement
+                    idx++;
+                }
+                if(false == found)
+                {
+                    // we can not send this move
+                    return false;
+                }
+            }
+            // the end speed will now be set
+            sendMoveWithEndSpeedSet(aMove);
+            return true;
         }
-        // the end speed will now be set
-        sendMoveWithEndSpeedSet(aMove);
-        return true;
     }
 
     private double getMaxEndSpeedFactorFor(double[] vec_one, double[] vec_two)

@@ -51,7 +51,7 @@ public class Movement
 
     private Integer maxProtocol = 0;
     private XyzTable table;
-    private TimeoutHandler to;
+    private final TimeoutHandler to;
     private int TimeoutId;
 
     public Movement(TimeoutHandler to, Cfg cfg)
@@ -110,7 +110,7 @@ public class Movement
                     if(true == first)
                     {
                         first = false;
-                        final PlannedMoves Queue = new PlannedMoves(di.getMaxSteppsPerSecond());
+                        final PlannedMoves Queue = new PlannedMoves(di.getMaxSteppsPerSecond(), to);
                         Queue.addProtocol(pro);
                         table.addMovementQueue(Queue);
                         // we need this Protocol
