@@ -323,7 +323,7 @@ public class XyzTable
         return true;
     }
 
-    /** This causes all axis to decelerate to a full stop.
+    /** This sends out the last move command. The one that waits for the next move to calculate the end Speed.
     *
     */
    public void letMovementStop()
