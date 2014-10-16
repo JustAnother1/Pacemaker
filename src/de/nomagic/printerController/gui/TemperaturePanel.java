@@ -33,6 +33,7 @@ import de.nomagic.printerController.core.EventSource;
 import de.nomagic.printerController.core.Executor;
 import de.nomagic.printerController.core.TemperatureObserver;
 import de.nomagic.printerController.core.TimeoutHandler;
+import de.nomagic.printerController.pacemaker.Protocol;
 import de.nomagic.printerController.Heater_enum;
 
 /**
@@ -155,9 +156,16 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
             dataset.addSeries(curSeries);
         }
         // else nothing to do
-        long curTime = System.currentTimeMillis();
-        curTime = curTime - startTime;
-        curSeries.add(curTime, temperature);
+        if(Protocol.LOWEST_POSSIBLE_TEMPERATURE < temperature)
+        {
+            long curTime = System.currentTimeMillis();
+            curTime = curTime - startTime;
+            curSeries.add(curTime, temperature);
+        }
+        else
+        {
+            // Invalid Temperature reported -> ignore the value
+        }
         if(TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT == timeOutId[position.getValue()])
         {
             // first Time this Heater reports a Temperature -> create a timeout
