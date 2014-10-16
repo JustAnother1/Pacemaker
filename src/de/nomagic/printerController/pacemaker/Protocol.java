@@ -201,6 +201,11 @@ public class Protocol implements EventSource
     public static final int MAX_STEPS_PER_MOVE = 0xffff;
     public static final int QUEUE_TIMEOUT_MS  = 500;
 
+    public static final double LOWEST_POSSIBLE_TEMPERATURE           = -1000.0;
+    public static final double TEMPERATURE_ERROR_SENSOR_PROBLEM      = -1000.1;
+    public static final double TEMPERATURE_ERROR_REPLY_NOT_OK        = -1000.2;
+    public static final double TEMPERATURE_ERROR_NO_REPLY            = -1000.3;
+    public static final double TEMPERATURE_ERROR_REPLY_WITHOUT_DATA  = -1000.4;
 
     private static final int QUEUE_SEND_BUFFER_SIZE = 200;
 
@@ -806,7 +811,7 @@ public class Protocol implements EventSource
         final Reply r = cc.sendRequest(ORDER_REQ_TEMPERATURE, param);
         if(null == r)
         {
-            return -10000.3;
+            return TEMPERATURE_ERROR_NO_REPLY;
         }
         if(true == r.isOKReply())
         {
@@ -814,12 +819,12 @@ public class Protocol implements EventSource
             if(2 > reply.length)
             {
                 // The return did not have the data
-                return -1000.4;
+                return TEMPERATURE_ERROR_REPLY_WITHOUT_DATA;
             }
             final int reportedTemp = ((0xff &reply[0]) * 256) + ( 0xff & reply[1]);
             if(SENSOR_PROBLEM == reportedTemp)
             {
-                return -1000.1;
+                return TEMPERATURE_ERROR_SENSOR_PROBLEM;
             }
             else
             {
@@ -829,7 +834,7 @@ public class Protocol implements EventSource
         else
         {
             // error -> try again later
-            return -1000.2;
+            return TEMPERATURE_ERROR_REPLY_NOT_OK;
         }
     }
 
