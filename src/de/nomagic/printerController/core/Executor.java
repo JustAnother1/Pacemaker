@@ -226,6 +226,7 @@ public class Executor
             // The configuration might have an effect on the other values.
             if(false == applyConfiguration(pro, i))
             {
+                pro.closeConnection();
                 return false;
             }
             final DeviceInformation di = pro.getDeviceInformation();
@@ -235,6 +236,7 @@ public class Executor
             if(null == di)
             {
                 log.error("Failed to read the Device Information from this client !");
+                pro.closeConnection();
                 return false;
             }
             log.info("Connected to : " + di);
@@ -244,7 +246,12 @@ public class Executor
             mapTemperatureSensors(di,pro,i);
             mapOutputs(di, pro, i);
             mapSwitches(di, pro, i);
-            move.addConnection(di, cfg, pro, i, Switches);
+            if(false == move.addConnection(di, cfg, pro, i, Switches))
+            {
+                log.error("Failed to configure the Steppers !");
+                pro.closeConnection();
+                return false;
+            }
         }
         return true;
     }

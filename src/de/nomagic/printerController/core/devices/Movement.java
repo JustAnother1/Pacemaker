@@ -73,7 +73,7 @@ public class Movement
         return lastErrorReason;
     }
 
-    public void addConnection(DeviceInformation di,
+    public boolean addConnection(DeviceInformation di,
                               Cfg cfg,
                               Protocol pro,
                               int ClientNumber,
@@ -82,7 +82,7 @@ public class Movement
         if(false == cfg.shouldUseSteppers(ClientNumber))
         {
             log.info("Client #{} is not allowed to use the Steppers !", ClientNumber);
-            return;
+            return false;
         }
 
         if(    (false == di.hasExtensionBasicMove())
@@ -91,7 +91,7 @@ public class Movement
             || (1 > di.getNumberSteppers()))
         {
             log.info("Skipped Move as client does not support it !");
-            return;
+            return false;
         }
 
         boolean first = true;
@@ -131,8 +131,14 @@ public class Movement
                                      cfg.getMaxJerkMmSfor(ClientNumber, i));
                     table.addStepper(ae, motor);
                     connectEndSwitchesToStepper(ae, motor, switches, pro);
-                    configureStepperMaxSpeed(motor, pro);
-                    configureUnderRunAvoidance(motor, pro);
+                    if(false == configureStepperMaxSpeed(motor, pro))
+                    {
+                        return false;
+                    }
+                    if(false == configureUnderRunAvoidance(motor, pro))
+                    {
+                        return false;
+                    }
                     table.addEndStopSwitches(switches);
                     table.setMaxClientStepsPerSecond(di.getMaxSteppsPerSecond());
                     break;
@@ -146,10 +152,12 @@ public class Movement
         if(false == pro.activateStepperControl())
         {
             log.error("Could not activate Stepper control !");
+            return false;
         }
+        return true;
     }
 
-    private void configureUnderRunAvoidance(Stepper motor, Protocol pro)
+    private boolean configureUnderRunAvoidance(Stepper motor, Protocol pro)
     {
         final boolean res = pro.configureUnderRunAvoidance(motor.getStepperNumber(),
                                                            motor.getMaxPossibleSpeedStepsPerSecond(),
@@ -158,9 +166,10 @@ public class Movement
         {
             log.error("Could not configure the under run avoidance !");
         }
+        return res;
     }
 
-    private void configureStepperMaxSpeed(Stepper motor, Protocol pro)
+    private boolean configureStepperMaxSpeed(Stepper motor, Protocol pro)
     {
         final boolean res = pro.configureStepperMovementRate(motor.getStepperNumber(),
                                                              motor.getMaxPossibleSpeedStepsPerSecond());
@@ -169,6 +178,7 @@ public class Movement
             log.error("Could not configure the Maximum Speed  of {} for the Stepper {} !",
                       motor.getMaxPossibleSpeedStepsPerSecond(), motor.getStepperNumber());
         }
+        return res;
     }
 
     private void connectEndSwitchesToStepper(Axis_enum ae,

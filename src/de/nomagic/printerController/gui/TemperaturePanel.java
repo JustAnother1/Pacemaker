@@ -74,6 +74,10 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
         {
             return;
         }
+        if(false == exe.isOperational())
+        {
+            return;
+        }
         this.exe = exe;
         exe.registerTemperatureObserver(this);
         timeOut = exe.getTimeoutHandler();
