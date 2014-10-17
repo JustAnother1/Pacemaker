@@ -22,6 +22,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTextArea;
 import javax.swing.text.DefaultCaret;
 
@@ -52,7 +53,6 @@ public class PrinterStatusPanel
 
         // Temperature plot
         tempPanel = new TemperaturePanel(exe);
-        myPanel.add(tempPanel.getPanel());
 
         // Text Area for Log Messages
         statusText.setEditable(false);
@@ -63,7 +63,12 @@ public class PrinterStatusPanel
         caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);
         scrollPane = new JScrollPane(statusText);
         scrollPane.setViewportView(statusText);
-        myPanel.add(scrollPane);
+
+        final JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                tempPanel.getPanel(),
+                scrollPane);
+        splitPane.setDividerLocation(300);
+        myPanel.add(splitPane);
         GuiAppender.setTextArea(statusText);
     }
 
