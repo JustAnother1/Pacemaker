@@ -45,6 +45,7 @@ public class GCodeDecoder
     // G-Code State
     private final double[] curPosition= new double[Axis_enum.size + 1]; // last entry is Feedrate
     private boolean isRelative = false;
+    private boolean isExtruderRelative = false;
     private boolean isMetric = true;
     private String lastErrorReason = null;
     private String ResultValue = "";
@@ -294,6 +295,14 @@ public class GCodeDecoder
         case 32: // select file and start printing
             selectedSDCardFile = code.getLineWithoutCommentWithoutWord('M');
             if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile)){ return RESULT_ERROR;} else {return RESULT_OK;}
+
+        case 82: // set Extruder to absolute Mode
+            isExtruderRelative = false;
+            return RESULT_OK;
+
+        case 83: // set Extruder to relative mode
+            isExtruderRelative = true;
+            return RESULT_OK;
 
         case 18: // Disable all stepper motors
         case 84: // Stop Idle hold
@@ -580,45 +589,86 @@ public class GCodeDecoder
         }
     }
 
+    private double getRelativeMoveForAxisE(final GCode code, final Character axis)
+    {
+        if(true == isExtruderRelative)
+        {
+            if(true == isMetric)
+            {
+                return code.getWordValue(axis);
+            }
+            else
+            {
+                // Inches
+                return (code.getWordValue(axis) * Inch_in_Milimeter);
+            }
+        }
+        else
+        {
+            final int index = Axis_enum.E.ordinal();
+            if(true == isMetric)
+            {
+                return code.getWordValue(axis) - curPosition[index];
+            }
+            else
+            {
+                // Inches
+                return ((code.getWordValue(axis) - curPosition[index]) * Inch_in_Milimeter);
+            }
+        }
+    }
+
+    private double getRelativeMoveForOtherAxis(final GCode code, final Character axis)
+    {
+        if(true == isRelative)
+        {
+            if(true == isMetric)
+            {
+                return code.getWordValue(axis);
+            }
+            else
+            {
+                // Inches
+                return (code.getWordValue(axis) * Inch_in_Milimeter);
+            }
+        }
+        else
+        {
+            int index = -1;
+            switch(axis)
+            {
+            case 'X': index = Axis_enum.X.ordinal(); break;
+            case 'Y': index = Axis_enum.Y.ordinal(); break;
+            case 'Z': index = Axis_enum.Z.ordinal(); break;
+            case 'E': index = Axis_enum.E.ordinal(); break;
+            case 'F': index = curPosition.length -1; break;
+            default:
+                log.error("Requested Move for Illigal Axis {} !", axis);
+                return 0.0;
+            }
+            if(true == isMetric)
+            {
+                return code.getWordValue(axis) - curPosition[index];
+            }
+            else
+            {
+                // Inches
+                return ((code.getWordValue(axis) - curPosition[index]) * Inch_in_Milimeter);
+            }
+        }
+    }
+
     private double getRelativeMoveForAxis(final GCode code, final Character axis)
     {
         if(true == code.hasWord(axis))
         {
-            if(true == isRelative)
+            if('E' == axis)
             {
-                if(true == isMetric)
-                {
-                    return code.getWordValue(axis);
-                }
-                else
-                {
-                    // Inches
-                    return (code.getWordValue(axis) * Inch_in_Milimeter);
-                }
+                return getRelativeMoveForAxisE(code, axis);
             }
             else
             {
-                int index = -1;
-                switch(axis)
-                {
-                case 'X': index = Axis_enum.X.ordinal(); break;
-                case 'Y': index = Axis_enum.Y.ordinal(); break;
-                case 'Z': index = Axis_enum.Z.ordinal(); break;
-                case 'E': index = Axis_enum.E.ordinal(); break;
-                case 'F': index = curPosition.length -1; break;
-                default:
-                    log.error("Requested Move for Illigal Axis {} !", axis);
-                    return 0.0;
-                }
-                if(true == isMetric)
-                {
-                    return code.getWordValue(axis) - curPosition[index];
-                }
-                else
-                {
-                    // Inches
-                    return ((code.getWordValue(axis) - curPosition[index]) * Inch_in_Milimeter);
-                }
+                return getRelativeMoveForOtherAxis(code, axis);
             }
         }
         else
