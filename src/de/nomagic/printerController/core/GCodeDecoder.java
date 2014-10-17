@@ -407,7 +407,7 @@ public class GCodeDecoder
             }
 
         case 117: // Display Message on LCD
-            log.info("Messahe for Display: " + code.getLineWithoutCommentWithoutWord('M'));
+            log.info("Message for Display: " + code.getLineWithoutCommentWithoutWord('M'));
             return RESULT_OK;
 
         case 119: // interpreted status of end stop switches
