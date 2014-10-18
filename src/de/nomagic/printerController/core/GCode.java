@@ -107,6 +107,17 @@ public class GCode
                     }
                     catch(final NumberFormatException e)
                     {
+                        if(true == hasWord('M'))
+                        {
+                            if(117 == getWordValue('M'))
+                            {
+                                // In the Marlin version of M117 (Display Message) the
+                                // message follows directly after the M Code.
+                                // -> so right now we try to interpret the Message.
+                                // -> we should not do that.
+                                return;
+                            }
+                        }
                         valid = false;
                         log.error("Invalid value({}) given for Word {} in line: {} !", help, curWordType, line);
                     }
@@ -167,6 +178,17 @@ public class GCode
             }
             catch(final NumberFormatException e)
             {
+                if(true == hasWord('M'))
+                {
+                    if(117 == getWordValue('M'))
+                    {
+                        // In the Marlin version of M117 (Display Message) the
+                        // message follows directly after the M Code.
+                        // -> so right now we try to interpret the Message.
+                        // -> we should not do that.
+                        return;
+                    }
+                }
                 valid = false;
                 log.error("Invalid value({}) given for Word {} in line: {} !", help, curWordType, line);
             }
@@ -174,45 +196,45 @@ public class GCode
         }
     }
 
+    private boolean isANumber(final Character c)
+    {
+        if( ('1' == c) || ('2' == c) || ('3' == c) ||
+            ('4' == c) || ('5' == c) || ('6' == c) ||
+            ('7' == c) || ('8' == c) || ('9' == c) || ('0' == c) ||
+            ('+' == c) || ('-' == c) || ('.' == c) || ('#' == c) )
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+    }
+
     public String getLineWithoutCommentWithoutWord(final Character wordType)
     {
         final StringBuffer res = new StringBuffer();
+        boolean inComment = false;
+        boolean inWordToSkip = false;
         for(int i = 0; i < OriginalLine.length(); i++)
         {
             final char  c = OriginalLine.charAt(i);
             if(wordType == c)
             {
                 // skip this word
-                boolean isANumber = false;
-                char nextChar;
-                do
-                {
-                    i++;
-                    nextChar = OriginalLine.charAt(i);
-                    if( ('1' == c) || ('2' == c) || ('3' == c) ||
-                        ('4' == c) || ('5' == c) || ('6' == c) ||
-                        ('7' == c) || ('8' == c) || ('9' == c) || ('0' == c) ||
-                        ('+' == c) || ('-' == c) || ('.' == c) || ('#' == c) )
-                    {
-                        isANumber = true;
-                    }
-                    else
-                    {
-                        isANumber = false;
-                    }
-                }
-                while((true != isANumber) && (i < OriginalLine.length()));
+                inWordToSkip = true;
+                continue; // to skip this char
             }
             else if('(' == c)
             {
                 // Comment start
-                char commentedChar;
-                do
-                {
-                    i++;
-                    commentedChar = OriginalLine.charAt(i);
-                }
-                while((commentedChar != ')') && (i < OriginalLine.length()));
+                inComment = true;
+            }
+            else if(')' == c)
+            {
+                // comment end
+                inComment = false;
+                continue; // to skip the ')'
             }
             else if(';' == c)
             {
@@ -220,7 +242,14 @@ public class GCode
                 // comment until end of line -> we are done here
                 break;
             }
-            else
+            if(true == inWordToSkip)
+            {
+                if(false == isANumber(c))
+                {
+                    inWordToSkip = false;
+                }
+            }
+            if((false == inComment) && (false == inWordToSkip))
             {
                 res.append(c);
             }
