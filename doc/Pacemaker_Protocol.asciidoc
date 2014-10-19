@@ -1505,7 +1505,7 @@ The details of the algorithm are discussed in more detail in the Basic Movement 
 
 The protocol currently doesn't require the client to track the position of each axis and therefore doesn't include a "get position" command. However, in situations other than an emergency stop or a Stopped state (where steps might have been missed anyway), the host should be able to determine the position on all axes by simply knowing how many command blocks have been executed.
 
-The client always returns an executed command block count in the "Queue Command Block" Reply Parameter which can be used to determine position even after a orderly "Clear Command Block Queue" command has been issued. The executed command block count is a count of all command blocks which have attempted execution (including those which encountered an error) since the last the last Stopped state was cleared.
+The client always returns an executed command block count in the "Queue Command Block" Reply Parameter which can be used to determine position even after a orderly "Clear Command Block Queue" command has been issued. The executed command block count is a count of all command blocks which have attempted execution (including those which encountered an error) since the last Stopped state was cleared.
 
 An emergency stop will require the host to re-home axes to determine its position - an emergency stop and certain other Stopped errors can result in skipped steps. Thus even if the client maintained an exact step count in these cases, it wouldn't necessarily be accurate.
 
