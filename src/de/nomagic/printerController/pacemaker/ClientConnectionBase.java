@@ -74,6 +74,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     protected boolean isSynced = false;
     private boolean isFirstOrder = true;
     private BlockingQueue<Reply> receiveQueue = new LinkedBlockingQueue<Reply>();
+    private volatile boolean isRunning = false;
 
     private byte[] readBuffer = null;
     private int readPos = 0;
@@ -135,6 +136,10 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     // Right now that is all the protocol can do.
     // If a future version of the protocol allows more than one frame send to the client then this needs to be changed.
     {
+        if(false == isRunning)
+        {
+            return null;
+        }
         Reply r = null;
         numberOfTransmissions = 0;
         numberOfTimeouts = 0;
@@ -456,6 +461,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     @Override
     public void run()
     {
+        isRunning = true;
         try
         {
             while(false == isInterrupted())
@@ -577,6 +583,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
             e.printStackTrace();
         }
         log.info("Receive Thread stopped !");
+        isRunning = false;
     }
 
     public void close()
