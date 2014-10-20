@@ -52,7 +52,6 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
     public static final int FUNC_ADD_MOVE_TO = 3;
     public static final int FUNC_LET_MOVEMENT_STOP = 4;
     public static final int FUNC_START_HOMING = 5;
-    public static final int FUNC_WAIT_FOR_END_OF_HOMING = 6;
     public static final int FUNC_DISABLE_ALL_STEPPER_MOTORS = 7;
     public static final int FUNC_ENABLE_ALL_STEPPER_MOTORS = 8;
     public static final int FUNC_SET_STEPS_PER_MILIMETER = 9;
@@ -157,10 +156,6 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
 
             case FUNC_START_HOMING:
                 res = exe.startHoming((Axis_enum[])parameter[i]);
-                break;
-
-            case FUNC_WAIT_FOR_END_OF_HOMING:
-                res = exe.waitForEndOfHoming();
                 break;
 
             case FUNC_DISABLE_ALL_STEPPER_MOTORS:

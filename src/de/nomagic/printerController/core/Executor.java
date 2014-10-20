@@ -470,6 +470,7 @@ public class Executor
     {
         if(false == move.homeAxis(axis))
         {
+            log.error("Homing Failed!");
             lastErrorReason = move.getLastErrorReason();
             return false;
         }
@@ -477,24 +478,6 @@ public class Executor
         {
             return true;
         }
-    }
-
-    public boolean waitForEndOfHoming()
-    {
-        // TODO once the end stops are hit move away from end stops and move to them again but this time slower
-        boolean isHoming = true;
-        do
-        {
-            try
-            {
-                Thread.sleep(POLL_INTERVALL_MS);
-            }
-            catch(InterruptedException e)
-            {
-            }
-            isHoming = move.isHoming();
-        } while(true == isHoming);
-        return true;
     }
 
     public boolean disableAllStepperMotors()

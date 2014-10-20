@@ -260,38 +260,26 @@ public class Movement
     public boolean letMovementStop()
     {
         to.stopTimeout(TimeoutId);
-        table.letMovementStop();
-        return true;
+        return table.letMovementStop();
     }
 
     public boolean addRelativeMove(RelativeMove relMov)
     {
-        table.addRelativeMove(relMov);
-        to.startTimeout(TimeoutId);
-        return true;
-    }
-
-    public boolean homeAxis(Axis_enum[] axis)
-    {
-        table.homeAxis(axis);
-        to.stopTimeout(TimeoutId);
-        return true;
-    }
-
-
-    public boolean isHoming()
-    {
-        // TODO check if homing is finished - all end stops triggered,...
-        final boolean isFinished = table.hasAllMovementFinished();
-        if(false == isFinished)
+        if(true == table.addRelativeMove(relMov))
         {
+            to.startTimeout(TimeoutId);
             return true;
         }
         else
         {
-
             return false;
         }
+    }
+
+    public boolean homeAxis(Axis_enum[] axis)
+    {
+        to.stopTimeout(TimeoutId);
+        return table.homeAxis(axis);
     }
 
     public boolean enableAllMotors()

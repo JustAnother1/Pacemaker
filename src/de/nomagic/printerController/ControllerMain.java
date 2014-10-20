@@ -330,9 +330,12 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
         {
             e.printStackTrace();
         }
+        log.trace("Closing Executor,...");
         final Executor exe = pp.getExecutor();
         exe.waitForClientQueueEmpty();
+        log.trace("Closing Core,...");
         pp.close();
+        log.trace("Finished Sending the G-Code File.");
     }
 
     public boolean hasFileToPrint()

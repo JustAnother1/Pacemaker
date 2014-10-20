@@ -38,6 +38,14 @@ public class XyzTable
      * minimum Value is 1.0. Everything more is just to be sure.
      * 1.5 is 50% longer move to be sure to reach the end of the axis. */
     public static final double HOMING_MOVE_SFAETY_FACTOR = 1.5;
+    /** max speed of a Homing move in mm/second.  */
+    public static final double HOMING_MOVE_MAX_SPEED = 5.0;
+    /** distance to move away from end stop after initial hitting of end stop */
+    public static final double HOMING_BACK_OFF_DISTANCE_MM = 1;
+    /** Speed when backing off from end stop */
+    public static final double HOMING_MOVE_BACK_OFF_SPEED = 5.0;
+    /** Speed for second approach to end Stops */
+    public static final double HOMING_MOVE_SLOW_APPROACH_SPEED = 1.0;
     /** everything shorter than this will be assumed to be 0 */
     public static final double MIN_MOVEMENT_DISTANCE = 0.00001;
     /** switch off end stops if print head prints closer than this to the end stop
@@ -74,7 +82,8 @@ public class XyzTable
 
     private PlannedMoves planner;
 
-    private double FeedrateMmPerMinute = 0;
+    // this might take effect on a homing before the first move with a Feedrate set.
+    private double FeedrateMmPerMinute = 9000;
     private int MaxClientStepsPerSecond = 0;
 
     public XyzTable(Cfg cfg)
@@ -92,8 +101,8 @@ public class XyzTable
         {
             curPosition[axis.ordinal()] = 0.0;
             isHomed[axis.ordinal()] = false;
-            Min[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis, 0);
-            Max[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis, 0);
+            Min[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis.getChar(), 300.0);
+            Max[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis.getChar(), 300.0);
             endStopminOn[axis.ordinal()] = false;
             endStopmaxOn[axis.ordinal()] = false;
             endStop_min[axis.ordinal()] = -1;
@@ -257,13 +266,14 @@ public class XyzTable
         }
     }
 
-    private void updateEndStopActivation(BasicLinearMove move)
+    private boolean updateEndStopActivation(BasicLinearMove move)
     {
         if(null == planner)
         {
             log.error("Cann not move as no steppers available !");
-            return;
+            return false;
         }
+        boolean success = true;
         stopsOn = new Vector<Integer>();
         stopsOff = new Vector<Integer>();
 
@@ -287,13 +297,14 @@ public class XyzTable
         if(null != move)
         {
             log.trace("Adding the move!");
-            planner.addMove(move);
+            success = planner.addMove(move);
         }
         if(0 < stopsOn.size())
         {
             log.trace("Adding stops On !");
             planner.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
         }
+        return success;
     }
 
     public void addStepper(Axis_enum ae, Stepper motor)
@@ -326,20 +337,21 @@ public class XyzTable
     /** This sends out the last move command. The one that waits for the next move to calculate the end Speed.
     *
     */
-   public void letMovementStop()
+   public boolean letMovementStop()
    {
        log.trace("letting the movement stop");
        if(null == planner)
        {
            log.warn("No Steppers configured ! No movement to stop !");
+           return true;
        }
        else
        {
-           planner.flushQueueToClient();
+           return planner.flushQueueToClient();
        }
    }
 
-   public void addRelativeMove(RelativeMove relMov)
+   public boolean addRelativeMove(RelativeMove relMov)
    {
        log.trace("adding the move {}", relMov);
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
@@ -370,43 +382,144 @@ public class XyzTable
            }
            // else axis not used
        }
-       updateEndStopActivation(aMove);
+       return updateEndStopActivation(aMove);
    }
 
-   public void homeAxis(Axis_enum[] axis)
+   public boolean homeAxis(Axis_enum[] axis)
    {
        if(null == planner)
        {
            log.error("Cann not home as no steppers available !");
-           return;
+           return false;
        }
        log.trace("homing Axis");
-       // TODO Homing direction (inverted = - homingDistance)
+       if(false == sendInitialHomingMoveToEndStops(axis))
+       {
+           log.error("Initial Homing Move Failed !");
+           return false;
+       }
+       if(false == sendHomingBackOfMove(axis))
+       {
+           log.error("Homing Back off Move Failed !");
+           return false;
+       }
+       if(false == sendHomingSlowApproachMoveToEndStops(axis))
+       {
+           log.error("Homing Slow approach Move Failed !");
+           return false;
+       }
+
+       for(int a = 0; a < axis.length; a++)
+       {
+           final Axis_enum ax = axis[a];
+           isHomed[ax.ordinal()] = true; // axis is now homed
+       }
+       return planner.flushQueueToClient();
+   }
+
+   private boolean sendInitialHomingMoveToEndStops(Axis_enum[] axis)
+   {
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
        log.trace("created Move({}) to hold the homing move", aMove.getId());
        aMove.setIsHoming(true);
+       aMove.setTravelSpeed(HOMING_MOVE_MAX_SPEED);
+       aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
+       aMove.setEndSpeed(0);
        double homingDistance = 0.0;
 
        for(int a = 0; a < axis.length; a++)
        {
            final Axis_enum ax = axis[a];
-           isHomed[ax.ordinal()] = true;
+           isHomed[ax.ordinal()] = false; // this axis will be homed -> therefore it is not yet homed.
            if(ax != Axis_enum.E)
            {
                homingDistance = (Max[ax.ordinal()] - Min[ax.ordinal()]) * HOMING_MOVE_SFAETY_FACTOR;
-               aMove.setDistanceMm(ax, homingDistance);
+               aMove.setDistanceMm(ax, -homingDistance);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
                    {
+                       if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
+                       {
+                           aMove.setDistanceMm(ax, homingDistance);
+                       }
                        aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
                }
            }
            // else nothing to do to home E
        }
-       updateEndStopActivation(aMove);
-       planner.flushQueueToClient();
+       return updateEndStopActivation(aMove);
+   }
+
+   private boolean sendHomingBackOfMove(Axis_enum[] axis)
+   {
+       final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       log.trace("created Move({}) to hold the homing move", aMove.getId());
+       aMove.setIsHoming(true);
+       aMove.setTravelSpeed(HOMING_MOVE_BACK_OFF_SPEED);
+       aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
+       aMove.setEndSpeed(0);
+       double homingDistance = 0.0;
+
+       for(int a = 0; a < axis.length; a++)
+       {
+           final Axis_enum ax = axis[a];
+           isHomed[ax.ordinal()] = false; // this axis will be homed -> therefore it is not yet homed.
+           if(ax != Axis_enum.E)
+           {
+               homingDistance = HOMING_BACK_OFF_DISTANCE_MM;
+               aMove.setDistanceMm(ax, homingDistance);
+               for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
+               {
+                   if(null != Steppers[ax.ordinal()][i])
+                   {
+                       if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
+                       {
+                           aMove.setDistanceMm(ax, homingDistance);
+                       }
+                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
+                   }
+               }
+           }
+           // else nothing to do to home E
+       }
+       return updateEndStopActivation(aMove);
+   }
+
+   private boolean sendHomingSlowApproachMoveToEndStops(Axis_enum[] axis)
+   {
+       final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       log.trace("created Move({}) to hold the homing move", aMove.getId());
+       aMove.setIsHoming(true);
+       aMove.setTravelSpeed(HOMING_MOVE_SLOW_APPROACH_SPEED);
+       aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
+       aMove.setEndSpeed(0);
+       double homingDistance = 0.0;
+
+       for(int a = 0; a < axis.length; a++)
+       {
+           final Axis_enum ax = axis[a];
+           isHomed[ax.ordinal()] = false; // this axis will be homed -> therefore it is not yet homed.
+           if(ax != Axis_enum.E)
+           {
+               homingDistance = HOMING_BACK_OFF_DISTANCE_MM * HOMING_MOVE_SFAETY_FACTOR;
+               aMove.setDistanceMm(ax, homingDistance);
+               for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
+               {
+                   if(null != Steppers[ax.ordinal()][i])
+                   {
+                       if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
+                       {
+                           aMove.setDistanceMm(ax, homingDistance);
+                       }
+                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
+                   }
+               }
+           }
+           // else nothing to do to home E
+       }
+       return updateEndStopActivation(aMove);
    }
 
     public boolean hasAllMovementFinished()

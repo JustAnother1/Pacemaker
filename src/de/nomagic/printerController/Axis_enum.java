@@ -30,10 +30,10 @@ public enum Axis_enum
     {
         switch(this)
         {
-        case X: return 'x';
-        case Y: return 'y';
-        case Z: return 'z';
-        case E: return 'e';
+        case X: return 'X';
+        case Y: return 'Y';
+        case Z: return 'Z';
+        case E: return 'E';
         default: return '?';
         }
     }

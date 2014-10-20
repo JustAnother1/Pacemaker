@@ -107,7 +107,7 @@ public class BasicLinearMove
     {
         log.debug("ID{}: adding {} = {} mm", myId, axis, distance);
         distances.put(axis, distance);
-        if(MIN_MOVEMENT_DISTANCE < distance)
+        if(MIN_MOVEMENT_DISTANCE < Math.abs(distance))
         {
             hasMovement = true;
         }
@@ -213,7 +213,7 @@ public class BasicLinearMove
     private int getSteps(Stepper stepper, Axis_enum ax)
     {
         final double exactSteps = roundingError.get(ax) + (distances.get(ax) * stepper.getStepsPerMm());
-        final int steps = (int) Math.round(exactSteps);
+        int steps = (int) Math.round(exactSteps);
         log.debug("ID{}: exact Steps = {}, got rounded to {}", myId, exactSteps, steps);
         final Double difference = exactSteps - steps;
         roundingError.put(ax, difference);
@@ -226,6 +226,18 @@ public class BasicLinearMove
         {
             log.debug("ID{}: we will need 2 bytes for steps", myId);
             NumBytesNeeededForSteps = 2;
+        }
+        if(65535 < Math.abs(steps))
+        {
+            // TODO We need to split this move into more than one move
+            if(steps < 0)
+            {
+                steps = -65535;
+            }
+            else
+            {
+                steps = 65535;
+            }
         }
         if(StepsOnPrimaryAxis < Math.abs(steps))
         {
@@ -300,7 +312,8 @@ public class BasicLinearMove
         int fraction = (int)((travelSpeed * PrimaryAxisStepsPerMm * 255)/ MaxPossibleClientSpeedInStepsPerSecond);
         if(1 > fraction)
         {
-            log.error("ID{}: Increased Travel Speed Fraction to 1 !", myId);
+            // speed of 0 is not allowed !
+            log.info("ID{}: Increased Travel Speed Fraction to 1 !", myId);
             fraction = 1;
         }
         log.trace("ID{}: travel speed = {} mm/s -> fraction = {}", myId, travelSpeed, fraction);
@@ -419,13 +432,24 @@ public class BasicLinearMove
 
     private double getFeedrateOnPrimaryAxis()
     {
-        // TODO : Currently 10mm on Y and 10mm on X lead to a Speed on primary axis of ß.5 of the Feedrate.
+        // TODO : Currently 10mm on Y and 10mm on X lead to a Speed on primary axis of 0.5 of the Feedrate.
         // But the Distance traveled in such a move is not 20mm but only about 14mm. So the Feedrate could be higher.
         // TODO The angle of the move has to be taken into account.
+        double SpeedPerMmSec = 0;
+        log.trace("ID{}: Feedrate = {} mm/minute", myId, feedrateMmPerMinute);
         final double distanceOnXYZMm = getDistanceOnXYZinMm();
-        double SpeedPerMmSec = (feedrateMmPerMinute/60) / distanceOnXYZMm;
-        log.trace("ID{}: Speed Factor = {} mm/second", myId, SpeedPerMmSec);
-        SpeedPerMmSec = SpeedPerMmSec * Math.abs(distances.get(AxisMapping.get(primaryAxis)));
+        final double distanceOnPrimaryAxis = Math.abs(distances.get(AxisMapping.get(primaryAxis)));
+        if(distanceOnXYZMm > distanceOnPrimaryAxis)
+        {
+            final double factor = distanceOnPrimaryAxis/distanceOnXYZMm;
+            log.trace("ID{}: Speed Factor = {}", myId, factor);
+            SpeedPerMmSec = (feedrateMmPerMinute/60) * factor;
+        }
+        else
+        {
+            // move with only one Axis involved
+            SpeedPerMmSec = feedrateMmPerMinute/60;
+        }
         log.trace("ID{}: Feedrate on primary Axis = {}", myId, SpeedPerMmSec);
         return SpeedPerMmSec;
     }
@@ -542,6 +566,7 @@ public class BasicLinearMove
         if((1 < endSpeedFactor) || (0 > endSpeedFactor))
         {
             // not possible
+            log.error("Invalid End Speed Factor of {} !", endSpeedFactor);
             return;
         }
         this.endSpeedFactor = endSpeedFactor;

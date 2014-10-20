@@ -531,7 +531,6 @@ public class GCodeDecoder
             return RESULT_OK;
 
         case 28: // Home
-        case 30:
             final Vector<Axis_enum> homingAxis = new Vector<Axis_enum>();
             for(Axis_enum axel : Axis_enum.values())
             {
@@ -540,12 +539,15 @@ public class GCodeDecoder
                     homingAxis.add(axel);
                 }
             }
+            if(true == homingAxis.isEmpty())
+            {
+                homingAxis.add(Axis_enum.X);
+                homingAxis.add(Axis_enum.Y);
+                homingAxis.add(Axis_enum.Z);
+            }
             if(false == exe.startHoming(homingAxis.toArray(new Axis_enum[0])))
             {
-                return RESULT_ERROR;
-            }
-            if(false == exe.waitForEndOfHoming())
-            {
+                lastErrorReason = exe.getLastErrorReason();
                 return RESULT_ERROR;
             }
             return RESULT_OK;
