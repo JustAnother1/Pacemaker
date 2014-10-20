@@ -1331,11 +1331,15 @@ public class Protocol implements EventSource
             final byte[] response = r.getParameter();
             // partly Queued
             final int numberOfQueued = (0xff & response[1]);
-            for(int i = 0; i < numberOfQueued; i++)
+            if(0 != numberOfQueued)
             {
-                if(0 < sendQueue.size())
+                log.warn("partly Queued !");
+                for(int i = 0; i < numberOfQueued; i++)
                 {
-                    sendQueue.remove(0);
+                    if(0 < sendQueue.size())
+                    {
+                        sendQueue.remove(0);
+                    }
                 }
             }
             parseQueueReply(response, 2);
