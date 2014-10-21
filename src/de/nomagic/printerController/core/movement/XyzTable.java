@@ -53,6 +53,8 @@ public class XyzTable
     public static final double DEFAULT_END_STOP_ALLOWANCE = 0.5;
     /** maximum supported number of Steppers on a axis */
     public static final int MAX_STEPPERS_PER_AXIS = 2;
+    public static final double DEFAULT_PRINT_AREA_MIN = 0.0;
+    public static final double DEFAULT_PRINT_AREA_MAX = 300.0;
 
     public static final String CFG_NAME_AUTO_END_STOP_DISABLE = "automatically disable end stops";
     public static final String CFG_NAME_END_STOP_ALLOWANCE = "end stop allowance";
@@ -101,8 +103,8 @@ public class XyzTable
         {
             curPosition[axis.ordinal()] = 0.0;
             isHomed[axis.ordinal()] = false;
-            Min[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis.getChar(), 300.0);
-            Max[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis.getChar(), 300.0);
+            Min[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis.getChar(), DEFAULT_PRINT_AREA_MIN);
+            Max[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis.getChar(), DEFAULT_PRINT_AREA_MAX);
             endStopminOn[axis.ordinal()] = false;
             endStopmaxOn[axis.ordinal()] = false;
             endStop_min[axis.ordinal()] = -1;
@@ -370,8 +372,23 @@ public class XyzTable
            if(true == relMov.has(ax))
            {
                log.debug("adding Axis {}", ax);
-               aMove.setDistanceMm(ax, relMov.get(ax));
-               curPosition[ax.ordinal()] = curPosition[ax.ordinal()] + relMov.get(ax);
+
+               // Software end Switches:
+               double distance = relMov.get(ax);
+               final double newPosition = curPosition[ax.ordinal()] + distance;
+               if(newPosition < Min[ax.ordinal()])
+               {
+                   log.error("Move would leave allowed Printing area(Min)! Mave has been changed!");
+                   distance = Min[ax.ordinal()] - curPosition[ax.ordinal()];
+               }
+               if(newPosition > Max[ax.ordinal()])
+               {
+                   log.error("Move would leave allowed Printing area(Max)! Mave has been changed!");
+                   distance = Max[ax.ordinal()] - curPosition[ax.ordinal()];
+               }
+               curPosition[ax.ordinal()] = curPosition[ax.ordinal()] + distance;
+               aMove.setDistanceMm(ax, distance);
+
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
@@ -398,7 +415,7 @@ public class XyzTable
            log.error("Initial Homing Move Failed !");
            return false;
        }
-       if(false == sendHomingBackOfMove(axis))
+       if(false == sendHomingBackOffMove(axis))
        {
            log.error("Homing Back off Move Failed !");
            return false;
@@ -413,6 +430,7 @@ public class XyzTable
        {
            final Axis_enum ax = axis[a];
            isHomed[ax.ordinal()] = true; // axis is now homed
+           curPosition[ax.ordinal()] = 0.0;
        }
        return planner.flushQueueToClient();
    }
@@ -420,7 +438,7 @@ public class XyzTable
    private boolean sendInitialHomingMoveToEndStops(Axis_enum[] axis)
    {
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
-       log.trace("created Move({}) to hold the homing move", aMove.getId());
+       log.trace("created Move({}) to hold the initial homing move", aMove.getId());
        aMove.setIsHoming(true);
        aMove.setTravelSpeed(HOMING_MOVE_MAX_SPEED);
        aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
@@ -452,10 +470,10 @@ public class XyzTable
        return updateEndStopActivation(aMove);
    }
 
-   private boolean sendHomingBackOfMove(Axis_enum[] axis)
+   private boolean sendHomingBackOffMove(Axis_enum[] axis)
    {
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
-       log.trace("created Move({}) to hold the homing move", aMove.getId());
+       log.trace("created Move({}) to hold the homing back offmove", aMove.getId());
        aMove.setIsHoming(true);
        aMove.setTravelSpeed(HOMING_MOVE_BACK_OFF_SPEED);
        aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
@@ -490,7 +508,7 @@ public class XyzTable
    private boolean sendHomingSlowApproachMoveToEndStops(Axis_enum[] axis)
    {
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
-       log.trace("created Move({}) to hold the homing move", aMove.getId());
+       log.trace("created Move({}) to hold the slow approach homing move", aMove.getId());
        aMove.setIsHoming(true);
        aMove.setTravelSpeed(HOMING_MOVE_SLOW_APPROACH_SPEED);
        aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
