@@ -470,16 +470,16 @@ public class BasicLinearMove
             final int speed = (int) (a * steps);
             if(speed > MaxSpeedStepsPerSecondOnAxis.get(axisNumber))
             {
-                log.error("ID{}: Speed of {} to high for this Axis !", myId, speed);
+                log.info("ID{}: Speed of {} to high for this Axis !", myId, speed);
                 // calculate new possible max Speed
                 a = MaxSpeedStepsPerSecondOnAxis.get(axisNumber) / steps;
                 maxSpeed = a * Math.abs(StepsOnAxis.get(primaryAxis));
-                log.error("ID{}: max Speed of {} (a={}) for this Axis !",myId, maxSpeed, a);
+                log.info("ID{}: max Speed of {} (a={}) for this Axis !",myId, maxSpeed, a);
                 if(MIN_MOVEMENT_SPEED_MM_SECOND > maxSpeed)
                 {
                     maxSpeed = MIN_MOVEMENT_SPEED_MM_SECOND;
                 }
-                log.error("ID{}: Reduced Speed to {} !", myId, maxSpeed);
+                log.info("ID{}: Reduced Speed to {} !", myId, maxSpeed);
                 // try again
                 i = 0;
                 continue;
@@ -533,7 +533,7 @@ public class BasicLinearMove
             final int speed = (int) (a * steps);
             if(speed > MaxSpeedStepsPerSecondOnAxis.get(axisNumber))
             {
-                log.error("ID{}: Speed to high for other Axis !", myId);
+                log.info("ID{}: Speed to high for other Axis !", myId);
                 // calculate new possible max Speed
                 a = MaxSpeedStepsPerSecondOnAxis.get(axisNumber) / steps;
                 maxEndSpeed = a * StepsOnAxis.get(primaryAxis);
