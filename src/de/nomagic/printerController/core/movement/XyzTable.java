@@ -378,12 +378,12 @@ public class XyzTable
                final double newPosition = curPosition[ax.ordinal()] + distance;
                if(newPosition < Min[ax.ordinal()])
                {
-                   log.error("Move would leave allowed Printing area(Min)! Mave has been changed!");
+                   log.error("Move would leave allowed Printing area(Min)! Move has been changed!");
                    distance = Min[ax.ordinal()] - curPosition[ax.ordinal()];
                }
                if(newPosition > Max[ax.ordinal()])
                {
-                   log.error("Move would leave allowed Printing area(Max)! Mave has been changed!");
+                   log.error("Move would leave allowed Printing area(Max)! Move has been changed!");
                    distance = Max[ax.ordinal()] - curPosition[ax.ordinal()];
                }
                curPosition[ax.ordinal()] = curPosition[ax.ordinal()] + distance;
