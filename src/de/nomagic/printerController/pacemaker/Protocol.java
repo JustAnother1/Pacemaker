@@ -1066,6 +1066,9 @@ public class Protocol implements EventSource
             ClientQueueNumberOfEnqueuedCommands = ((0xff & reply[2 + offset]) * 256) + (0xff & reply[3 + offset]);
             ClientExecutedJobs =                  ((0xff & reply[4 + offset]) * 256) + (0xff & reply[5 + offset]);
             timeofLastClientQueueUpdate = System.currentTimeMillis();
+            log.trace("Queue Free Slots = {}", ClientQueueFreeSlots);
+            log.trace("Queue Number of Enqueued Commands = {}", ClientQueueNumberOfEnqueuedCommands);
+            log.trace("Executed Jobs = {}", ClientExecutedJobs);
         }
     }
 
