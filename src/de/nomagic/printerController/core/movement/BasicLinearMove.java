@@ -450,7 +450,7 @@ public class BasicLinearMove
             // move with only one Axis involved
             SpeedPerMmSec = feedrateMmPerMinute/60;
         }
-        log.trace("ID{}: Feedrate on primary Axis = {}", myId, SpeedPerMmSec);
+        log.trace("ID{}: Feedrate on primary Axis = {} mm/sec", myId, SpeedPerMmSec);
         return SpeedPerMmSec;
     }
 

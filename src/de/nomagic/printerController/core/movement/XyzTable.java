@@ -39,13 +39,13 @@ public class XyzTable
      * 1.5 is 50% longer move to be sure to reach the end of the axis. */
     public static final double HOMING_MOVE_SFAETY_FACTOR = 1.5;
     /** max speed of a Homing move in mm/second.  */
-    public static final double HOMING_MOVE_MAX_SPEED = 5.0;
+    public static final double DEFAULT_HOMING_MOVE_MAX_SPEED = 10.0;
     /** distance to move away from end stop after initial hitting of end stop */
-    public static final double HOMING_BACK_OFF_DISTANCE_MM = 1;
+    public static final double DEFAULT_HOMING_BACK_OFF_DISTANCE_MM = 5;
     /** Speed when backing off from end stop */
-    public static final double HOMING_MOVE_BACK_OFF_SPEED = 5.0;
+    public static final double DEFAULT_HOMING_MOVE_BACK_OFF_SPEED = 5.0;
     /** Speed for second approach to end Stops */
-    public static final double HOMING_MOVE_SLOW_APPROACH_SPEED = 1.0;
+    public static final double DEFAULT_HOMING_MOVE_SLOW_APPROACH_SPEED = 1.0;
     /** everything shorter than this will be assumed to be 0 */
     public static final double MIN_MOVEMENT_DISTANCE = 0.00001;
     /** switch off end stops if print head prints closer than this to the end stop
@@ -60,6 +60,16 @@ public class XyzTable
     public static final String CFG_NAME_END_STOP_ALLOWANCE = "end stop allowance";
     public static final String CFG_NAME_MIN = "allowed movement area min";
     public static final String CFG_NAME_MAX = "allowed movement area max";
+
+    public static final String CFG_NAME_HOME_MAX_SPEED = "max homing speed";
+    public static final String CFG_NAME_HOME_BACK_OFF_SPEED = "homing back off speed";
+    public static final String CFG_NAME_HOME_APPROACH_SPEED = "homing slow approach speed";
+    public static final String CFG_NAME_HOME_BACK_OFF_DISTANCE = "homing back off distance";
+
+    private final double homeMaxSpeed;
+    private final double homeBackOffSpeed;
+    private final double homeSlowApproachSpeed;
+    private final double homeBackOffDistance;
 
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
@@ -99,19 +109,34 @@ public class XyzTable
         Max = new double[Axis_enum.size];
         endStop_min = new int[Axis_enum.size];
         endStop_max = new int[Axis_enum.size];
+        log.debug("Print Area:");
         for(Axis_enum axis: Axis_enum.values())
         {
             curPosition[axis.ordinal()] = 0.0;
             isHomed[axis.ordinal()] = false;
-            Min[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis.getChar(), DEFAULT_PRINT_AREA_MIN);
-            Max[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis.getChar(), DEFAULT_PRINT_AREA_MAX);
+            Min[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis.getChar(),
+                                                        DEFAULT_PRINT_AREA_MIN);
+            log.debug("{}min = {}mm", axis.getChar(), Min[axis.ordinal()]);
+            Max[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis.getChar(),
+                                                        DEFAULT_PRINT_AREA_MAX);
+            log.debug("{}max = {}mm", axis.getChar(), Max[axis.ordinal()]);
             endStopminOn[axis.ordinal()] = false;
             endStopmaxOn[axis.ordinal()] = false;
             endStop_min[axis.ordinal()] = -1;
             endStop_max[axis.ordinal()] = -1;
         }
-        autoEndStopDisable = cfg.getGeneralSetting(CFG_NAME_AUTO_END_STOP_DISABLE, true);
-        endstopAllowance   = cfg.getGeneralSetting(CFG_NAME_END_STOP_ALLOWANCE,    DEFAULT_END_STOP_ALLOWANCE);
+        autoEndStopDisable    = cfg.getGeneralSetting(CFG_NAME_AUTO_END_STOP_DISABLE,
+                                                      true);
+        endstopAllowance      = cfg.getGeneralSetting(CFG_NAME_END_STOP_ALLOWANCE,
+                                                      DEFAULT_END_STOP_ALLOWANCE);
+        homeMaxSpeed          = cfg.getGeneralSetting(CFG_NAME_HOME_MAX_SPEED,
+                                                      DEFAULT_HOMING_MOVE_MAX_SPEED);
+        homeBackOffSpeed      = cfg.getGeneralSetting(CFG_NAME_HOME_BACK_OFF_SPEED,
+                                                      DEFAULT_HOMING_MOVE_BACK_OFF_SPEED);
+        homeSlowApproachSpeed = cfg.getGeneralSetting(CFG_NAME_HOME_APPROACH_SPEED,
+                                                      DEFAULT_HOMING_MOVE_SLOW_APPROACH_SPEED);
+        homeBackOffDistance   = cfg.getGeneralSetting(CFG_NAME_HOME_BACK_OFF_DISTANCE,
+                                                      DEFAULT_HOMING_BACK_OFF_DISTANCE_MM);
     }
 
     public void addMovementQueue(PlannedMoves queue)
@@ -376,15 +401,18 @@ public class XyzTable
                // Software end Switches:
                double distance = relMov.get(ax);
                final double newPosition = curPosition[ax.ordinal()] + distance;
-               if(newPosition < Min[ax.ordinal()])
+               if(true == isHomed[ax.ordinal()])
                {
-                   log.error("Move would leave allowed Printing area(Min)! Move has been changed!");
-                   distance = Min[ax.ordinal()] - curPosition[ax.ordinal()];
-               }
-               if(newPosition > Max[ax.ordinal()])
-               {
-                   log.error("Move would leave allowed Printing area(Max)! Move has been changed!");
-                   distance = Max[ax.ordinal()] - curPosition[ax.ordinal()];
+                   if(newPosition < Min[ax.ordinal()])
+                   {
+                       log.error("Move would leave allowed Printing area(Min)! Move has been changed!");
+                       distance = Min[ax.ordinal()] - curPosition[ax.ordinal()];
+                   }
+                   if(newPosition > Max[ax.ordinal()])
+                   {
+                       log.error("Move would leave allowed Printing area(Max)! Move has been changed!");
+                       distance = Max[ax.ordinal()] - curPosition[ax.ordinal()];
+                   }
                }
                curPosition[ax.ordinal()] = curPosition[ax.ordinal()] + distance;
                aMove.setDistanceMm(ax, distance);
@@ -440,8 +468,7 @@ public class XyzTable
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
        log.trace("created Move({}) to hold the initial homing move", aMove.getId());
        aMove.setIsHoming(true);
-       aMove.setTravelSpeed(HOMING_MOVE_MAX_SPEED);
-       aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
+       aMove.setFeedrateMmPerMinute(homeMaxSpeed * 60);
        aMove.setEndSpeed(0);
        double homingDistance = 0.0;
 
@@ -475,8 +502,7 @@ public class XyzTable
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
        log.trace("created Move({}) to hold the homing back offmove", aMove.getId());
        aMove.setIsHoming(true);
-       aMove.setTravelSpeed(HOMING_MOVE_BACK_OFF_SPEED);
-       aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
+       aMove.setFeedrateMmPerMinute(homeBackOffSpeed * 60);
        aMove.setEndSpeed(0);
        double homingDistance = 0.0;
 
@@ -486,7 +512,7 @@ public class XyzTable
            isHomed[ax.ordinal()] = false; // this axis will be homed -> therefore it is not yet homed.
            if(ax != Axis_enum.E)
            {
-               homingDistance = HOMING_BACK_OFF_DISTANCE_MM;
+               homingDistance = homeBackOffDistance;
                aMove.setDistanceMm(ax, homingDistance);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
@@ -510,8 +536,7 @@ public class XyzTable
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
        log.trace("created Move({}) to hold the slow approach homing move", aMove.getId());
        aMove.setIsHoming(true);
-       aMove.setTravelSpeed(HOMING_MOVE_SLOW_APPROACH_SPEED);
-       aMove.setFeedrateMmPerMinute(FeedrateMmPerMinute);
+       aMove.setFeedrateMmPerMinute(homeSlowApproachSpeed * 60);
        aMove.setEndSpeed(0);
        double homingDistance = 0.0;
 
@@ -521,8 +546,8 @@ public class XyzTable
            isHomed[ax.ordinal()] = false; // this axis will be homed -> therefore it is not yet homed.
            if(ax != Axis_enum.E)
            {
-               homingDistance = HOMING_BACK_OFF_DISTANCE_MM * HOMING_MOVE_SFAETY_FACTOR;
-               aMove.setDistanceMm(ax, homingDistance);
+               homingDistance = homeBackOffDistance * HOMING_MOVE_SFAETY_FACTOR;
+               aMove.setDistanceMm(ax, -homingDistance);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])

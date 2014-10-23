@@ -550,6 +550,10 @@ public class GCodeDecoder
                 lastErrorReason = exe.getLastErrorReason();
                 return RESULT_ERROR;
             }
+            for(int i = 0; i < homingAxis.size(); i++)
+            {
+                curPosition[homingAxis.get(i).ordinal()] = 0;
+            }
             return RESULT_OK;
 
         case 90: // Set Distance Mode : absolute
