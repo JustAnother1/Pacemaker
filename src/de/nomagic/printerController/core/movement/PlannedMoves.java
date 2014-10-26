@@ -42,7 +42,7 @@ public class PlannedMoves implements EventSource
     private volatile boolean needsFlushing = false;
     private Protocol pro;
     private int MaxClientStepsPerSecond;
-    private double currentSpeed = 0.0;
+    private double currentSpeedMmS = 0.0;
     private final int timeoutID;
     private final TimeoutHandler to;
 
@@ -266,7 +266,7 @@ public class PlannedMoves implements EventSource
         synchronized(entries)
         {
             final BasicLinearMove aMove = entries.removeLast();
-            aMove.setEndSpeed(0.0);
+            aMove.setEndSpeedMms(0.0);
             entries.addLast(aMove);
         }
         if(false == sendAllPossibleMoves())
@@ -325,36 +325,36 @@ public class PlannedMoves implements EventSource
     private boolean sendMoveWithEndSpeedSet(BasicLinearMove aMove)
     {
         // we know the speed we need to have at the end of this move
-        double desiredEndSpeed = aMove.getEndSpeed();
+        double desiredEndSpeedMmS = aMove.getEndSpeedMms();
         int steps = aMove.getStepsOnActiveStepper(aMove.getPrimaryAxis());
         final int stepsToAchiveEndSpeed = Math.abs(
-                aMove.getNumberOfStepsForSpeedChange(currentSpeed, desiredEndSpeed));
+                aMove.getNumberOfStepsOnPrimaryAxisForSpeedChange(currentSpeedMmS, desiredEndSpeedMmS));
         if(steps > stepsToAchiveEndSpeed)
         {
             log.trace("we can achieve the end speed and have some steps left");
             // these steps can be used to accelerate to a higher speed
             log.trace("steps needed to achieve end Speed = {}", stepsToAchiveEndSpeed);
             steps = steps - stepsToAchiveEndSpeed;
-            final double maxSpeedChange = aMove.getSpeedChangeForSteps(steps/2);
-            log.trace("maxSpeedChange = {} mm/s", maxSpeedChange);
-            final double maxPossibleSpeed = aMove.getMaxPossibleSpeed();
-            log.trace("maxPossibleSpeed = {} mm/s", maxPossibleSpeed);
-            final double travelSpeed = Math.max(currentSpeed, desiredEndSpeed);
-            log.trace("travelSpeed = {} mm/s", travelSpeed);
+            final double maxSpeedChangeMmS = aMove.getSpeedChangeMmSOnPrimaryAxisForSteps(steps/2);
+            log.trace("maxSpeedChange = {} mm/s", maxSpeedChangeMmS);
+            final double maxPossibleSpeedMmS = aMove.getMaxPossibleSpeedMmS();
+            log.trace("maxPossibleSpeed = {} mm/s", maxPossibleSpeedMmS);
+            final double travelSpeedMmS = Math.max(currentSpeedMmS, desiredEndSpeedMmS);
+            log.trace("travelSpeed = {} mm/s", travelSpeedMmS);
             int accell = 0;
             int decell = 0;
-            if(travelSpeed > maxPossibleSpeed)
+            if(travelSpeedMmS > maxPossibleSpeedMmS)
             {
                 log.error("Travel speed too high! end speed = {} mm/s currentSpeed = {} mm/s",
-                           desiredEndSpeed, currentSpeed);
-                aMove.setTravelSpeed(maxPossibleSpeed);
+                           desiredEndSpeedMmS, currentSpeedMmS);
+                aMove.setTravelSpeedMms(maxPossibleSpeedMmS);
             }
-            else if(travelSpeed + maxSpeedChange > maxPossibleSpeed)
+            else if(travelSpeedMmS + maxSpeedChangeMmS > maxPossibleSpeedMmS)
             {
                 log.trace("we can not use all the steps to accelerate");
                 final int accelerateSteps = Math.abs(
-                        aMove.getNumberOfStepsForSpeedChange(travelSpeed, maxPossibleSpeed));
-                aMove.setTravelSpeed(maxPossibleSpeed);
+                        aMove.getNumberOfStepsOnPrimaryAxisForSpeedChange(travelSpeedMmS, maxPossibleSpeedMmS));
+                aMove.setTravelSpeedMms(maxPossibleSpeedMmS);
                 accell = accelerateSteps;
                 decell = accelerateSteps;
             }
@@ -363,9 +363,9 @@ public class PlannedMoves implements EventSource
                 log.trace("we just use all steps for speed changes");
                 accell = steps/2;
                 decell = steps - accell;
-                aMove.setTravelSpeed(travelSpeed + maxSpeedChange);
+                aMove.setTravelSpeedMms(travelSpeedMmS + maxSpeedChangeMmS);
             }
-            if(desiredEndSpeed > currentSpeed)
+            if(desiredEndSpeedMmS > currentSpeedMmS)
             {
                 aMove.setAccelerationSteps(stepsToAchiveEndSpeed + accell);
                 aMove.setDecelerationSteps(decell);
@@ -382,12 +382,12 @@ public class PlannedMoves implements EventSource
             // we need to use all the steps to achieve the end speed.
             if(steps < stepsToAchiveEndSpeed)
             {
-                log.warn("Not enough steps to achieve end speed (steps={}, end speed={})",
-                          steps, desiredEndSpeed);
-                aMove.setEndSpeed(aMove.getSpeedChangeForSteps(steps));
-                desiredEndSpeed = aMove.getEndSpeed();
+                log.warn("Not enough steps to achieve end speed (steps={}, end speed={} mm/sec)",
+                          steps, desiredEndSpeedMmS);
+                aMove.setEndSpeedMms(aMove.getSpeedChangeMmSOnPrimaryAxisForSteps(steps));
+                desiredEndSpeedMmS = aMove.getEndSpeedMms();
             }
-            if(desiredEndSpeed > currentSpeed)
+            if(desiredEndSpeedMmS > currentSpeedMmS)
             {
                 aMove.setAccelerationSteps(steps);
             }
@@ -397,14 +397,14 @@ public class PlannedMoves implements EventSource
             }
             if(true == aMove.endSpeedIsZero())
             {
-                aMove.setTravelSpeed(currentSpeed);
+                aMove.setTravelSpeedMms(currentSpeedMmS);
             }
             else
             {
-                aMove.setTravelSpeed(desiredEndSpeed);
+                aMove.setTravelSpeedMms(desiredEndSpeedMmS);
             }
         }
-        currentSpeed = desiredEndSpeed;
+        currentSpeedMmS = desiredEndSpeedMmS;
         synchronized(entries)
         {
             entries.set(0, aMove);
@@ -431,13 +431,13 @@ public class PlannedMoves implements EventSource
         }
         if(false == aMove.hasEndSpeedSet())
         {
-            double maxEndSpeed = aMove.getMaxEndSpeed();
+            double maxEndSpeedMmS = aMove.getMaxEndSpeedMmS();
             // we can send this move if we find a move that has a end Speed of 0,
             // or if we have more steps in the Queue than needed to decelerate
             // from the max end Speed of this move to 0.
             int idx = 1;
             boolean found = false;
-            int stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
+            int stepsNeeded = aMove.getNumberOfStepsOnPrimaryAxisForSpeedChange(maxEndSpeedMmS, 0.0);
             log.trace("steps needed = {}", stepsNeeded);
             int stepsSeen = 0;
             boolean first = true;
@@ -454,13 +454,13 @@ public class PlannedMoves implements EventSource
                     if(true == first)
                     {
                         first = false;
-                        final double maxSpeedNextMove = otherMove.getMaxPossibleSpeed();
-                        if(maxSpeedNextMove < maxEndSpeed)
+                        final double maxSpeedNextMoveMmS = otherMove.getMaxPossibleSpeedMmS();
+                        if(maxSpeedNextMoveMmS < maxEndSpeedMmS)
                         {
                             // we need to reduce the end speed further
                             // to avoid being to fast for the following move
-                            maxEndSpeed = maxSpeedNextMove;
-                            stepsNeeded = aMove.getNumberOfStepsForSpeedChange(maxEndSpeed, 0.0);
+                            maxEndSpeedMmS = maxSpeedNextMoveMmS;
+                            stepsNeeded = aMove.getNumberOfStepsOnPrimaryAxisForSpeedChange(maxEndSpeedMmS, 0.0);
                             log.trace("steps needed = {}", stepsNeeded);
                         }
                     }
@@ -468,20 +468,20 @@ public class PlannedMoves implements EventSource
                     if(stepsNeeded < stepsSeen)
                     {
                         log.trace("we have enough steps in the queue -> we can send this move");
-                        aMove.setEndSpeed(maxEndSpeed);
+                        aMove.setEndSpeedMms(maxEndSpeedMmS);
                         found = true;
                     }
                     else if(true == otherMove.endSpeedIsZero())
                     {
                         log.trace("we found a move that ends with speed = 0.");
-                        final double possibleEndSpeed = aMove.getSpeedChangeForSteps(stepsSeen);
-                        if(possibleEndSpeed > maxEndSpeed)
+                        final double possibleEndSpeedMmS = aMove.getSpeedChangeMmSOnPrimaryAxisForSteps(stepsSeen);
+                        if(possibleEndSpeedMmS > maxEndSpeedMmS)
                         {
-                            aMove.setEndSpeed(maxEndSpeed);
+                            aMove.setEndSpeedMms(maxEndSpeedMmS);
                         }
                         else
                         {
-                            aMove.setEndSpeed(possibleEndSpeed);
+                            aMove.setEndSpeedMms(possibleEndSpeedMmS);
                         }
                         found = true;
                     }

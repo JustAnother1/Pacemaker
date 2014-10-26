@@ -53,73 +53,62 @@ public class XyzTable
     public static final double DEFAULT_END_STOP_ALLOWANCE = 0.5;
     /** maximum supported number of Steppers on a axis */
     public static final int MAX_STEPPERS_PER_AXIS = 2;
+    // configuration:
     public static final double DEFAULT_PRINT_AREA_MIN = 0.0;
     public static final double DEFAULT_PRINT_AREA_MAX = 300.0;
-
     public static final String CFG_NAME_AUTO_END_STOP_DISABLE = "automatically disable end stops";
     public static final String CFG_NAME_END_STOP_ALLOWANCE = "end stop allowance";
     public static final String CFG_NAME_MIN = "allowed movement area min";
     public static final String CFG_NAME_MAX = "allowed movement area max";
-
     public static final String CFG_NAME_HOME_MAX_SPEED = "max homing speed";
     public static final String CFG_NAME_HOME_BACK_OFF_SPEED = "homing back off speed";
     public static final String CFG_NAME_HOME_APPROACH_SPEED = "homing slow approach speed";
     public static final String CFG_NAME_HOME_BACK_OFF_DISTANCE = "homing back off distance";
 
-    private final double homeMaxSpeed;
-    private final double homeBackOffSpeed;
-    private final double homeSlowApproachSpeed;
-    private final double homeBackOffDistance;
-
-
+    private final double homeMaxSpeedMms;
+    private final double homeBackOffSpeedMms;
+    private final double homeSlowApproachSpeedMms;
+    private final double homeBackOffDistanceMm;
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private Stepper[][] Steppers;
-
-
-    private double[] curPosition;
+    private double[] curPositionMm;
     private boolean[] isHomed;
-
     private double endstopAllowance;
-    private double[] Min;
-    private double[] Max;
-
+    private double[] MinMm;
+    private double[] MaxMm;
     private boolean autoEndStopDisable = true;
     private boolean[] endStopminOn;
     private boolean[] endStopmaxOn;
     private int[] endStop_min;
     private int[] endStop_max;
-
     private Vector<Integer> stopsOn;
     private Vector<Integer> stopsOff;
-
     private PlannedMoves planner;
-
-    // this might take effect on a homing before the first move with a Feedrate set.
     private double FeedrateMmPerMinute = 9000;
     private int MaxClientStepsPerSecond = 0;
 
     public XyzTable(Cfg cfg)
     {
         Steppers = new Stepper[Axis_enum.size][2];
-        curPosition = new double[Axis_enum.size];
+        curPositionMm = new double[Axis_enum.size];
         isHomed = new boolean[Axis_enum.size];
         endStopminOn = new boolean[Axis_enum.size];
         endStopmaxOn = new boolean[Axis_enum.size];
-        Min = new double[Axis_enum.size];
-        Max = new double[Axis_enum.size];
+        MinMm = new double[Axis_enum.size];
+        MaxMm = new double[Axis_enum.size];
         endStop_min = new int[Axis_enum.size];
         endStop_max = new int[Axis_enum.size];
         log.debug("Print Area:");
         for(Axis_enum axis: Axis_enum.values())
         {
-            curPosition[axis.ordinal()] = 0.0;
+            curPositionMm[axis.ordinal()] = 0.0;
             isHomed[axis.ordinal()] = false;
-            Min[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis.getChar(),
+            MinMm[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MIN + axis.getChar(),
                                                         DEFAULT_PRINT_AREA_MIN);
-            log.debug("{}min = {}mm", axis.getChar(), Min[axis.ordinal()]);
-            Max[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis.getChar(),
+            log.debug("{}min = {}mm", axis.getChar(), MinMm[axis.ordinal()]);
+            MaxMm[axis.ordinal()] = cfg.getGeneralSetting(CFG_NAME_MAX + axis.getChar(),
                                                         DEFAULT_PRINT_AREA_MAX);
-            log.debug("{}max = {}mm", axis.getChar(), Max[axis.ordinal()]);
+            log.debug("{}max = {}mm", axis.getChar(), MaxMm[axis.ordinal()]);
             endStopminOn[axis.ordinal()] = false;
             endStopmaxOn[axis.ordinal()] = false;
             endStop_min[axis.ordinal()] = -1;
@@ -129,13 +118,13 @@ public class XyzTable
                                                       true);
         endstopAllowance      = cfg.getGeneralSetting(CFG_NAME_END_STOP_ALLOWANCE,
                                                       DEFAULT_END_STOP_ALLOWANCE);
-        homeMaxSpeed          = cfg.getGeneralSetting(CFG_NAME_HOME_MAX_SPEED,
+        homeMaxSpeedMms          = cfg.getGeneralSetting(CFG_NAME_HOME_MAX_SPEED,
                                                       DEFAULT_HOMING_MOVE_MAX_SPEED);
-        homeBackOffSpeed      = cfg.getGeneralSetting(CFG_NAME_HOME_BACK_OFF_SPEED,
+        homeBackOffSpeedMms      = cfg.getGeneralSetting(CFG_NAME_HOME_BACK_OFF_SPEED,
                                                       DEFAULT_HOMING_MOVE_BACK_OFF_SPEED);
-        homeSlowApproachSpeed = cfg.getGeneralSetting(CFG_NAME_HOME_APPROACH_SPEED,
+        homeSlowApproachSpeedMms = cfg.getGeneralSetting(CFG_NAME_HOME_APPROACH_SPEED,
                                                       DEFAULT_HOMING_MOVE_SLOW_APPROACH_SPEED);
-        homeBackOffDistance   = cfg.getGeneralSetting(CFG_NAME_HOME_BACK_OFF_DISTANCE,
+        homeBackOffDistanceMm   = cfg.getGeneralSetting(CFG_NAME_HOME_BACK_OFF_DISTANCE,
                                                       DEFAULT_HOMING_BACK_OFF_DISTANCE_MM);
     }
 
@@ -256,13 +245,15 @@ public class XyzTable
 
                 if(true == isHomed[axis.ordinal()])
                 {
-                    final double posOnAxis = curPosition[axis.ordinal()];
-                    if((Min[axis.ordinal()] <= posOnAxis) && ((Min[axis.ordinal()] + endstopAllowance)>= posOnAxis))
+                    final double posOnAxisMm = curPositionMm[axis.ordinal()];
+                    if(   (MinMm[axis.ordinal()] <= posOnAxisMm)
+                       && ((MinMm[axis.ordinal()] + endstopAllowance)>= posOnAxisMm) )
                     {
                         // position close to min end stop -> min end stop off
                         setEndstopMinEnabled(axis, false);
                     }
-                    else if((Max[axis.ordinal()] >= posOnAxis) && (Max[axis.ordinal()] - endstopAllowance) <= posOnAxis)
+                    else if(   (MaxMm[axis.ordinal()] >= posOnAxisMm)
+                            && ((MaxMm[axis.ordinal()] - endstopAllowance) <= posOnAxisMm) )
                     {
                         // position close to end stop -> end stop off
                         setEndstopMaxEnabled(axis, false);
@@ -399,23 +390,23 @@ public class XyzTable
                log.debug("adding Axis {}", ax);
 
                // Software end Switches:
-               double distance = relMov.get(ax);
-               final double newPosition = curPosition[ax.ordinal()] + distance;
+               double distanceMm = relMov.get(ax);
+               final double newPositionMm = curPositionMm[ax.ordinal()] + distanceMm;
                if(true == isHomed[ax.ordinal()])
                {
-                   if(newPosition < Min[ax.ordinal()])
+                   if(newPositionMm < MinMm[ax.ordinal()])
                    {
                        log.error("Move would leave allowed Printing area(Min)! Move has been changed!");
-                       distance = Min[ax.ordinal()] - curPosition[ax.ordinal()];
+                       distanceMm = MinMm[ax.ordinal()] - curPositionMm[ax.ordinal()];
                    }
-                   if(newPosition > Max[ax.ordinal()])
+                   if(newPositionMm > MaxMm[ax.ordinal()])
                    {
                        log.error("Move would leave allowed Printing area(Max)! Move has been changed!");
-                       distance = Max[ax.ordinal()] - curPosition[ax.ordinal()];
+                       distanceMm = MaxMm[ax.ordinal()] - curPositionMm[ax.ordinal()];
                    }
                }
-               curPosition[ax.ordinal()] = curPosition[ax.ordinal()] + distance;
-               aMove.setDistanceMm(ax, distance);
+               curPositionMm[ax.ordinal()] = curPositionMm[ax.ordinal()] + distanceMm;
+               aMove.setDistanceMm(ax, distanceMm);
 
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
@@ -454,11 +445,11 @@ public class XyzTable
            return false;
        }
 
-       for(int a = 0; a < axis.length; a++)
+       for(int i = 0; i < axis.length; i++)
        {
-           final Axis_enum ax = axis[a];
+           final Axis_enum ax = axis[i];
            isHomed[ax.ordinal()] = true; // axis is now homed
-           curPosition[ax.ordinal()] = 0.0;
+           curPositionMm[ax.ordinal()] = 0.0;
        }
        return planner.flushQueueToClient();
    }
@@ -468,9 +459,9 @@ public class XyzTable
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
        log.trace("created Move({}) to hold the initial homing move", aMove.getId());
        aMove.setIsHoming(true);
-       aMove.setFeedrateMmPerMinute(homeMaxSpeed * 60);
-       aMove.setEndSpeed(0);
-       double homingDistance = 0.0;
+       aMove.setFeedrateMmPerMinute(homeMaxSpeedMms * 60);
+       aMove.setEndSpeedMms(0);
+       double homingDistanceMm = 0.0;
 
        for(int a = 0; a < axis.length; a++)
        {
@@ -478,15 +469,15 @@ public class XyzTable
            isHomed[ax.ordinal()] = false; // this axis will be homed -> therefore it is not yet homed.
            if(ax != Axis_enum.E)
            {
-               homingDistance = (Max[ax.ordinal()] - Min[ax.ordinal()]) * HOMING_MOVE_SFAETY_FACTOR;
-               aMove.setDistanceMm(ax, -homingDistance);
+               homingDistanceMm = (MaxMm[ax.ordinal()] - MinMm[ax.ordinal()]) * HOMING_MOVE_SFAETY_FACTOR;
+               aMove.setDistanceMm(ax, -homingDistanceMm);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
                    {
                        if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
                        {
-                           aMove.setDistanceMm(ax, homingDistance);
+                           aMove.setDistanceMm(ax, homingDistanceMm);
                        }
                        aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
@@ -502,9 +493,9 @@ public class XyzTable
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
        log.trace("created Move({}) to hold the homing back offmove", aMove.getId());
        aMove.setIsHoming(true);
-       aMove.setFeedrateMmPerMinute(homeBackOffSpeed * 60);
-       aMove.setEndSpeed(0);
-       double homingDistance = 0.0;
+       aMove.setFeedrateMmPerMinute(homeBackOffSpeedMms * 60);
+       aMove.setEndSpeedMms(0);
+       double homingDistanceMm = 0.0;
 
        for(int a = 0; a < axis.length; a++)
        {
@@ -512,15 +503,15 @@ public class XyzTable
            isHomed[ax.ordinal()] = false; // this axis will be homed -> therefore it is not yet homed.
            if(ax != Axis_enum.E)
            {
-               homingDistance = homeBackOffDistance;
-               aMove.setDistanceMm(ax, homingDistance);
+               homingDistanceMm = homeBackOffDistanceMm;
+               aMove.setDistanceMm(ax, homingDistanceMm);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
                    {
                        if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
                        {
-                           aMove.setDistanceMm(ax, homingDistance);
+                           aMove.setDistanceMm(ax, homingDistanceMm);
                        }
                        aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
@@ -536,9 +527,9 @@ public class XyzTable
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
        log.trace("created Move({}) to hold the slow approach homing move", aMove.getId());
        aMove.setIsHoming(true);
-       aMove.setFeedrateMmPerMinute(homeSlowApproachSpeed * 60);
-       aMove.setEndSpeed(0);
-       double homingDistance = 0.0;
+       aMove.setFeedrateMmPerMinute(homeSlowApproachSpeedMms * 60);
+       aMove.setEndSpeedMms(0);
+       double homingDistanceMm = 0.0;
 
        for(int a = 0; a < axis.length; a++)
        {
@@ -546,15 +537,15 @@ public class XyzTable
            isHomed[ax.ordinal()] = false; // this axis will be homed -> therefore it is not yet homed.
            if(ax != Axis_enum.E)
            {
-               homingDistance = homeBackOffDistance * HOMING_MOVE_SFAETY_FACTOR;
-               aMove.setDistanceMm(ax, -homingDistance);
+               homingDistanceMm = homeBackOffDistanceMm * HOMING_MOVE_SFAETY_FACTOR;
+               aMove.setDistanceMm(ax, -homingDistanceMm);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
                    {
                        if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
                        {
-                           aMove.setDistanceMm(ax, homingDistance);
+                           aMove.setDistanceMm(ax, homingDistanceMm);
                        }
                        aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
