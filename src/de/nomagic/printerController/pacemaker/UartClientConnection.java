@@ -288,6 +288,15 @@ public final class UartClientConnection extends ClientConnectionBase
         final UartClientConnection res = new UartClientConnection(data);
         if(true == res.isConnected())
         {
+            // Arduino Clients with Automatic Reset need a pause of one second.(Bootloader)
+            try
+            {
+                Thread.sleep(1000);
+            }
+            catch(InterruptedException e)
+            {
+                // I don't care
+            }
             return res;
         }
         else
