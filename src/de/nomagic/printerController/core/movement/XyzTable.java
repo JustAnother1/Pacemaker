@@ -292,6 +292,7 @@ public class XyzTable
             return false;
         }
         boolean success = true;
+        // make sure that these class variables are clean
         stopsOn = new Vector<Integer>();
         stopsOff = new Vector<Integer>();
 
