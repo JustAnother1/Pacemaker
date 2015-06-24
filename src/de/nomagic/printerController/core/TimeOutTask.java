@@ -18,9 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -30,7 +27,6 @@ public class TimeOutTask extends Thread implements TimeoutHandler
 {
     public static final int MAX_TIMEOUT = 10;
 
-    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private AtomicIntegerArray countdowns = new AtomicIntegerArray(MAX_TIMEOUT);
 
     private ConcurrentHashMap<Integer, Event> TimeoutEvents = new ConcurrentHashMap<Integer, Event>();

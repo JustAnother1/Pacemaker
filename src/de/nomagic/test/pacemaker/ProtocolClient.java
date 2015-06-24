@@ -20,7 +20,6 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 
 import de.nomagic.printerController.Tool;
-import de.nomagic.printerController.pacemaker.ClientConnectionBase;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 
