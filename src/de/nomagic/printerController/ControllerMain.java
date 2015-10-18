@@ -355,12 +355,12 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
         // set up the printer
         if(false == hasReadConfiguration)
         {
-            core = null;
+            System.out.println("No Configuration File found ! Printing not possible !");
+            return;
         }
-        else
-        {
-            core = new CoreStateMachine(cfg);
-        }
+
+        core = new CoreStateMachine(cfg);
+
         final CloseApplication Closer = this;
         // If we want the GUI then we want it even with non operational core!
         if(true == shallStartGui)
@@ -382,11 +382,6 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
                     }
                 }
             });
-        }
-        if(false == hasReadConfiguration)
-        {
-            System.out.println("No Configuration File found ! Printing not possible !");
-            return;
         }
         if(false == core.isOperational())
         {
