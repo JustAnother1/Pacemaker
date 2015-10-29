@@ -231,7 +231,7 @@ public class Protocol implements EventSource
     private volatile long timeofLastClientQueueUpdate;
     private volatile int hostTimeout = 2;
     private final TimeoutHandler timeout;
-    private final int timeoutId;
+    private int timeoutId;
 
     public Protocol(ClientConnection Client, TimeoutHandler timeout)
     {
@@ -246,15 +246,18 @@ public class Protocol implements EventSource
             isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
         }
         this.timeout = timeout;
-        final Event e = new Event(Action_enum.timeOut, null, this);
-        timeoutId = timeout.createTimeout(e, hostTimeout/2 * 1000);
-        if(TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT == timeoutId)
+        if(null != timeout)
         {
-            log.error("No Timeout available - can not send Keep Alives to Client!");
-        }
-        else
-        {
-            timeout.startTimeout(timeoutId);
+	        final Event e = new Event(Action_enum.timeOut, null, this);
+	        timeoutId = timeout.createTimeout(e, hostTimeout/2 * 1000);
+	        if(TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT == timeoutId)
+	        {
+	            log.error("No Timeout available - can not send Keep Alives to Client!");
+	        }
+	        else
+	        {
+	            timeout.startTimeout(timeoutId);
+	        }
         }
     }
 

@@ -36,7 +36,8 @@ public class TestTool
     public void testFromExceptionToString()
     {
         Exception e = new IOException();
-        assertTrue((Tool.fromExceptionToString(e)).contains("java.io.IOException\n"));
+        String res = Tool.fromExceptionToString(e);
+        assertTrue(res.contains("java.io.IOException"));
         assertEquals("Exception [null]", Tool.fromExceptionToString(null));
     }
 
