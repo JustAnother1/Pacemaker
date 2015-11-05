@@ -14,14 +14,12 @@
  */
 package de.nomagic.printerController.core;
 
-import java.io.File;
 import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
-import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
@@ -55,17 +53,28 @@ public class GCodeDecoder
     private boolean firstLine = true;
     private int lastLineNumber = 0;
     private final SDCardSimulation sdCard;
-    private final SDCardPrinter sdPrinterWorker;
+    private SDCardPrinter sdPrinterWorker;
+    private GCode masterCode;
 
-    public GCodeDecoder(final Executor plan, Cfg cfg)
+    public GCodeDecoder(final Executor plan, SDCardSimulation sdCard)
     {
         this.exe = plan;
+        this.sdCard = sdCard;
+        masterCode = new GCodeImpl("");
         for(int i = 0; i < curPosition.length; i++)
         {
             curPosition[i] = 0.0;
         }
-        sdCard = new SDCardSimulation(new File(cfg.getGeneralSetting("sdcardfolder", "sdcard")));
-        sdPrinterWorker =  new SDCardPrinter(sdCard, this);
+    }
+
+    public void addSDCardPrinter(SDCardPrinter printer)
+    {
+        sdPrinterWorker = printer;
+    }
+
+    public void setGCodeImplementation(GCode masterCode)
+    {
+        this.masterCode = masterCode;
     }
 
     public String sendLine(final String line, final GCodeResultStream resultStream)
@@ -73,7 +82,7 @@ public class GCodeDecoder
         lastErrorReason = null;
         if(null == line) {return "";}
         if(1 > line.length()) {return "";}
-        final GCode code = new GCode(line);
+        final GCode code = masterCode.getGCodeFrom(line);
         if(true == FileTransferModeActive)
         {
             final Double M = code.getWordValue('M');

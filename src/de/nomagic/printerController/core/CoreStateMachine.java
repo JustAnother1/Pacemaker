@@ -14,6 +14,8 @@
  */
 package de.nomagic.printerController.core;
 
+import java.io.File;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,13 +39,16 @@ public final class CoreStateMachine
     public CoreStateMachine(final Cfg cfg)
     {
         log.info("starting Executor,...");
-        exe = new Executor(cfg);
+        exe = new ExecutorImpl(cfg);
         if(false == exe.isOperational())
         {
             return;
         }
         log.info("starting G-Code Decoder,...");
-        decoder = new GCodeDecoder(exe, cfg);
+        SDCardSimulation sdCard = new SDCardSimulationImpl(new File(cfg.getGeneralSetting("sdcardfolder", "sdcard")));
+        decoder = new GCodeDecoder(exe, sdCard);
+        SDCardPrinter sdPrinterWorker =  new SDCardPrinterImpl(sdCard, decoder);
+        decoder.addSDCardPrinter(sdPrinterWorker);
         // everything is now up and running
         isOperational = true;
     }
