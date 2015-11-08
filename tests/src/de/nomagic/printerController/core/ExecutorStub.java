@@ -39,10 +39,17 @@ public class ExecutorStub implements Executor
     {
     }
 
+    boolean doShutDownReturn;
+
+    public void set_doShutDownReturn(boolean value)
+    {
+    	doShutDownReturn = value;
+    }
+
     @Override
     public boolean doShutDown()
     {
-        return false;
+        return doShutDownReturn;
     }
 
     @Override
@@ -69,41 +76,110 @@ public class ExecutorStub implements Executor
         return false;
     }
 
+    private boolean startHomingReturn;
+
+    public void setReturnFor_startHoming(boolean value)
+    {
+    	startHomingReturn = value;
+    }
+
     @Override
     public boolean startHoming(Axis_enum[] axis)
     {
-        return false;
+    	return startHomingReturn;
+    }
+
+    private boolean disableAllStepperMotorsReturn;
+
+    public void setReturnFor_disableAllStepperMotors(boolean value)
+    {
+    	disableAllStepperMotorsReturn = value;
     }
 
     @Override
     public boolean disableAllStepperMotors()
     {
-        return false;
+        return disableAllStepperMotorsReturn;
+    }
+
+    private boolean enableAllStepperMotorsReturn;
+
+    public void setReturnFor_enableAllStepperMotors(boolean value)
+    {
+    	enableAllStepperMotorsReturn = value;
     }
 
     @Override
     public boolean enableAllStepperMotors()
     {
-        return false;
+        return enableAllStepperMotorsReturn;
+    }
+
+    private boolean setStepsPerMilimeterReturn;
+    private Double StepsPerMilimeterSet;
+
+    public void setReturnFor_setStepsPerMilimeter(boolean value)
+    {
+    	setStepsPerMilimeterReturn = value;
+    }
+
+    public Double getStepsPerMilimeterSet()
+    {
+    	return StepsPerMilimeterSet;
     }
 
     @Override
-    public boolean setStepsPerMilimeter(Axis_enum axle,
-            Double stepsPerMillimeter)
+    public boolean setStepsPerMilimeter(Axis_enum axle, Double stepsPerMillimeter)
     {
-        return false;
+    	StepsPerMilimeterSet = stepsPerMillimeter;
+        return setStepsPerMilimeterReturn;
+    }
+
+    private boolean setFanSpeedforReturn;
+    private int fan_set;
+    private int speed_set;
+
+    public void setReturnFor_setFanSpeedfor(boolean value)
+    {
+    	setFanSpeedforReturn = value;
+    }
+
+    public int get_fan_set()
+    {
+    	return fan_set;
+    }
+
+    public int get_speed_set()
+    {
+    	return speed_set;
     }
 
     @Override
     public boolean setFanSpeedfor(int fan, int speed)
     {
-        return false;
+    	fan_set = fan;
+    	speed_set = speed;
+        return setFanSpeedforReturn;
+    }
+
+    private boolean setCurrentExtruderTemperatureNoWaitReturn;
+    private Double ExtruderTemperatureSet;
+
+    public void setReturnFor_setCurrentExtruderTemperatureNoWait(boolean value)
+    {
+    	setCurrentExtruderTemperatureNoWaitReturn = value;
+    }
+
+    public Double get_ExtruderTemperatureSet()
+    {
+    	return ExtruderTemperatureSet;
     }
 
     @Override
     public boolean setCurrentExtruderTemperatureNoWait(Double temperature)
     {
-        return false;
+    	ExtruderTemperatureSet = temperature;
+        return setCurrentExtruderTemperatureNoWaitReturn;
     }
 
     @Override

@@ -98,7 +98,7 @@ public class GCodeDecoder
                 if(false == res)
                 {
                     lastErrorReason = sdCard.getLastErrorReason();
-                    return "!! " + lastErrorReason;
+                    return "!! " + getLastErrorReason();
                 }
                 else
                 {
@@ -111,7 +111,7 @@ public class GCodeDecoder
         {
             lastErrorReason = "G-Code is invalid !";
             log.error(lastErrorReason);
-            return "!! " + lastErrorReason;
+            return "!! " + getLastErrorReason();
         }
 
         int result = RESULT_ERROR;
@@ -166,7 +166,7 @@ public class GCodeDecoder
         {
             lastErrorReason = "Line has no G, M or T Code !";
             log.error(lastErrorReason);
-            return "!! " + lastErrorReason;
+            return "!! " + getLastErrorReason();
         }
         if(RESULT_OK == result)
         {
@@ -174,7 +174,7 @@ public class GCodeDecoder
         }
         else if(RESULT_ERROR == result)
         {
-            return "!! " + lastErrorReason;
+            return "!! " + getLastErrorReason();
         }
         else if(RESULT_VALUE == result)
         {
@@ -232,6 +232,8 @@ public class GCodeDecoder
 
         case 17: // Enable/Power all stepper motors
             if(false == exe.enableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
+
+        // case 18: see 84
 
         case 20: // List SD Card Files
             final String[] files = sdCard.getListOfFiles();
@@ -318,10 +320,12 @@ public class GCodeDecoder
             if(false == exe.disableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 92: // Set axis_steps_per_unit
+        	boolean foundOne = false;
             for(Axis_enum axel : Axis_enum.values())
             {
                 if(true == code.hasWord(axel.getChar()))
                 {
+                	foundOne = true;
                     if(true == isMetric)
                     {
                         if(false == exe.setStepsPerMilimeter(axel, code.getWordValue(axel.getChar())))
@@ -338,9 +342,21 @@ public class GCodeDecoder
                     }
                 }
             }
-            return RESULT_OK;
+            if(true == foundOne)
+            {
+            	return RESULT_OK;
+            }
+            else
+            {
+            	return RESULT_ERROR;
+            }
 
         case 104: // Set Extruder Temperature - no wait
+        	if(false == code.hasWord('S'))
+        	{
+        		lastErrorReason = "Parameter S is missing";
+        		return RESULT_ERROR;
+        	}
             if(false == exe.setCurrentExtruderTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 105: // Get Extruder Temperature
@@ -348,6 +364,11 @@ public class GCodeDecoder
             return RESULT_VALUE;
 
         case 106: // set Fan Speed
+        	if(false == code.hasWord('S'))
+        	{
+        		lastErrorReason = "Parameter S is missing";
+        		return RESULT_ERROR;
+        	}
             // The fan Speed in S is 0..255 with 0=off 255=full speed.
             // The Fan speed in Pacemaker is 0=off 0xffff = full speed
             int speed = (code.getWordValue('S').intValue() * 256) + code.getWordValue('S').intValue();
