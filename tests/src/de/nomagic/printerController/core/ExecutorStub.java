@@ -52,10 +52,17 @@ public class ExecutorStub implements Executor
         return doShutDownReturn;
     }
 
+    boolean doImmediateShutDownReturn;
+
+    public void set_doImmediateShutDownReturn(boolean value)
+    {
+    	doImmediateShutDownReturn = value;
+    }
+
     @Override
     public boolean doImmediateShutDown()
     {
-        return false;
+        return doImmediateShutDownReturn;
     }
 
     @Override
@@ -182,36 +189,118 @@ public class ExecutorStub implements Executor
         return setCurrentExtruderTemperatureNoWaitReturn;
     }
 
+    private boolean setCurrentExtruderTemperatureAndDoWaitReturn;
+
+    public void setReturnfor_setCurrentExtruderTemperatureAndDoWait(boolean value)
+    {
+    	setCurrentExtruderTemperatureAndDoWaitReturn = value;
+    }
+
+    private Double ExtruderDoWait_setTemperature;
+
+    public Double getExtruderDoWait_setTemperature()
+    {
+    	return ExtruderDoWait_setTemperature;
+    }
+
+    private GCodeResultStream ExtruderDoWait_setResultStream;
+
+    public GCodeResultStream getExtruderDoWait_setResultStream()
+    {
+    	return ExtruderDoWait_setResultStream;
+    }
+
     @Override
     public boolean setCurrentExtruderTemperatureAndDoWait(Double temperature,
             GCodeResultStream resultStream)
     {
-        return false;
+    	ExtruderDoWait_setTemperature = temperature;
+    	ExtruderDoWait_setResultStream = resultStream;
+        return setCurrentExtruderTemperatureAndDoWaitReturn;
+    }
+
+    private boolean waitForEverythingInLimitsReturn;
+
+    public void set_waitForEverythingInLimitsReturn(boolean value)
+    {
+    	waitForEverythingInLimitsReturn = value;
     }
 
     @Override
     public boolean waitForEverythingInLimits(GCodeResultStream resultStream)
     {
-        return false;
+        return waitForEverythingInLimitsReturn;
+    }
+
+    private boolean setPrintBedTemperatureNoWaitReturn;
+
+    public void set_setPrintBedTemperatureNoWaitReturn(boolean value)
+    {
+    	setPrintBedTemperatureNoWaitReturn = value;
+    }
+
+    private Double PrintBedTemperatureNoWait_setTemperature;
+
+    public Double get_PrintBedTemperatureNoWait_setTemperature()
+    {
+    	return PrintBedTemperatureNoWait_setTemperature;
     }
 
     @Override
     public boolean setPrintBedTemperatureNoWait(Double temperature)
     {
-        return false;
+    	PrintBedTemperatureNoWait_setTemperature = temperature;
+        return setPrintBedTemperatureNoWaitReturn;
+    }
+
+    private boolean setChamberTemperatureNoWaitReturn;
+
+    public void set_setChamberTemperatureNoWaitReturn(boolean value)
+    {
+    	setChamberTemperatureNoWaitReturn = value;
+    }
+
+    private Double setChamberTemperatureNoWait_setTemperature;
+
+    public Double get_setChamberTemperatureNoWait_setTemperature()
+    {
+    	return setChamberTemperatureNoWait_setTemperature;
     }
 
     @Override
     public boolean setChamberTemperatureNoWait(Double temperature)
     {
-        return false;
+    	setChamberTemperatureNoWait_setTemperature = temperature;
+        return setChamberTemperatureNoWaitReturn;
     }
 
+    private boolean setPrintBedTemperatureAndDoWaitReturn;
+
+    public void set_setPrintBedTemperatureAndDoWaitReturn(boolean value)
+    {
+    	setPrintBedTemperatureAndDoWaitReturn = value;
+    }
+
+    private Double setPrintBedTemperatureAndDoWait_setTemperature;
+
+    public Double get_setPrintBedTemperatureAndDoWait_setTemperature()
+    {
+    	return setPrintBedTemperatureAndDoWait_setTemperature;
+    }
+
+    private GCodeResultStream setPrintBedTemperatureAndDoWait_setResultStream;
+
+    public GCodeResultStream get_setPrintBedTemperatureAndDoWait_setResultStream()
+    {
+    	return setPrintBedTemperatureAndDoWait_setResultStream;
+    }
     @Override
     public boolean setPrintBedTemperatureAndDoWait(Double temperature,
             GCodeResultStream resultStream)
     {
-        return false;
+    	setPrintBedTemperatureAndDoWait_setTemperature = temperature;
+    	setPrintBedTemperatureAndDoWait_setResultStream = resultStream;
+        return setPrintBedTemperatureAndDoWaitReturn;
     }
 
     @Override
@@ -227,16 +316,30 @@ public class ExecutorStub implements Executor
         return false;
     }
 
+    private String getCurrentExtruderTemperatureReturn;
+
+    public void set_getCurrentExtruderTemperatureReturn(String value)
+    {
+    	getCurrentExtruderTemperatureReturn = value;
+    }
+
     @Override
     public String getCurrentExtruderTemperature()
     {
-        return null;
+        return getCurrentExtruderTemperatureReturn;
+    }
+
+    private String getHeatedBedTemperatureReturn;
+
+    public void set_getHeatedBedTemperatureReturn(String value)
+    {
+    	getHeatedBedTemperatureReturn = value;
     }
 
     @Override
     public String getHeatedBedTemperature()
     {
-        return null;
+        return getHeatedBedTemperatureReturn;
     }
 
     @Override

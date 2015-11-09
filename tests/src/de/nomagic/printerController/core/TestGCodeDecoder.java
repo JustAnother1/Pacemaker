@@ -112,6 +112,14 @@ public class TestGCodeDecoder
     }
 
     @Test
+    public void testSendLine_Code_M1_notImplemented()
+    {
+    	String res = dut.sendLine("M1", null);
+    	assertTrue(null != res);
+    	assertTrue(res.startsWith("!!"));
+    }
+
+    @Test
     public void testSendLine_Code_M17()
     {
     	exe.setReturnFor_enableAllStepperMotors(true);
@@ -266,6 +274,14 @@ public class TestGCodeDecoder
     }
 
     @Test
+    public void testSendLine_Code_M105()
+    {
+    	exe.set_getCurrentExtruderTemperatureReturn("23.0");
+    	exe.set_getHeatedBedTemperatureReturn("50.1");
+    	assertEquals("T:23.0 B:50.1", dut.sendLine("M105", null));
+    }
+
+    @Test
     public void testSendLine_Code_M106()
     {
     	exe.setReturnFor_setFanSpeedfor(true);
@@ -325,6 +341,194 @@ public class TestGCodeDecoder
     	assertEquals(0xffff, exe.get_speed_set());
     }
 
+    @Test
+    public void testSendLine_Code_M107()
+    {
+    	exe.setReturnFor_setFanSpeedfor(true);
+    	assertEquals("ok", dut.sendLine("M107", null));
+    }
+
+    @Test
+    public void testSendLine_Code_M107_execFail()
+    {
+    	exe.setReturnFor_setFanSpeedfor(false);
+    	exe.setLastError("M107 failed");
+    	assertEquals("!! M107 failed", dut.sendLine("M107", null));
+    }
+
+
+    @Test
+    public void testSendLine_Code_M107_P()
+    {
+    	exe.setReturnFor_setFanSpeedfor(true);
+    	assertEquals("ok", dut.sendLine("M107 P2", null));
+    	assertEquals(2, exe.get_fan_set());
+    	assertEquals(0, exe.get_speed_set());
+    }
+
+    @Test
+    public void testSendLine_Code_M107_P_execFail()
+    {
+    	exe.setReturnFor_setFanSpeedfor(false);
+    	exe.setLastError("M107 failed");
+    	assertEquals("!! M107 failed", dut.sendLine("M107 P2", null));
+    	assertEquals(2, exe.get_fan_set());
+    	assertEquals(0, exe.get_speed_set());
+    }
+
+    @Test
+    public void testSendLine_Code_M109()
+    {
+    	exe.setReturnfor_setCurrentExtruderTemperatureAndDoWait(true);
+    	assertEquals("ok", dut.sendLine("M109 S220", null));
+    	assertEquals(null, exe.getExtruderDoWait_setResultStream());
+    	assertEquals(220, exe.getExtruderDoWait_setTemperature(), 0.0001);
+    }
+
+    @Test
+    public void testSendLine_Code_M109_execFail()
+    {
+    	exe.setReturnfor_setCurrentExtruderTemperatureAndDoWait(false);
+    	exe.setLastError("M109 failed");
+    	assertEquals("!! M109 failed", dut.sendLine("M109 S220", null));
+    	assertEquals(null, exe.getExtruderDoWait_setResultStream());
+    	assertEquals(220, exe.getExtruderDoWait_setTemperature(), 0.0001);
+    }
+
+    @Test
+    public void testSendLine_Code_M109_noParam()
+    {
+    	exe.setReturnfor_setCurrentExtruderTemperatureAndDoWait(true);
+    	String res = dut.sendLine("M109", null);
+    	assertTrue(null != res);
+    	assertTrue(res.startsWith("!!"));
+    }
+
+    @Test
+    public void testSendLine_Code_M112()
+    {
+    	exe.set_doImmediateShutDownReturn(true);
+    	assertEquals("ok", dut.sendLine("M112", null));
+    }
+
+    @Test
+    public void testSendLine_Code_M112_execFail()
+    {
+    	exe.set_doImmediateShutDownReturn(false);
+    	exe.setLastError("M112 failed");
+    	assertEquals("!! M112 failed", dut.sendLine("M112", null));
+    }
+
+    @Test
+    public void testSendLine_Code_M115()
+    {
+    	String res = dut.sendLine("M115", null);
+    	assertTrue(null != res);
+    	assertTrue(res.contains("FIRMWARE_NAME:"));
+    	assertTrue(res.contains("FIRMWARE_VERSION:"));
+    	assertTrue(res.contains("FIRMWARE_URL:"));
+    }
+
+    @Test
+    public void testSendLine_Code_M116()
+    {
+    	exe.set_waitForEverythingInLimitsReturn(true);
+    	assertEquals("ok", dut.sendLine("M116", null));
+    }
+
+    @Test
+    public void testSendLine_Code_M116_execFail()
+    {
+    	exe.set_waitForEverythingInLimitsReturn(false);
+    	exe.setLastError("M116 failed");
+    	assertEquals("!! M116 failed", dut.sendLine("M116", null));
+    }
+
+    @Test
+    public void testSendLine_Code_M117()
+    {
+    	assertEquals("ok", dut.sendLine("M117", null));
+    }
+
+    @Test
+    public void testSendLine_Code_M140()
+    {
+    	exe.set_setPrintBedTemperatureNoWaitReturn(true);
+    	assertEquals("ok", dut.sendLine("M140 S120", null));
+    	assertEquals(120, exe.get_PrintBedTemperatureNoWait_setTemperature(), 0.0001);
+    }
+
+    @Test
+    public void testSendLine_Code_M140_execFail()
+    {
+    	exe.set_setPrintBedTemperatureNoWaitReturn(false);
+    	exe.setLastError("M140 failed");
+    	assertEquals("!! M140 failed", dut.sendLine("M140 S120", null));
+    	assertEquals(120, exe.get_PrintBedTemperatureNoWait_setTemperature(), 0.0001);
+    }
+
+    @Test
+    public void testSendLine_Code_M140_noParam()
+    {
+    	exe.set_setPrintBedTemperatureNoWaitReturn(true);
+    	String res = dut.sendLine("M140", null);
+    	assertTrue(null != res);
+    	assertTrue(res.startsWith("!!"));
+    }
+
+    @Test
+    public void testSendLine_Code_M141()
+    {
+    	exe.set_setChamberTemperatureNoWaitReturn(true);
+    	assertEquals("ok", dut.sendLine("M141 S80", null));
+    	assertEquals(80, exe.get_setChamberTemperatureNoWait_setTemperature(), 0.0001);
+    }
+
+    @Test
+    public void testSendLine_Code_M141_execFail()
+    {
+    	exe.set_setChamberTemperatureNoWaitReturn(false);
+    	exe.setLastError("M141 failed");
+    	assertEquals("!! M141 failed", dut.sendLine("M141 S80", null));
+    	assertEquals(80, exe.get_setChamberTemperatureNoWait_setTemperature(), 0.0001);
+    }
+
+    @Test
+    public void testSendLine_Code_M141_noParam()
+    {
+    	exe.set_setChamberTemperatureNoWaitReturn(true);
+    	String res = dut.sendLine("M141", null);
+    	assertTrue(null != res);
+    	assertTrue(res.startsWith("!!"));
+    }
+
+    @Test
+    public void testSendLine_Code_M190()
+    {
+    	exe.set_setPrintBedTemperatureAndDoWaitReturn(true);
+    	assertEquals("ok", dut.sendLine("M190 S120", null));
+    	assertEquals(120, exe.get_setPrintBedTemperatureAndDoWait_setTemperature(), 0.0001);
+    	assertEquals(null, exe.get_setPrintBedTemperatureAndDoWait_setResultStream());
+    }
+
+    @Test
+    public void testSendLine_Code_M190_execFail()
+    {
+    	exe.set_setPrintBedTemperatureAndDoWaitReturn(false);
+    	exe.setLastError("M190 failed");
+    	assertEquals("!! M190 failed", dut.sendLine("M190 S120", null));
+    	assertEquals(120, exe.get_setPrintBedTemperatureAndDoWait_setTemperature(), 0.0001);
+    	assertEquals(null, exe.get_setPrintBedTemperatureAndDoWait_setResultStream());
+    }
+
+    @Test
+    public void testSendLine_Code_M190_noParam()
+    {
+    	exe.set_setPrintBedTemperatureAndDoWaitReturn(true);
+    	String res = dut.sendLine("M190", null);
+    	assertTrue(null != res);
+    	assertTrue(res.startsWith("!!"));
+    }
 
     // End of G-Codes
 

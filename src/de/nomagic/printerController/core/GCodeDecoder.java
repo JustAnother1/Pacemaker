@@ -393,6 +393,11 @@ public class GCodeDecoder
             }
 
         case 109: // Set Extruder Temperature and wait
+        	if(false == code.hasWord('S'))
+        	{
+        		lastErrorReason = "Parameter S missing";
+        		return RESULT_ERROR;
+        	}
             if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'), resultStream))
             {
                 return RESULT_ERROR;
@@ -480,12 +485,27 @@ public class GCodeDecoder
             return RESULT_VALUE;
 
         case 140: // set Bed Temperature - no wait
+        	if(false == code.hasWord('S'))
+        	{
+        		lastErrorReason = "Parameter S missing";
+        		return RESULT_ERROR;
+        	}
             if(false == exe.setPrintBedTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 141: // set chamber temperature - no wait
+        	if(false == code.hasWord('S'))
+        	{
+        		lastErrorReason = "Parameter S missing";
+        		return RESULT_ERROR;
+        	}
             if(false == exe.setChamberTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
 
         case 190: // set Bed Temperature - and do wait
+        	if(false == code.hasWord('S'))
+        	{
+        		lastErrorReason = "Parameter S missing";
+        		return RESULT_ERROR;
+        	}
             if(false == exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'), resultStream))
             {
                 return RESULT_ERROR;
@@ -494,6 +514,7 @@ public class GCodeDecoder
             {
                 return RESULT_OK;
             }
+
         case 303:
             Heater_enum ext = Heater_enum.Extruder_0;
             double extruder = code.getWordValue('E', 1.0);
