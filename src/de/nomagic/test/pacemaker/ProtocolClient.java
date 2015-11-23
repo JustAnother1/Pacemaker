@@ -19,6 +19,9 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.nomagic.printerController.Tool;
 import de.nomagic.printerController.pacemaker.Protocol;
 
@@ -29,6 +32,8 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class ProtocolClient
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     private static byte[] crc_array =
     {
         //       0           1           2           3           4           5           6           7           8           9           A           B           C           D           E           F
@@ -117,8 +122,8 @@ public class ProtocolClient
         }
         final int res =  0xff & getCRCfor(data,
                 length + Protocol.ORDER_POS_OF_START_OF_PARAMETER - 2);
-        System.out.println("calculating CRC for : " + Tool.fromByteBufferToHexString(data)
-                           + " -> " + String.format("%02X", res));
+        log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(data)
+                    + " -> " + String.format("%02X", res));
         return res;
     }
 
@@ -140,7 +145,7 @@ public class ProtocolClient
                     else
                     {
                         // bad bytes after frame
-                        System.err.println("Received a bad Byte !");
+                        log.error("Received a bad Byte !");
                         isSynced = false;
                     }
                 }
@@ -160,7 +165,7 @@ public class ProtocolClient
                     final int calculatedCheckSum = calculateChecksum(order, length, control, parameter);
                     if(checksum != calculatedCheckSum)
                     {
-                        System.err.println("BAD CRC ! (" +checksum + " - " + calculatedCheckSum + ") !" );
+                        log.error("BAD CRC ! (" +checksum + " - " + calculatedCheckSum + ") !" );
                         sendReply(Protocol.RESPONSE_FRAME_RECEIPT_ERROR, Protocol.RESPONSE_BAD_ERROR_CHECK_CODE);
                     }
                     else
@@ -224,7 +229,7 @@ public class ProtocolClient
                 break;
 
             case Protocol.ORDER_RESUME:
-                System.err.println("Order (Resume) not implemented in this state !");
+                log.error("Order (Resume) not implemented in this state !");
                 sendOK();
                 break;
 
@@ -265,17 +270,17 @@ public class ProtocolClient
                 break;
 
             case Protocol.ORDER_WRITE_FIRMWARE_CONFIGURATION:
-                System.err.println("Order (write Firmware Configuration) not implemented in this state !");
+                log.error("Order (write Firmware Configuration) not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_READ_FIRMWARE_CONFIGURATION:
-                System.err.println("Order (read Firmware Configuration) not implemented in this state !");
+                log.error("Order (read Firmware Configuration) not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_STOP_PRINT:
-                System.err.println("Order (stop print) not implemented in this state !");
+                log.error("Order (stop print) not implemented in this state !");
                 sendOK();
                 break;
 
@@ -315,17 +320,17 @@ public class ProtocolClient
 
                 // Event Reporting Extension
             case Protocol.ORDER_RETRIEVE_EVENTS:
-                System.err.println("Order (Retrieve Events) not implemented in this state !");
+                log.error("Order (Retrieve Events) not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_GET_NUMBER_EVENT_FORMAT_IDS:
-                System.err.println("Order (get Number Event Format IDs) not implemented in this state !");
+                log.error("Order (get Number Event Format IDs) not implemented in this state !");
                 sendOK();
                 break;
 
             case Protocol.ORDER_GET_EVENT_STRING_FORMAT_ID:
-                System.err.println("Order (get Event String Format ID) not implemented in this state !");
+                log.error("Order (get Event String Format ID) not implemented in this state !");
                 sendOK();
                 break;
 
@@ -370,7 +375,7 @@ public class ProtocolClient
 
             // New Orders go here
             default:
-                System.err.println("Received Invalid Order Code : " +  order);
+                log.error("Received Invalid Order Code : " +  order);
                 sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
                                Protocol.RESPONSE_UNKNOWN_ORDER);
             }
@@ -770,7 +775,7 @@ public class ProtocolClient
 
     private void sendCachedResponse() throws IOException
     {
-        System.out.println("sending cached Reply !");
+        log.info("sending cached Reply !");
         out.write(cachedResponse, 0, cachedResponseLength);
         out.flush();
     }
@@ -899,7 +904,7 @@ public class ProtocolClient
             response[Protocol.REPLY_POS_OF_CONTROL] = (byte)(Protocol.SEQUENCE_NUMBER_MASK & control);
         }
         response[cspos] = getCRCfor(response, cspos);
-        System.out.println("sending : " + Tool.fromByteBufferToHexString(response, bytesToSend));
+        log.trace("sending : " + Tool.fromByteBufferToHexString(response, bytesToSend));
         out.write(response, 0, bytesToSend);
         out.flush();
         cachedResponse = response;

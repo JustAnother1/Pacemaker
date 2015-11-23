@@ -16,6 +16,9 @@ package de.nomagic.test.pacemaker;
 
 import java.util.LinkedList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -23,6 +26,8 @@ import java.util.LinkedList;
  */
 public class CommandQueue
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     public static final int totalSlots = 500;
     private int executedSlots = 0;
     private LinkedList<Slot> queue = new LinkedList<Slot>();
@@ -38,7 +43,17 @@ public class CommandQueue
                 {
                     for(;;)
                     {
-                        remove();
+                    	Slot theSlot;
+                        theSlot = remove();
+                        if(null != theSlot)
+                        {
+                        	if(theSlot instanceof BasicLinearMoveSlot)
+                        	{
+                        		log.info(theSlot.toString());
+                        		BasicLinearMoveSlot move = (BasicLinearMoveSlot) theSlot;
+                        		log.info(move.getCartesianMove());
+                        	}
+                        }
                         sleep(500);
                     }
                 }
@@ -47,6 +62,7 @@ public class CommandQueue
                 }
             }
         };
+        worker.start();
     }
 
     public byte[] clear()
@@ -59,7 +75,7 @@ public class CommandQueue
     {
         if(2 > ParameterLength)
         {
-            System.err.println("ERROR: Parameter to short !");
+            log.error("ERROR: Parameter to short !");
         }
         int usedBytes = 0;
         do
@@ -68,10 +84,10 @@ public class CommandQueue
             final int type = parameter[1 + usedBytes];
             if(0 == length)
             {
-                System.err.println("ERROR: invalid length !");
+                log.error("ERROR: invalid length !");
                 break;
             }
-            System.out.println("Found Block of Type " + type + " and length " + length);
+            log.trace("Found Block of Type " + type + " and length " + length);
             if(length + usedBytes < ParameterLength)
             {
                 final int[] slotData = new int[length -1];
@@ -80,13 +96,13 @@ public class CommandQueue
                                  length -1);
                 final Slot theSlot = SlotFactory.getSlot(type, slotData);
                 validate(theSlot);
-                System.out.println("adding : " + theSlot);
+                log.trace("adding : " + theSlot);
                 queue.add(theSlot);
                 usedBytes = usedBytes + length + 1;
             }
             else
             {
-                System.err.println("ERROR: invalid Data !");
+                log.error("ERROR: invalid Data !");
                 break;
             }
         } while((usedBytes + 2) < ParameterLength);
@@ -97,7 +113,7 @@ public class CommandQueue
     {
         if(null == theSlot)
         {
-            System.err.println("ERROR: invalid Data !");
+            log.error("ERROR: invalid Data !");
             return;
         }
         if(theSlot instanceof BasicLinearMoveSlot)

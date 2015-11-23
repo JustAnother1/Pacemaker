@@ -14,6 +14,10 @@
  */
 package de.nomagic.test.pacemaker;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import de.nomagic.printerController.Tool;
 
 /**
  * @author Lars P&ouml;tter
@@ -22,17 +26,35 @@ package de.nomagic.test.pacemaker;
  */
 public class BasicLinearMoveSlot extends Slot
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     private int decelerationSteps;
     private int nominalSpeed;
     private int endSpeed;
     private int accelerationSteps;
     private int primaryAxis;
-    private int StepsOnPrimaryAxis;
+    private int[] StepsOn = new int[16];
+
+    private double Xmm;
+    private double Ymm;
+    private double Zmm;
+
+    private int[] rawData = new int[300];
+    private int rawDataLength;
+
+    private boolean isHomingMove = true;
+
+    // TODO cfg is hardwired
 
     public BasicLinearMoveSlot(int[] data)
     {
         typeDescription = "basic linear move";
-        dataDescription = parseBasicLinearMove(data);
+        if(null != data)
+        {
+        	System.arraycopy( data, 0, rawData, 0, data.length );
+        	rawDataLength = data.length;
+            dataDescription = parseBasicLinearMove(data);
+        }
     }
 
     private String parseBasicLinearMove(int[] data)
@@ -84,10 +106,12 @@ public class BasicLinearMoveSlot extends Slot
         if(0 == (0x10 & data[nextByte]))
         {
             // normal move
+        	isHomingMove = false;
         }
         else
         {
             // homing move
+        	isHomingMove = true;
             res.append(" homing");
         }
         nextByte++;
@@ -136,18 +160,16 @@ public class BasicLinearMoveSlot extends Slot
                     StepsOnAxis = (0xff & data[nextByte]);
                     nextByte ++;
                 }
-                if(primaryAxis == i)
-                {
-                    StepsOnPrimaryAxis = StepsOnAxis;
-                }
                 res.append("(" + StepsOnAxis + " Steps on Axis " + i);
                 if(pattern == (AxisDirection & pattern))
                 {
                     res.append(" direction increasing)");
+                    StepsOn[i] = StepsOnAxis;
                 }
                 else
                 {
                     res.append(" direction decreasing)");
+                    StepsOn[i] = 0 - StepsOnAxis;
                 }
             }
             // else this axis is not selected
@@ -159,17 +181,50 @@ public class BasicLinearMoveSlot extends Slot
     {
         if(nominalSpeed > endSpeed)
         {
-            System.err.println("ERROR: nominal Speed lower than end Speed !"
+            log.error("ERROR: nominal Speed lower than end Speed !"
                     + " (nominal = " + nominalSpeed + ", end speed = " + endSpeed + ")");
         }
-        if(StepsOnPrimaryAxis < (accelerationSteps + decelerationSteps))
+        if(StepsOn[primaryAxis] < (accelerationSteps + decelerationSteps))
         {
-            System.err.println("ERROR: Step Numbers wrong !"
+            log.error("ERROR: Step Numbers wrong !"
                     + " (acceleration = " + accelerationSteps
                     + ", deceleration = " + decelerationSteps
-                    + ", steps on primary Axis = " + StepsOnPrimaryAxis + ")");
+                    + ", steps on primary Axis = " + StepsOn[primaryAxis] + ")");
         }
         // TOD add further checks
     }
+
+	public String getCartesianMove()
+	{
+		Xmm = StepsOn[0] / 80;
+		Ymm = StepsOn[1] / 80;
+		Zmm = StepsOn[2] / 4000;
+
+		StringBuilder sb = new StringBuilder();
+		if(true == isHomingMove)
+		{
+			sb.append("Homing: ");
+		}
+		sb.append("Move X = ");
+		sb.append(Xmm);
+		sb.append("mm, Y = ");
+		sb.append(Ymm);
+		sb.append("mm, Z = ");
+		sb.append(Zmm);
+		sb.append("mm\n");
+
+		sb.append("decelerationSteps : " + decelerationSteps + "\n");
+		sb.append("nominalSpeed : " + nominalSpeed + "\n");
+		sb.append("endSpeed : " + endSpeed + "\n");
+		sb.append("accelerationSteps : " + accelerationSteps + "\n");
+		sb.append("primaryAxis : " + primaryAxis + "\n");
+		sb.append("StepsOn[0] : " + StepsOn[0] + "\n");
+		sb.append("StepsOn[1] : " + StepsOn[1] + "\n");
+		sb.append("StepsOn[2] : " + StepsOn[2] + "\n");
+		sb.append("StepsOn[3] : " + StepsOn[3] + "\n");
+		sb.append("Length of raw data : " + rawDataLength + "\n");
+		sb.append(Tool.fromByteBufferToHexString(rawData, rawDataLength, 0));
+		return sb.toString();
+	}
 
 }

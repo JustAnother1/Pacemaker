@@ -14,6 +14,9 @@
  */
 package de.nomagic.test.pacemaker;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import de.nomagic.printerController.Tool;
 import de.nomagic.printerController.pacemaker.Protocol;
 
@@ -23,6 +26,8 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class Slot
 {
+    private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+
     protected String dataDescription;
     protected String typeDescription;
     private int type;
@@ -103,7 +108,7 @@ public class Slot
             break;
 
         default:
-            System.err.println("ERROR: invalid(" + type + ") !");
+            log.error("ERROR: invalid(" + type + ") !");
             break;
         }
     }
