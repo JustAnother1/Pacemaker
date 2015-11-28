@@ -54,7 +54,6 @@ public class BasicLinearMove
     private HashMap<Integer, Integer> StepsOnAxis = new HashMap<Integer, Integer>();
     private HashMap<Integer, Integer> MaxSpeedStepsPerSecondOnAxis = new HashMap<Integer, Integer>();
     private HashMap<Integer, Boolean> AxisDirectionIncreasing = new HashMap<Integer, Boolean>();
-    private int NumBytesNeeededForSteps = 1;
     private int primaryAxis = -1;
     private int StepsOnPrimaryAxis = -1;
     private double PrimaryAxisStepsPerMm = 1;
@@ -78,6 +77,8 @@ public class BasicLinearMove
     private boolean JerkIsSet = false;
 
     private int myId;
+
+    private int numParts = 1;
 
     public BasicLinearMove(int MaxPossibleClientSpeedStepsPerSecond)
     {
@@ -136,6 +137,11 @@ public class BasicLinearMove
         return isHoming;
     }
 
+    public void splitTo(int parts)
+    {
+        numParts = parts;
+    }
+
     public int getNumberOfActiveSteppers()
     {
         return activeAxises.size();
@@ -144,6 +150,22 @@ public class BasicLinearMove
     public int getHighestStepperNumber()
     {
         return maxStepperNumber;
+    }
+
+    public int getStepsOnActiveStepper(int i, int curPart)
+    {
+        int allSteps = getStepsOnActiveStepper(i);
+        int stepsPerPart = allSteps/numParts;
+        if(curPart < (numParts -1))
+        {
+            return stepsPerPart;
+        }
+        else
+        {
+            // last part
+            // fix rounding
+            return allSteps - ((numParts -1) * stepsPerPart);
+        }
     }
 
     public int getStepsOnActiveStepper(int i)
@@ -156,11 +178,6 @@ public class BasicLinearMove
         {
             return 0;
         }
-    }
-
-    public int getBytesPerStep()
-    {
-        return NumBytesNeeededForSteps;
     }
 
     public int getPrimaryAxis()
@@ -224,23 +241,6 @@ public class BasicLinearMove
             return 0;
         }
         hasMovement = true;
-        if(255 < Math.abs(steps))
-        {
-            log.debug("ID{}: we will need 2 bytes for steps", myId);
-            NumBytesNeeededForSteps = 2;
-        }
-        if(65535 < Math.abs(steps))
-        {
-            // TODO We need to split this move into more than one move
-            if(steps < 0)
-            {
-                steps = -65535;
-            }
-            else
-            {
-                steps = 65535;
-            }
-        }
         if(StepsOnPrimaryAxis < Math.abs(steps))
         {
             StepsOnPrimaryAxis = Math.abs(steps);
@@ -305,6 +305,26 @@ public class BasicLinearMove
         return DirectionMap;
     }
 
+    public int getTravelSpeedFraction(int curPart)
+    {
+        int curPartAccelSteps= getAccelerationSteps(curPart);
+        if(0 == curPartAccelSteps)
+        {
+            // Acceleration is finished
+            return getTravelSpeedFraction();
+        }
+        else if(AccelerationSteps == curPartAccelSteps)
+        {
+            // complete acceleration in this part so travel speed is the same
+            return getTravelSpeedFraction();
+        }
+        else
+        {
+            // this part does only a part of the acceleration.
+            return getTravelSpeedFraction() * (curPartAccelSteps/AccelerationSteps);
+        }
+    }
+
     public int getTravelSpeedFraction()
     {
         int fraction = (int)((travelSpeedMms * PrimaryAxisStepsPerMm * 255)
@@ -349,6 +369,27 @@ public class BasicLinearMove
         }
     }
 
+    public int getEndSpeedFraction(int curPart)
+    {
+        int decelStepsInThisPart = getDecelerationSteps(curPart);
+        if(0 == decelStepsInThisPart)
+        {
+            // no breaking so end speed is travel speed
+            return getTravelSpeedFraction(curPart);
+        }
+        else if(DecelerationSteps == decelStepsInThisPart)
+        {
+            // all breaking in this part
+            return getEndSpeedFraction();
+        }
+        else
+        {
+            // only part of the breaking in this part
+            return getEndSpeedFraction() * (decelStepsInThisPart/DecelerationSteps);
+        }
+    }
+
+
     public int getEndSpeedFraction()
     {
         final int fraction =  (int)((endSpeedMms * PrimaryAxisStepsPerMm * 255)
@@ -367,9 +408,41 @@ public class BasicLinearMove
         DecelerationSteps = steps;
     }
 
+    public int getAccelerationSteps(int curPart)
+    {
+        int primaryStepsPerPart = StepsOnPrimaryAxis / numParts;
+        int stepsInThisPhase = AccelerationSteps - (curPart * primaryStepsPerPart);
+        if(1 > stepsInThisPhase)
+        {
+            return 0;
+        }
+        else if(primaryStepsPerPart > stepsInThisPhase)
+        {
+            return primaryStepsPerPart;
+        }
+        else
+        {
+            return stepsInThisPhase;
+        }
+    }
+
     public int getAccelerationSteps()
     {
         return AccelerationSteps;
+    }
+
+    public int getDecelerationSteps(int curPart)
+    {
+        int primaryStepsPerPart = StepsOnPrimaryAxis / numParts;
+        int stepsInThisPhase =  DecelerationSteps - ((numParts-(curPart + 1)) * primaryStepsPerPart);
+        if(1 > stepsInThisPhase)
+        {
+            return 0;
+        }
+        else
+        {
+            return stepsInThisPhase;
+        }
     }
 
     public int getDecelerationSteps()

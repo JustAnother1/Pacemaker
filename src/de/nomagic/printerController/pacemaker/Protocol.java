@@ -232,6 +232,7 @@ public class Protocol implements EventSource
     private volatile int hostTimeout = 2;
     private final TimeoutHandler timeout;
     private int timeoutId;
+    private byte[] movementCommand;
 
     public Protocol(ClientConnection Client, TimeoutHandler timeout)
     {
@@ -248,16 +249,16 @@ public class Protocol implements EventSource
         this.timeout = timeout;
         if(null != timeout)
         {
-	        final Event e = new Event(Action_enum.timeOut, null, this);
-	        timeoutId = timeout.createTimeout(e, hostTimeout/2 * 1000);
-	        if(TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT == timeoutId)
-	        {
-	            log.error("No Timeout available - can not send Keep Alives to Client!");
-	        }
-	        else
-	        {
-	            timeout.startTimeout(timeoutId);
-	        }
+            final Event e = new Event(Action_enum.timeOut, null, this);
+            timeoutId = timeout.createTimeout(e, hostTimeout/2 * 1000);
+            if(TimeoutHandler.ERROR_FAILED_TO_CREATE_TIMEOUT == timeoutId)
+            {
+                log.error("No Timeout available - can not send Keep Alives to Client!");
+            }
+            else
+            {
+                timeout.startTimeout(timeoutId);
+            }
         }
     }
 
@@ -1079,6 +1080,121 @@ public class Protocol implements EventSource
         }
     }
 
+    private void fillTopPartForUpTo8Axis(BasicLinearMove aMove, int BytesPerStep, int curPart)
+    {
+        movementCommand = new byte[7 + (BytesPerStep * (2 + aMove.getNumberOfActiveSteppers()))];
+        movementCommand[0] = (byte)(0xff & movementCommand.length - 1); // Length
+        movementCommand[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
+        // active Steppers
+        movementCommand[2] = (byte)aMove.getActiveSteppersMap();
+        // Byte per steps
+        if(1 == BytesPerStep)
+        {
+            movementCommand[3] = 0;
+        }
+        else
+        {
+            movementCommand[3] = (byte) 0x80;
+        }
+        // directions
+        movementCommand[3] =  (byte)(movementCommand[3] | (0x7f & aMove.getDirectionMap()));
+        // Homing
+        if(true == aMove.isHomingMove())
+        {
+            movementCommand[4] = 0x10;
+        }
+        // Primary Axis
+        movementCommand[4] =(byte)(movementCommand[4] | (0x0f & aMove.getPrimaryAxis()));
+        // Nominal Speed
+        movementCommand[5] = (byte)(0xff & aMove.getTravelSpeedFraction(curPart));
+        // end Speed
+        movementCommand[6] = (byte)(0xff & aMove.getEndSpeedFraction(curPart));
+    }
+
+    private void fillTopPartForUpTo16Axis(BasicLinearMove aMove, int BytesPerStep, int curPart)
+    {
+        movementCommand = new byte[9 + (BytesPerStep * (2 + aMove.getNumberOfActiveSteppers()))];
+        movementCommand[0] = (byte)(0xff & movementCommand.length - 1); // Length
+        movementCommand[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
+        // Active Steppers
+        final int ActiveSteppersMap =  aMove.getActiveSteppersMap();
+        movementCommand[3] = (byte)(0xff & ActiveSteppersMap);
+        movementCommand[2] = (byte)(0x80 | (0x7f & (ActiveSteppersMap >> 8)));
+        // Byte per steps
+        if(1 == BytesPerStep)
+        {
+            movementCommand[4] = 0;
+        }
+        else
+        {
+            movementCommand[4] = (byte) 0x80;
+        }
+        // directions
+        final int DirectionMap = aMove.getDirectionMap();
+        movementCommand[5] =  (byte)(0xff & DirectionMap);
+        movementCommand[4] =  (byte)(movementCommand[4] | (0x7f & (DirectionMap>>8)));
+        // Homing
+        if(true == aMove.isHomingMove())
+        {
+            movementCommand[6] = 0x10;
+        }
+        // Primary Axis
+        movementCommand[6] =(byte)(movementCommand[6] | (0x0f & aMove.getPrimaryAxis()));
+        // Nominal Speed
+        movementCommand[7] = (byte)(0xff & aMove.getTravelSpeedFraction(curPart));
+        // end Speed
+        movementCommand[8] = (byte)(0xff & aMove.getEndSpeedFraction(curPart));
+    }
+
+    private void fillBottomPartUsingOneByteForSteps(BasicLinearMove aMove, int offset, int curPart)
+    {
+        movementCommand[offset    ] = (byte)(0xff & aMove.getAccelerationSteps(curPart));
+        movementCommand[offset + 1] = (byte)(0xff & aMove.getDecelerationSteps(curPart));
+        final int numStepperToGo = aMove.getNumberOfActiveSteppers();
+        int stepperfound = 0;
+        // highest Stepper Number can be 0 -> then we still have one stepper
+        for(int i = 0; i < aMove.getHighestStepperNumber() + 1; i++)
+        {
+            final int steps = aMove.getStepsOnActiveStepper(i, curPart);
+            if(0 != steps)
+            {
+                movementCommand[offset + 2 + stepperfound] = (byte)(0xff & steps);
+                stepperfound ++;
+                if(stepperfound == numStepperToGo)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+    private void fillBottomPartUsingTwoByteForSteps(BasicLinearMove aMove, int offset, int curPart)
+    {
+        final int accellerationSteps = aMove.getAccelerationSteps(curPart);
+        final int DecellerationSteps = aMove.getDecelerationSteps(curPart);
+        movementCommand[offset    ] = (byte)(0xff & (accellerationSteps>>8));
+        movementCommand[offset + 1] = (byte)(0xff & accellerationSteps);
+        movementCommand[offset + 2] = (byte)(0xff & (DecellerationSteps>>8));
+        movementCommand[offset + 3] = (byte)(0xff & DecellerationSteps);
+        final int numStepperToGo = aMove.getNumberOfActiveSteppers();
+        int stepperfound = 0;
+        // highest Stepper Number can be 0 -> then we still have one stepper
+        for(int i = 0; i < aMove.getHighestStepperNumber() + 1; i++)
+        {
+            final int steps = aMove.getStepsOnActiveStepper(i, curPart);
+            if(0 != steps)
+            {
+                movementCommand[offset + 4 + stepperfound*2] = (byte)(0xff & (steps>>8));
+                movementCommand[offset + 5 + stepperfound*2] = (byte)(0xff & steps);
+                stepperfound ++;
+                if(stepperfound == numStepperToGo)
+                {
+                    break;
+                }
+            }
+        }
+    }
+
     public boolean addBasicLinearMove(BasicLinearMove aMove)
     {
         if(   (false == di.hasExtensionQueuedCommand())
@@ -1094,142 +1210,65 @@ public class Protocol implements EventSource
             return true;
         }
         log.trace("Sending move {}", aMove.getId());
-        // Prepare data
-        final byte[] param;
-        int steppsStart;
-        if(aMove.getNumberOfActiveSteppers() < 7)
+
+        // check if we need to break the move into many small moves
+        int maxSteps = aMove.getStepsOnActiveStepper(aMove.getPrimaryAxis());
+        int parts = (maxSteps/65535) + 1; // 0..65534 = 1; 65535.. 131069 =2; ...
+        int maxStepPerPart = (maxSteps / parts) + 1;
+        aMove.splitTo(parts);
+
+        for(int curPart = 0; curPart < parts; curPart ++)
         {
-            // 1 byte Axis selection mode
-            param = new byte[7 + (aMove.getBytesPerStep() * (2 + aMove.getNumberOfActiveSteppers()))];
-            param[0] = (byte)(0xff & param.length - 1); // Length
-            param[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
-            // active Steppers
-            param[2] = (byte)aMove.getActiveSteppersMap();
-            // Byte per steps
-            if(1 == aMove.getBytesPerStep())
+            // Prepare data
+            int steppsStart;
+            if(aMove.getNumberOfActiveSteppers() < 7)
             {
-                param[3] = 0;
+                // 1 byte Axis selection mode
+                if(255 > maxStepPerPart)
+                {
+                    fillTopPartForUpTo8Axis(aMove, 1, curPart);
+                }
+                else
+                {
+                    fillTopPartForUpTo8Axis(aMove, 2, curPart);
+                }
+                steppsStart = 7;
+            }
+            else if(aMove.getNumberOfActiveSteppers() < 15)
+            {
+                // 2 byte Axis selection mode
+                if(255 > maxStepPerPart)
+                {
+                    fillTopPartForUpTo16Axis(aMove, 1, curPart);
+                }
+                else
+                {
+                    fillTopPartForUpTo16Axis(aMove, 2, curPart);
+                }
+                steppsStart = 9;
             }
             else
             {
-                param[3] = (byte) 0x80;
+                lastErrorReason = "Too Many Steppers - Can only handle 15 !";
+                log.error(lastErrorReason);
+                return false;
             }
-            // directions
-            param[3] =  (byte)(param[3] | (0x7f & aMove.getDirectionMap()));
-            // Homing
-            if(true == aMove.isHomingMove())
+            // Add Steps
+            if(1 ==maxStepPerPart)
             {
-                param[4] = 0x10;
-            }
-            // Primary Axis
-            param[4] =(byte)(param[4] | (0x0f & aMove.getPrimaryAxis()));
-            // Nominal Speed
-            param[5] = (byte)(0xff & aMove.getTravelSpeedFraction());
-            // end Speed
-            param[6] = (byte)(0xff & aMove.getEndSpeedFraction());
-            steppsStart = 7;
-        }
-        else if(aMove.getNumberOfActiveSteppers() < 15)
-        {
-            // 2 byte Axis selection mode
-            param = new byte[9 + (aMove.getBytesPerStep() * (2 + aMove.getNumberOfActiveSteppers()))];
-            param[0] = (byte)(0xff & param.length - 1); // Length
-            param[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
-            // Active Steppers
-            final int ActiveSteppersMap =  aMove.getActiveSteppersMap();
-            param[3] = (byte)(0xff & ActiveSteppersMap);
-            param[2] = (byte)(0x80 | (0x7f & (ActiveSteppersMap >> 8)));
-            // Byte per steps
-            if(1 == aMove.getBytesPerStep())
-            {
-                param[4] = 0;
+                fillBottomPartUsingOneByteForSteps(aMove, steppsStart, curPart);
             }
             else
             {
-                param[4] = (byte) 0x80;
+                fillBottomPartUsingTwoByteForSteps(aMove, steppsStart, curPart);
             }
-            // directions
-            final int DirectionMap = aMove.getDirectionMap();
-            param[5] =  (byte)(0xff & DirectionMap);
-            param[4] =  (byte)(param[4] | (0x7f & (DirectionMap>>8)));
-            // Homing
-            if(true == aMove.isHomingMove())
+            // Send the data
+            if(false == enqueueCommandBlocking(movementCommand))
             {
-                param[6] = 0x10;
-            }
-            // Primary Axis
-            param[6] =(byte)(param[6] | (0x0f & aMove.getPrimaryAxis()));
-            // Nominal Speed
-            param[7] = (byte)(0xff & aMove.getTravelSpeedFraction());
-            // end Speed
-            param[8] = (byte)(0xff & aMove.getEndSpeedFraction());
-            steppsStart = 9;
-        }
-        else
-        {
-            lastErrorReason = "Too Many Steppers - Can only handle 15 !";
-            log.error(lastErrorReason);
-            return false;
-        }
-        // Add Steps
-        if(1 == aMove.getBytesPerStep())
-        {
-            param[steppsStart    ] = (byte)(0xff & aMove.getAccelerationSteps());
-            param[steppsStart + 1] = (byte)(0xff & aMove.getDecelerationSteps());
-            final int numStepperToGo = aMove.getNumberOfActiveSteppers();
-            int stepperfound = 0;
-            // highest Stepper Number can be 0 -> then we still have one stepper
-            for(int i = 0; i < aMove.getHighestStepperNumber() + 1; i++)
-            {
-                final int steps = aMove.getStepsOnActiveStepper(i);
-                if(0 != steps)
-                {
-                    param[steppsStart + 2 + stepperfound] = (byte)(0xff & steps);
-                    stepperfound ++;
-                    if(stepperfound == numStepperToGo)
-                    {
-                        break;
-                    }
-                }
+                return false;
             }
         }
-        else
-        {
-            // 2 bytes
-            final int accellerationSteps = aMove.getAccelerationSteps();
-            final int DecellerationSteps = aMove.getDecelerationSteps();
-            param[steppsStart    ] = (byte)(0xff & (accellerationSteps>>8));
-            param[steppsStart + 1] = (byte)(0xff & accellerationSteps);
-            param[steppsStart + 2] = (byte)(0xff & (DecellerationSteps>>8));
-            param[steppsStart + 3] = (byte)(0xff & DecellerationSteps);
-            final int numStepperToGo = aMove.getNumberOfActiveSteppers();
-            int stepperfound = 0;
-            // highest Stepper Number can be 0 -> then we still have one stepper
-            for(int i = 0; i < aMove.getHighestStepperNumber() + 1; i++)
-            {
-                final int steps = aMove.getStepsOnActiveStepper(i);
-                if(0 != steps)
-                {
-                    param[steppsStart + 4 + stepperfound*2] = (byte)(0xff & (steps>>8));
-                    param[steppsStart + 5 + stepperfound*2] = (byte)(0xff & steps);
-                    stepperfound ++;
-                    if(stepperfound == numStepperToGo)
-                    {
-                        break;
-                    }
-                }
-            }
-        }
-        // Send the data
-        if(RESULT_ERROR == enqueueCommand(param))
-        {
-            return false;
-        }
-        else
-        {
-            // success or try again later and data queued
-            return true;
-        }
+        return true;
     }
 
     public boolean addSetActiveToolHeadToQueue(final int activeToolHead)
