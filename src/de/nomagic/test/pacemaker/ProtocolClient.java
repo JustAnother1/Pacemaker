@@ -386,6 +386,22 @@ public class ProtocolClient
     {
         if(true == StepperControlActive)
         {
+        	int offset = 2;
+        	for(int i = 0; i <length - offset; i = i+2)
+        	{
+        		if(0 == parameter[i+1])
+        		{
+        			log.info("Disabling Input Switch {} !", parameter[i]);
+        		}
+        		else if(1 == parameter[i+1])
+        		{
+        			log.info("Enabling Input Switch {} !", parameter[i]);
+        		}
+        		else
+        		{
+        			log.error("Invalid enabled State of {} for input switch {} !", parameter[i+1], parameter[i]);
+        		}
+        	}
             sendOK();
         }
         else

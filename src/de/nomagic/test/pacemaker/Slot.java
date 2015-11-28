@@ -88,7 +88,7 @@ public class Slot
         return "Slot [" + typeDescription + " : " + dataDescription + "]";
     }
 
-    public void validate()
+    public void validate(PrinterState curState)
     {
         switch(type)
         {

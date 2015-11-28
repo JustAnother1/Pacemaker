@@ -31,8 +31,8 @@ public class CommandQueue
     public static final int totalSlots = 500;
     private int executedSlots = 0;
     private LinkedList<Slot> queue = new LinkedList<Slot>();
-    @SuppressWarnings("unused")
     private Thread worker;
+    private PrinterState curState = new PrinterState();
 
     public CommandQueue()
     {
@@ -47,12 +47,14 @@ public class CommandQueue
                         theSlot = remove();
                         if(null != theSlot)
                         {
+                        	/*
                         	if(theSlot instanceof BasicLinearMoveSlot)
                         	{
                         		log.info(theSlot.toString());
                         		BasicLinearMoveSlot move = (BasicLinearMoveSlot) theSlot;
                         		log.info(move.getCartesianMove());
                         	}
+                        	*/
                         }
                         sleep(500);
                     }
@@ -98,6 +100,12 @@ public class CommandQueue
                 validate(theSlot);
                 log.trace("adding : " + theSlot);
                 queue.add(theSlot);
+            	if(theSlot instanceof BasicLinearMoveSlot)
+            	{
+            		log.info(theSlot.toString());
+            		BasicLinearMoveSlot move = (BasicLinearMoveSlot) theSlot;
+            		log.info(move.getCartesianMove(curState));
+            	}
                 usedBytes = usedBytes + length + 1;
             }
             else
@@ -116,14 +124,7 @@ public class CommandQueue
             log.error("ERROR: invalid Data !");
             return;
         }
-        if(theSlot instanceof BasicLinearMoveSlot)
-        {
-
-        }
-        else
-        {
-            theSlot.validate();
-        }
+        theSlot.validate(curState);
     }
 
     public Slot remove()

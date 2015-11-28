@@ -38,13 +38,12 @@ public class BasicLinearMoveSlot extends Slot
     private double Xmm;
     private double Ymm;
     private double Zmm;
+    private double Emm;
 
     private int[] rawData = new int[300];
     private int rawDataLength;
 
     private boolean isHomingMove = true;
-
-    // TODO cfg is hardwired
 
     public BasicLinearMoveSlot(int[] data)
     {
@@ -177,29 +176,49 @@ public class BasicLinearMoveSlot extends Slot
         return res.toString();
     }
 
-    public void validate()
+    @Override
+    public void validate(PrinterState curState)
     {
-        if(nominalSpeed > endSpeed)
+        if(nominalSpeed < endSpeed)
         {
             log.error("ERROR: nominal Speed lower than end Speed !"
                     + " (nominal = " + nominalSpeed + ", end speed = " + endSpeed + ")");
         }
-        if(StepsOn[primaryAxis] < (accelerationSteps + decelerationSteps))
+        if(Math.abs(StepsOn[primaryAxis]) < (Math.abs(accelerationSteps) + Math.abs(decelerationSteps)))
         {
             log.error("ERROR: Step Numbers wrong !"
                     + " (acceleration = " + accelerationSteps
                     + ", deceleration = " + decelerationSteps
                     + ", steps on primary Axis = " + StepsOn[primaryAxis] + ")");
         }
-        // TOD add further checks
+        for(int i = 0; i < 4; i++)
+        {
+        	int speed = curState.getSpeedOn(i);
+        	if(speed != nominalSpeed)
+        	{
+        		log.info("{} : changing speed from {} to {} in {} Steps !",
+        				  i,                     speed, nominalSpeed, accelerationSteps);
+        	}
+        	if(endSpeed != nominalSpeed)
+        	{
+        		log.info("{} : changing speed from {} to {} in {} Steps !",
+        				  i,                     nominalSpeed, endSpeed, decelerationSteps);
+        	}
+        	curState.setSpeed(i, endSpeed);
+        }
+        // TODO add further checks
     }
 
-	public String getCartesianMove()
+	public String getCartesianMove(PrinterState curState)
 	{
-		Xmm = StepsOn[0] / 80;
-		Ymm = StepsOn[1] / 80;
-		Zmm = StepsOn[2] / 4000;
+		Xmm = StepsOn[0] / curState.getStepsPerMmFor(0);
+		Ymm = StepsOn[1] / curState.getStepsPerMmFor(1);
+		Zmm = StepsOn[2] / curState.getStepsPerMmFor(2);
+		Emm = StepsOn[3] / curState.getStepsPerMmFor(3);
 
+		log.info("Move X = " + Xmm + "mm, Y = " + Ymm + "mm, Z = " + Zmm + "mm, E = " + Emm + "mm");
+		
+		
 		StringBuilder sb = new StringBuilder();
 		if(true == isHomingMove)
 		{
@@ -211,6 +230,8 @@ public class BasicLinearMoveSlot extends Slot
 		sb.append(Ymm);
 		sb.append("mm, Z = ");
 		sb.append(Zmm);
+		sb.append("mm, E = ");
+		sb.append(Emm);
 		sb.append("mm\n");
 
 		sb.append("decelerationSteps : " + decelerationSteps + "\n");
@@ -218,10 +239,10 @@ public class BasicLinearMoveSlot extends Slot
 		sb.append("endSpeed : " + endSpeed + "\n");
 		sb.append("accelerationSteps : " + accelerationSteps + "\n");
 		sb.append("primaryAxis : " + primaryAxis + "\n");
-		sb.append("StepsOn[0] : " + StepsOn[0] + "\n");
-		sb.append("StepsOn[1] : " + StepsOn[1] + "\n");
-		sb.append("StepsOn[2] : " + StepsOn[2] + "\n");
-		sb.append("StepsOn[3] : " + StepsOn[3] + "\n");
+		sb.append("StepsOn[0] : (X)" + StepsOn[0] + "\n");
+		sb.append("StepsOn[1] : (Y)" + StepsOn[1] + "\n");
+		sb.append("StepsOn[2] : (Z)" + StepsOn[2] + "\n");
+		sb.append("StepsOn[3] : (E)" + StepsOn[3] + "\n");
 		sb.append("Length of raw data : " + rawDataLength + "\n");
 		sb.append(Tool.fromByteBufferToHexString(rawData, rawDataLength, 0));
 		return sb.toString();
