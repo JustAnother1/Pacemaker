@@ -1390,6 +1390,7 @@ public class Protocol implements EventSource
                     log.error("Description : " + r.getParameterAsString(9));
                 }
                 log.error("Send Data: {} !", Tool.fromByteBufferToHexString(param, length));
+                log.error("Send Data: {} !", parseQueueBlock(param, length ,0));
                 log.error("Received : {} !", Tool.fromByteBufferToHexString(response));
                 return RESULT_ERROR;
             }
