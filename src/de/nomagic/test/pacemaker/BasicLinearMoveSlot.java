@@ -239,10 +239,10 @@ public class BasicLinearMoveSlot extends Slot
 		sb.append("endSpeed : " + endSpeed + "\n");
 		sb.append("accelerationSteps : " + accelerationSteps + "\n");
 		sb.append("primaryAxis : " + primaryAxis + "\n");
-		sb.append("StepsOn[0] : (X)" + StepsOn[0] + "\n");
-		sb.append("StepsOn[1] : (Y)" + StepsOn[1] + "\n");
-		sb.append("StepsOn[2] : (Z)" + StepsOn[2] + "\n");
-		sb.append("StepsOn[3] : (E)" + StepsOn[3] + "\n");
+		sb.append("StepsOn[0] (X) : " + StepsOn[0] + "\n");
+		sb.append("StepsOn[1] (Y) : " + StepsOn[1] + "\n");
+		sb.append("StepsOn[2] (Z) : " + StepsOn[2] + "\n");
+		sb.append("StepsOn[3] (E) : " + StepsOn[3] + "\n");
 		sb.append("Length of raw data : " + rawDataLength + "\n");
 		sb.append(Tool.fromByteBufferToHexString(rawData, rawDataLength, 0));
 		return sb.toString();

@@ -416,7 +416,7 @@ public class BasicLinearMove
         {
             return 0;
         }
-        else if(primaryStepsPerPart > stepsInThisPhase)
+        else if(primaryStepsPerPart < stepsInThisPhase)
         {
             return primaryStepsPerPart;
         }
@@ -474,8 +474,8 @@ public class BasicLinearMove
         endSpeedMmS = Math.abs(endSpeedMmS);
         final double distanceMm = Math.abs(getBrakingDistance(startSpeedMmS, endSpeedMmS, getMaxAcceleration()));
         final int res = (int)(distanceMm * PrimaryAxisStepsPerMm);
-        log.trace("ID{}: We need {} steps to accelerate from {} mm/s to {} mms/s",
-                   myId,        res,                 startSpeedMmS, endSpeedMmS);
+        log.trace("ID{}: We need {} steps to accelerate from {} mm/s to {} mms/s (in {} mm)",
+                   myId,        res,                 startSpeedMmS, endSpeedMmS, distanceMm);
         return res;
     }
 

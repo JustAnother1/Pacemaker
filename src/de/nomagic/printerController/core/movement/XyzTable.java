@@ -492,7 +492,7 @@ public class XyzTable
    private boolean sendHomingBackOffMove(Axis_enum[] axis)
    {
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
-       log.trace("created Move({}) to hold the homing back offmove", aMove.getId());
+       log.trace("created Move({}) to hold the homing back off move", aMove.getId());
        aMove.setIsHoming(true);
        aMove.setFeedrateMmPerMinute(homeBackOffSpeedMms * 60);
        aMove.setEndSpeedMms(0);
