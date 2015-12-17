@@ -225,6 +225,7 @@ public class Protocol implements EventSource
 
     private final Vector<byte[]> sendQueue = new Vector<byte[]>();
     private volatile int ClientQueueFreeSlots = 0;
+    private volatile int ClientQueueKeepFreeSlots = 5;
     private volatile int ClientQueueNumberOfEnqueuedCommands = 0;
     private volatile int ClientExecutedJobs = 0;
     private volatile int CommandsSendToClient = 0;
@@ -1038,7 +1039,7 @@ public class Protocol implements EventSource
 
     public boolean hasFreeQueueSlots()
     {
-        if(0 < ClientQueueFreeSlots)
+        if(0 + ClientQueueKeepFreeSlots < ClientQueueFreeSlots)
         {
             return true;
         }
@@ -1254,7 +1255,7 @@ public class Protocol implements EventSource
                 return false;
             }
             // Add Steps
-            if(1 ==maxStepPerPart)
+            if(255 > maxStepPerPart)
             {
                 fillBottomPartUsingOneByteForSteps(aMove, steppsStart, curPart);
             }
@@ -1450,7 +1451,7 @@ public class Protocol implements EventSource
             int writePos = 0;
             int numBlocksInBuffer = 0;
             int idx = 0;
-            for(int i = 0; i < ClientQueueFreeSlots; i++)
+            for(int i = 0; i < (ClientQueueFreeSlots - ClientQueueKeepFreeSlots); i++)
             {
                 // add a block to the send buffer until
                 // either send Buffer if full
