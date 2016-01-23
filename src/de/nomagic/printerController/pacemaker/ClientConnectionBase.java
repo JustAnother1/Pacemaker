@@ -149,8 +149,10 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         {
             try
             {
-                log.trace("Sending Frame: " + Tool.fromByteBufferToHexString(buf));
-                log.trace(Protocol.parse(buf));
+                if( true == log.isTraceEnabled() )
+                {
+                	log.trace("Sending " + Protocol.parse(buf) + " : " + Tool.fromByteBufferToHexString(buf) );
+                }
                 out.write(buf);
                 numberOfTransmissions++;
                 r =  getReply();
@@ -550,8 +552,10 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
                 }
 
                 final Reply curReply = new Reply(buf);
-                log.trace(curReply.getDump());
-                log.trace(Protocol.parse(buf));
+                if(true == log.isTraceEnabled())
+                {
+                	log.trace("Received : " + Protocol.parse(buf) + " : " + curReply.getDump());
+                }
                 timeOfLastSuccessfulReply = System.currentTimeMillis();
                 if(true == curReply.isDebugFrame())
                 {
