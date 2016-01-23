@@ -28,12 +28,14 @@ public class BasicLinearMoveSlot extends Slot
 {
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
+    private final int NUM_MAX_AXIS = 16;
+
     private int decelerationSteps;
     private int nominalSpeed;
     private int endSpeed;
     private int accelerationSteps;
     private int primaryAxis;
-    private int[] StepsOn = new int[16];
+    private int[] StepsOn = new int[NUM_MAX_AXIS];
 
     private double Xmm;
     private double Ymm;
@@ -44,9 +46,11 @@ public class BasicLinearMoveSlot extends Slot
     private int rawDataLength;
 
     private boolean isHomingMove = true;
+    private PrinterState curState;
 
-    public BasicLinearMoveSlot(int[] data)
+    public BasicLinearMoveSlot(int[] data, PrinterState curState)
     {
+    	this.curState = curState;
         typeDescription = "basic linear move";
         if(null != data)
         {
@@ -170,6 +174,15 @@ public class BasicLinearMoveSlot extends Slot
                     res.append(" direction decreasing)");
                     StepsOn[i] = 0 - StepsOnAxis;
                 }
+                if(true == isHomingMove)
+                {
+                	curState.homeAxis(i);
+                }
+                else
+                {
+                	curState.moveSteps(i, StepsOn[i]);
+                }
+                log.info(curState.getPosition());
             }
             // else this axis is not selected
         }
@@ -177,7 +190,7 @@ public class BasicLinearMoveSlot extends Slot
     }
 
     @Override
-    public void validate(PrinterState curState)
+    public void validate()
     {
         if(nominalSpeed < endSpeed)
         {
@@ -191,13 +204,54 @@ public class BasicLinearMoveSlot extends Slot
                     + ", deceleration = " + decelerationSteps
                     + ", steps on primary Axis = " + StepsOn[primaryAxis] + ")");
         }
-        for(int i = 0; i < 4; i++)
+        boolean hasMovement = false;
+        for(int i = 0; i < NUM_MAX_AXIS; i++)
         {
         	int speed = curState.getSpeedOn(i);
+        	if(0 != StepsOn[i])
+        	{
+        		hasMovement = true;
+            	if(speed != nominalSpeed)
+            	{
+            		log.info("{} : changing speed from {} to {} in {} Steps !",
+            				   i,                     speed, nominalSpeed, accelerationSteps);
+            	}
+        	}
         	if(speed != nominalSpeed)
         	{
-        		log.info("{} : changing speed from {} to {} in {} Steps !",
-        				  i,                     speed, nominalSpeed, accelerationSteps);
+        		boolean lastDirectionwasForward = curState.getDirectionisForward(i);
+        		if(true == lastDirectionwasForward)
+        		{
+        			if(0 < StepsOn[i])
+        			{
+        				// no direction change
+        			}
+        			else
+        			{
+        				log.info("{} : chnaging direction to backwards!", i);
+        				curState.setDirectionIsForward(i, false);
+        				if(speed != 0)
+        				{
+        					log.info("{} : jerk = {}", i, speed);
+        				}
+        			}
+        		}
+        		else
+        		{
+        			if(0 < StepsOn[i])
+        			{
+        				log.info("{} : chnaging direction to backwards!", i);
+        				curState.setDirectionIsForward(i, true);
+        				if(speed != 0)
+        				{
+        					log.info("{} : jerk = {}", i, speed);
+        				}
+        			}
+        			else
+        			{
+        				// no direction change
+        			}
+        		}
         	}
         	if(endSpeed != nominalSpeed)
         	{
@@ -205,6 +259,10 @@ public class BasicLinearMoveSlot extends Slot
         				  i,                     nominalSpeed, endSpeed, decelerationSteps);
         	}
         	curState.setSpeed(i, endSpeed);
+        }
+        if(false == hasMovement)
+        {
+        	log.error("Move order has no move data !");
         }
         // TODO add further checks
     }
@@ -217,8 +275,8 @@ public class BasicLinearMoveSlot extends Slot
 		Emm = StepsOn[3] / curState.getStepsPerMmFor(3);
 
 		log.info("Move X = " + Xmm + "mm, Y = " + Ymm + "mm, Z = " + Zmm + "mm, E = " + Emm + "mm");
-		
-		
+
+
 		StringBuilder sb = new StringBuilder();
 		if(true == isHomingMove)
 		{

@@ -96,7 +96,7 @@ public class CommandQueue
                 System.arraycopy(parameter, 2 + usedBytes,
                                  slotData, 0,
                                  length -1);
-                final Slot theSlot = SlotFactory.getSlot(type, slotData);
+                final Slot theSlot = SlotFactory.getSlot(type, slotData, curState);
                 validate(theSlot);
                 log.trace("adding : " + theSlot);
                 queue.add(theSlot);
@@ -124,7 +124,7 @@ public class CommandQueue
             log.error("ERROR: invalid Data !");
             return;
         }
-        theSlot.validate(curState);
+        theSlot.validate();
     }
 
     public Slot remove()

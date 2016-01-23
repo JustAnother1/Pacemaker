@@ -8,12 +8,12 @@ public final class SlotFactory
     {
     }
 
-    public static Slot getSlot(int type, int[] data)
+    public static Slot getSlot(int type, int[] data, PrinterState curState)
     {
         switch(type)
         {
         case Protocol.MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE:
-            return new BasicLinearMoveSlot(data);
+            return new BasicLinearMoveSlot(data, curState);
 
         case Protocol.MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER:
         case Protocol.MOVEMENT_BLOCK_TYPE_DELAY:
