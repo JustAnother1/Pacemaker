@@ -245,8 +245,7 @@ public class ExecutorImpl implements Executor
             if(false == move.addConnection(di, cfg, pro, i, Switches))
             {
                 log.error("Failed to configure the Steppers !");
-                pro.closeConnection();
-                return false;
+                // Clients are allowed to have no steppers! -> this is OK
             }
         }
         return true;
