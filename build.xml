@@ -12,10 +12,14 @@
   You should have received a copy of the GNU General Public License along
   with this program; if not, see <http://www.gnu.org/licenses/>
  -->
+
+<!--
+<project name="Pacemaker" default="do-deploy" basedir="."  xmlns:fx="javafx:com.sun.javafx.tools.ant">
 <project default="all">
+ -->
+<project name="Pacemaker" default="all" basedir="."  xmlns:fx="javafx:com.sun.javafx.tools.ant">
     <property name="mainJar" value="Pacemaker.jar" />
     <property name="SimulatorJar" value="PacemakerTest.jar" />
-    <property name="WizzardJar" value="PacemakerWizard.jar" />
     <property name="destDir" value="bin" />
     <property name="javadoc" value="doc/javadoc" />
     <property name="srcDir" value="src" />
@@ -44,17 +48,13 @@
        <classpath refid="simulator.class.path" />
     </manifestclasspath>
 
-    <manifestclasspath property="wz.cp" jarfile="${WizzardJar}">
-       <classpath refid="project.class.path" />
-    </manifestclasspath>
-
     <target name="clean" description="delete everything that might have previously been created" >
         <delete dir="${destDir}"/>
         <delete file="${mainJar}"></delete>
         <delete file="${SimulatorJar}"></delete>
-        <delete file="${WizzardJar}"></delete>
         <delete file="${TerminalJar}"></delete>
         <delete dir="${javadoc}"/>
+    	<delete dir="build"/>
     </target>
 
     <target name="prepare" depends="clean" description="Prepare for building" >
@@ -107,17 +107,6 @@
             </manifest>
         </jar>
 
-        <jar destfile="${WizzardJar}" update="false">
-            <fileset dir="${destDir}">
-                <include name="**/*.class" />
-            </fileset>
-            <manifest>
-                <attribute name="Main-Class" value="de.nomagic.printerController.printerConfigurationCreationWizard.WizardMain" />
-                <attribute name="Class-Path" value=". ${wz.cp}"/>
-                <attribute name="Built-By" value="${user.name}"/>
-                <attribute name="Built-Date" value="${TODAY}"/>
-            </manifest>
-        </jar>
     </target>
 
     <target name="javadoc" description="create Documentation" >
@@ -133,6 +122,179 @@
         </javadoc>
     </target>
 
-    <target name="all" depends="jar">
+<!-- start of JavaFx targets-->
+	<target name="init-fx-tasks">
+		<path id="fxant">
+			<filelist>
+				<file name="${java.home}\..\lib\ant-javafx.jar"/>
+				<file name="${java.home}\lib\jfxrt.jar"/>
+			</filelist>
+		</path>
+
+		<taskdef resource="com/sun/javafx/tools/ant/antlib.xml"
+			uri="javafx:com.sun.javafx.tools.ant"
+			classpathref="fxant"/>
+	</target>
+
+	<target name="setup-staging-area">
+		<delete dir="build/externalLibs" />
+		<delete dir="build/project" />
+		<delete dir="build/projectRefs" />
+
+		<mkdir dir="build/externalLibs" />
+
+		<copy todir="build/externalLibs">
+			<fileset dir="lib/slf4j-1.7.5">
+				<filename name="slf4j-api-1.7.5.jar"/>
+			</fileset>
+		</copy>
+		<copy todir="build/externalLibs">
+			<fileset dir="lib/logback-1.0.13">
+				<filename name="logback-core-1.0.13.jar"/>
+			</fileset>
+		</copy>
+		<copy todir="build/externalLibs">
+			<fileset dir="lib">
+				<filename name="jfreechart-1.0.19.jar"/>
+			</fileset>
+		</copy>
+		<copy todir="build/externalLibs">
+			<fileset dir="lib">
+				<filename name="jna-4.1.0.jar"/>
+			</fileset>
+		</copy>
+		<copy todir="build/externalLibs">
+			<fileset dir="lib">
+				<filename name="jcommon-1.0.23.jar"/>
+			</fileset>
+		</copy>
+		<copy todir="build/externalLibs">
+			<fileset dir="lib">
+				<filename name="purejavacomm-0.0.22.jar"/>
+			</fileset>
+		</copy>
+		<copy todir="build/externalLibs">
+			<fileset dir="lib/logback-1.0.13">
+				<filename name="logback-classic-1.0.13.jar"/>
+			</fileset>
+		</copy>
+
+		<mkdir dir="build/project" />
+		<copy todir="build/project">
+			<fileset dir=".">
+				<include name="src/**" />
+			</fileset>
+		</copy>
+
+		<mkdir dir="build/projectRefs" />
+	</target>
+
+	<target name='do-compile'>
+		<delete dir="build/build" />
+		<mkdir dir="build/build/src" />
+		<mkdir dir="build/build/libs" />
+		<mkdir dir="build/build/classes" />
+
+		<!-- Copy project-libs references -->
+		<copy todir="build/build/libs">
+			<fileset dir="build/externalLibs">
+				<include name="purejavacomm-0.0.22.jar"/>
+				<include name="slf4j-api-1.7.5.jar"/>
+				<include name="jcommon-1.0.23.jar"/>
+				<include name="logback-core-1.0.13.jar"/>
+				<include name="jna-4.1.0.jar"/>
+				<include name="jfreechart-1.0.19.jar"/>
+				<include name="logback-classic-1.0.13.jar"/>
+			</fileset>
+		</copy>
+
+		<!-- Copy project references -->
+
+		<!-- Copy project sources itself -->
+		<copy todir="build/build/src">
+			<fileset dir="build/project/src">
+				<include name="**/*"/>
+			</fileset>
+		</copy>
+
+		<javac includeantruntime="false" source="1.8" target="1.8" srcdir="build/build/src" destdir="build/build/classes" encoding="UTF-8">
+			<classpath>
+				<fileset dir="build/build/libs">
+					<include name="*"/>
+				</fileset>
+			</classpath>
+		</javac>
+
+		<!-- Copy over none Java-Files -->
+		<copy todir="build/build/classes">
+			<fileset dir="build/project/src">
+				<exclude name="**/*.java"/>
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="do-deploy" depends="setup-staging-area, do-compile, init-fx-tasks">
+		<delete file="build/dist"/>
+		<delete file="build/deploy" />
+
+		<mkdir dir="build/dist" />
+		<mkdir dir="build/dist/libs" />
+
+		<copy todir="build/dist/libs">
+			<fileset dir="build/externalLibs">
+				<include name="*" />
+			</fileset>
+		</copy>
+
+
+		<fx:resources id="appRes">
+			<fx:fileset dir="build/dist" includes="build/ConfigurationCreator.jar"/>
+			<fx:fileset dir="build/dist" includes="build/libs/*"/>
+		</fx:resources>
+
+		<fx:application id="fxApplication"
+			name="Pacemaker Client Configuration creator"
+			mainClass="de.nomagic.printerController.createConfigFx.Main"
+			toolkit="fx"
+		/>
+
+		<mkdir dir="build/build/classes/META-INF" />
+
+		<fx:jar destfile="${basedir}/build/dist/ConfigurationCreator.jar">
+			<fx:application refid="fxApplication"/>
+			<fileset dir="build/build/classes">
+			</fileset>
+			<fx:resources refid="appRes"/>
+
+			<manifest>
+				<attribute name="Implementation-Vendor" value="nomagic.de"/>
+				<attribute name="Implementation-Title" value="Pacemaker Client Configuration creator"/>
+				<attribute name="Implementation-Version" value="0.1"/>
+				<attribute name="JavaFX-Feature-Proxy" value="None"/>
+			</manifest>
+		</fx:jar>
+
+		<mkdir dir="deploy" />
+		<!-- Need to use ${basedir} because somehow the ant task is calculating the directory differently -->
+		<fx:deploy
+			embedJNLP="false"
+			extension="false"
+			includeDT="false"
+			offlineAllowed="true"
+			outdir="${basedir}/build/deploy"
+			outfile="ConfigurationCreator" nativeBundles="all"
+			updatemode="background" >
+
+			<fx:platform basedir="${java.home}"/>
+			<fx:info title="ConfigurationCreator" vendor="nomagic.de"/>
+
+			<fx:application refId="fxApplication"/>
+			<fx:resources refid="appRes"/>
+		</fx:deploy>
+
+	</target>
+<!-- end of JavaFX targets-->
+
+    <target name="all" depends="jar, do-deploy">
     </target>
 </project>
