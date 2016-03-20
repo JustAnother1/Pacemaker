@@ -264,6 +264,9 @@
 			<fx:application refid="fxApplication"/>
 			<fileset dir="build/build/classes">
 			</fileset>
+			<fileset dir="bin">
+				<include name="commit-id" />
+			</fileset>
 			<fx:resources refid="appRes"/>
 
 			<manifest>

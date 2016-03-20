@@ -14,7 +14,7 @@ import javafx.scene.layout.BorderPane;
 
 public class Main extends Application
 {
-    private BorderPane SessionDefinitionScene;
+    private BorderPane MainWindowScene;
 
 	@Override
 	public void start(Stage primaryStage)
@@ -25,11 +25,11 @@ public class Main extends Application
         primaryStage.setTitle("Pacemaker Configuration creator");
         MainWindowController ctrl = new MainWindowController(primaryStage);
         FXMLLoader loader = new FXMLLoader();
-        loader.setLocation(getClass().getResource("view/SessionDefinitionScene.fxml"));
+        loader.setLocation(getClass().getResource("MainWindow.fxml"));
         loader.setController(ctrl);
         try
         {
-            SessionDefinitionScene = (BorderPane) loader.load();
+            MainWindowScene = (BorderPane) loader.load();
         }
         catch (IOException e)
         {
@@ -38,7 +38,7 @@ public class Main extends Application
         }
 
         // Show the scene containing the root layout.
-        Scene scene = new Scene(SessionDefinitionScene);
+        Scene scene = new Scene(MainWindowScene);
         primaryStage.setScene(scene);
         primaryStage.show();
 	}
