@@ -1,46 +1,24 @@
 package de.nomagic.printerController.createConfigFx;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
 import javafx.application.Application;
-import javafx.fxml.FXMLLoader;
 import javafx.stage.Stage;
-import javafx.scene.Scene;
-import javafx.scene.layout.BorderPane;
 
 
 public class Main extends Application
 {
-    private BorderPane MainWindowScene;
 
 	@Override
 	public void start(Stage primaryStage)
 	{
 		System.out.println("Starting Configuration Creator in version : " + getCommitID());
-
         // Create GUI
         primaryStage.setTitle("Pacemaker Configuration creator");
         MainWindowController ctrl = new MainWindowController(primaryStage);
-        FXMLLoader loader = new FXMLLoader();
-        loader.setLocation(getClass().getResource("MainWindow.fxml"));
-        loader.setController(ctrl);
-        try
-        {
-            MainWindowScene = (BorderPane) loader.load();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        // Show the scene containing the root layout.
-        Scene scene = new Scene(MainWindowScene);
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        ctrl.createAndShowWindow();
 	}
 
     private String getCommitID()

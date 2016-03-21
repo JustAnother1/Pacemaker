@@ -13,9 +13,9 @@
    <top>
       <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
         <items>
-          <Button mnemonicParsing="false" text="Load Cfg" />
-            <Button disable="true" mnemonicParsing="false" text="Save Cfg" />
-            <Button mnemonicParsing="false" text="Add Client" />
+          <Button mnemonicParsing="false" onAction="#handleLoadConfigButton" text="Load Cfg" />
+            <Button disable="true" mnemonicParsing="false" onAction="#handleSaveConfigButton" text="Save Cfg" />
+            <Button defaultButton="true" mnemonicParsing="false" onAction="#handleAddClientButton" text="Add Client" />
             <CheckBox disable="true" mnemonicParsing="false" text="Online" />
         </items>
       </ToolBar>
