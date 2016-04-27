@@ -59,19 +59,17 @@ public class AddClientWindowController implements Initializable
     public void initialize(URL url, ResourceBundle resourceBundle)
     {
 		// detect available serial ports
-		/*
         final Properties systemProperties = System.getProperties();
         systemProperties.setProperty("jna.nosys", "true");
         ObservableList<String> list = serial_portComboBox.getItems();
         Enumeration e = CommPortIdentifier.getPortIdentifiers();
         while(true == e.hasMoreElements())
         {
-        	String port =  (String) e.nextElement();
+        	CommPortIdentifier id = (CommPortIdentifier)e.nextElement();
+        	String port = id.getName();
         	list.add(port);
         	System.out.println(port);
         }
-        // serial_portComboBox.setItems(data);
-         */
     }
 
 	@FXML
