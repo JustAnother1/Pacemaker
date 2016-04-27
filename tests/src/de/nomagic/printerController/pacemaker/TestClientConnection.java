@@ -76,4 +76,11 @@ public class TestClientConnection implements ClientConnection
         return 0;
     }
 
+	@Override
+	public String getName()
+	{
+		// TODO Auto-generated method stub
+		return "TestClient";
+	}
+
 }

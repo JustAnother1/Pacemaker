@@ -28,4 +28,5 @@ public interface ClientConnection
     Reply sendRequest(final byte order, final byte[]    parameter, int offset, int length);
     void close();
     long getTimeOfLastSuccessfulReply();
+	String getName();
 }

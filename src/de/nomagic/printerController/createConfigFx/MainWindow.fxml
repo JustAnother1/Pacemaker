@@ -16,7 +16,7 @@
           <Button mnemonicParsing="false" onAction="#handleLoadConfigButton" text="Load Cfg" />
             <Button disable="true" mnemonicParsing="false" onAction="#handleSaveConfigButton" text="Save Cfg" />
             <Button defaultButton="true" mnemonicParsing="false" onAction="#handleAddClientButton" text="Add Client" />
-            <CheckBox disable="true" mnemonicParsing="false" text="Online" />
+            <CheckBox fx:id="onlineCheckBox" disable="true" mnemonicParsing="false" onAction="#handleOnlineCheckBoxClick" text="Online" />
         </items>
       </ToolBar>
    </top>
@@ -27,7 +27,7 @@
                <children>
                   <ScrollPane layoutX="-26.0" layoutY="45.0" prefHeight="358.0" prefWidth="174.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                      <content>
-                        <TreeView prefHeight="205.0" prefWidth="166.0" />
+                        <TreeView fx:id="clientTreeView" prefHeight="205.0" prefWidth="166.0" />
                      </content>
                   </ScrollPane>
                </children>
