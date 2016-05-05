@@ -15,6 +15,7 @@
 package de.nomagic.printerController.pacemaker;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -30,31 +31,55 @@ public class TcpClientConnection extends ClientConnectionBase
 {
     private static final Logger log = LoggerFactory.getLogger("TcpClientConnection");
     private final Socket pms;
+    private final String host;
+    private final String portStr;
 
-    public static ClientConnection establishConnectionTo(String data)
+    public static TcpClientConnection establishConnectionTo(String data)
     {
+    	TcpClientConnection res = new TcpClientConnection(data);
+    	res.connect();
+    	return res;
+    }
+
+    public TcpClientConnection(String data)
+    {
+        super("TcpClientConnection");
         if(false == data.contains(":"))
         {
             log.error("Description({}) has no : !", data);
-            return null;
+            host = "";
+            portStr = "";
+            pms = null;
+            return;
         }
-        final String host = data.substring(0, data.indexOf(':'));
-        final String portStr = data.substring(data.indexOf(':') + 1);
+        host = data.substring(0, data.indexOf(':'));
+        portStr = data.substring(data.indexOf(':') + 1);
+        pms = new Socket();
+    }
+
+	public boolean connect()
+	{
         final int port = Integer.parseInt(portStr);
         // connecting to Pacemaker using TCP
         log.info("Connecting to Pacemaker at {}:{} !", host, port);
         try
         {
-            final Socket pms = new Socket(host, port);
+            pms.connect(new InetSocketAddress(host, port));
             if(true == pms.isConnected())
             {
-                return new TcpClientConnection(pms);
+                pms.setSoTimeout(0);
+                pms.setKeepAlive(true);
+                pms.setTcpNoDelay(true);
+                this.in = pms.getInputStream();
+                this.out = pms.getOutputStream();
+                this.start();
+                return true;
             }
             else
             {
                 pms.close();
                 log.error("Could not connect !");
-                return null;
+                return false;
             }
         }
         catch (final UnknownHostException e)
@@ -67,31 +92,27 @@ public class TcpClientConnection extends ClientConnectionBase
             log.error("IOException !");
             e.printStackTrace();
         }
-        return null;
-    }
-
-    public TcpClientConnection(final Socket pms) throws IOException
-    {
-        super("TcpClientConnection");
-        pms.setSoTimeout(0);
-        pms.setKeepAlive(true);
-        pms.setTcpNoDelay(true);
-        this.pms = pms;
-        this.in = pms.getInputStream();
-        this.out = pms.getOutputStream();
-        this.start();
-    }
+        return false;
+	}
 
     @Override
     public String toString()
     {
-        return "TCP : " + pms.getInetAddress() + ":" + pms.getPort();
+    	String cn = getConnectionName();
+    	if(0 < cn.length())
+    	{
+    		return cn + ": TCP : " + pms.getInetAddress() + ":" + pms.getPort();
+    	}
+    	else
+    	{
+    		return "TCP : " + pms.getInetAddress() + ":" + pms.getPort();
+    	}
     }
 
     @Override
-    public void close()
+    public void disconnect()
     {
-        super.close();
+        super.disconnect();
         if(null != pms)
         {
             try

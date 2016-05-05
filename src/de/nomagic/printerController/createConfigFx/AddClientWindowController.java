@@ -16,6 +16,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.SingleSelectionModel;
@@ -46,6 +48,8 @@ public class AddClientWindowController implements Initializable
 	private Button add_button;
 	@FXML
 	private TabPane connectionTypeTabPane;
+	@FXML
+	private Tab tcpTab;
 
 	private final MainWindowController mainWindowController;
 
@@ -70,6 +74,16 @@ public class AddClientWindowController implements Initializable
         	list.add(port);
         	System.out.println(port);
         }
+        if(true == list.isEmpty())
+        {
+        	SingleSelectionModel<Tab> selectionModel = connectionTypeTabPane.getSelectionModel();
+        	selectionModel.select(tcpTab);
+        }
+        else
+        {
+        	SingleSelectionModel<String> selectionModel = serial_portComboBox.getSelectionModel();
+        	selectionModel.selectFirst();
+        }
     }
 
 	@FXML
@@ -83,18 +97,31 @@ public class AddClientWindowController implements Initializable
 		if("Serial".equals(TabName))
 		{
 			connect = new UartClientConnection(serial_portComboBox.getValue() + ":115200:8:None:1:false:false:false:false");
+			connect.setConnectionName(serial_portComboBox.getValue());
 		}
 		else if("TCP".equals(TabName))
 		{
 			connect = TcpClientConnection.establishConnectionTo(tcp_hostTextField.getText() + ":" + tcp_portTextField.getText());
+			connect.setConnectionName(tcp_hostTextField.getText() + ":" + tcp_portTextField.getText());
 		}
 		// create connection from Data
 		if(null != connect)
 		{
-			// Give connection to main Window
-			mainWindowController.addClient(connect);
-			// close this window
-			secondStage.close();
+			if(false == connect.connect())
+			{
+				Alert alert = new Alert(AlertType.INFORMATION);
+				alert.setTitle("Failed to connect");
+				alert.setHeaderText(null);
+				alert.setContentText("Could not open the connection to the client! ");
+				alert.showAndWait();
+			}
+			else
+			{
+				// Give connection to main Window
+				mainWindowController.addClient(connect);
+				// close this window
+				secondStage.close();
+			}
 		}
 	}
 

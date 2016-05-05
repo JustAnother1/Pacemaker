@@ -83,10 +83,11 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     private int numberOfTransmissions = 0;
 
     private volatile long timeOfLastSuccessfulReply = 0;
+    private String ConnectionName = "";
 
-    public ClientConnectionBase(String name)
+    public ClientConnectionBase(String TaskName)
     {
-        super(name);
+        super(TaskName);
     }
 
     public Reply sendRequest(final byte order, final byte[] parameter)
@@ -590,7 +591,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         isRunning = false;
     }
 
-    public void close()
+    public void disconnect()
     {
         this.interrupt();
     }
@@ -599,5 +600,17 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     {
         return timeOfLastSuccessfulReply;
     }
+
+    @Override
+    public void setConnectionName(String Name)
+    {
+    	ConnectionName = Name;
+    }
+
+    @Override
+	public String getConnectionName()
+	{
+		return ConnectionName;
+	}
 
 }

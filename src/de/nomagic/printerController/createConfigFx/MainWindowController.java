@@ -66,7 +66,7 @@ public class MainWindowController implements Initializable
 		if(null != aClient)
 		{
 			clientChannel = aClient;
-			TreeItem<String> clientItem = new TreeItem<String>(clientChannel.getName());
+			TreeItem<String> clientItem = new TreeItem<String>(clientChannel.getConnectionName());
 			root.getChildren().add(clientItem);
 			// connection is now online
 			onlineCheckBox.setSelected(true);

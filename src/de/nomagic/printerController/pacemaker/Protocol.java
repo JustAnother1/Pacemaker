@@ -701,7 +701,7 @@ public class Protocol implements EventSource
     {
         if(null != cc)
         {
-            cc.close();
+            cc.disconnect();
         }
         isOperational = false;
     }
