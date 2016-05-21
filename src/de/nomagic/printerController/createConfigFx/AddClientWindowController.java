@@ -107,21 +107,10 @@ public class AddClientWindowController implements Initializable
 		// create connection from Data
 		if(null != connect)
 		{
-			if(false == connect.connect())
-			{
-				Alert alert = new Alert(AlertType.INFORMATION);
-				alert.setTitle("Failed to connect");
-				alert.setHeaderText(null);
-				alert.setContentText("Could not open the connection to the client! ");
-				alert.showAndWait();
-			}
-			else
-			{
-				// Give connection to main Window
-				mainWindowController.addClient(connect);
-				// close this window
-				secondStage.close();
-			}
+			// Give connection to main Window
+			mainWindowController.addClient(connect);
+			// close this window
+			secondStage.close();
 		}
 	}
 
