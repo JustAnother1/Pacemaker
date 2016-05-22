@@ -45,7 +45,6 @@ public class BasicLinearMove
     private double feedrateMmPerMinute = MIN_MOVEMENT_SPEED_MM_SECOND * 60;
     private boolean isHoming = false;
     private HashMap<Axis_enum, Double> distancesMm = new HashMap<Axis_enum, Double>();
-    private HashMap<Axis_enum, Double> roundingErrorSteps = new HashMap<Axis_enum, Double>();
     private HashMap<Integer, Axis_enum> AxisMapping = new HashMap<Integer, Axis_enum>();
     private Vector<Integer> activeAxises = new Vector<Integer>();
     private HashMap<Integer, Integer> StepsOnAxis = new HashMap<Integer, Integer>();
@@ -82,10 +81,6 @@ public class BasicLinearMove
         this.MaxPossibleClientSpeedInStepsPerSecond = MaxPossibleClientSpeedStepsPerSecond;
         myId = nextId;
         nextId++;
-        for(Axis_enum axis: Axis_enum.values())
-        {
-            roundingErrorSteps.put(axis, 0.0);
-        }
     }
 
     public boolean hasMovementData()
@@ -224,36 +219,12 @@ public class BasicLinearMove
         StepsOnAxis.put(stepper.getStepperNumber(), Math.abs(steps));
     }
 
-    private int getSteps(Stepper stepper, Axis_enum ax)
-    {
-        final double exactSteps = roundingErrorSteps.get(ax) + (distancesMm.get(ax) * stepper.getStepsPerMm());
-        int steps = (int) Math.round(exactSteps);
-        log.debug("ID{}: exact Steps = {}, got rounded to {}", myId, exactSteps, steps);
-        final Double difference = exactSteps - steps;
-        roundingErrorSteps.put(ax, difference);
-        if(0 < Math.abs(steps))
-        {
-            hasMovement = true;
-        }
-        if(StepsOnPrimaryAxis < Math.abs(steps))
-        {
-            StepsOnPrimaryAxis = Math.abs(steps);
-            final int number = stepper.getStepperNumber();
-            log.trace("ID{}: primary Axis is {} !", myId, number);
-            primaryAxis = number;
-            PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
-            PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
-        }
-        return steps;
-    }
-
-    public void addMovingAxis(Stepper stepper, Axis_enum ax)
+    public void addMovingAxis(Stepper stepper, Axis_enum ax, int steps)
     {
         if(null == stepper)
         {
             return;
         }
-        final int steps = getSteps(stepper, ax);
         final Integer number = stepper.getStepperNumber();
         log.debug("ID{}: adding Stepper {} for Axis {} with {} steps", myId, number, ax, steps);
         AxisMapping.put(number, ax);
@@ -267,6 +238,18 @@ public class BasicLinearMove
         final int maxSpeedStepsPerSecond = stepper.getMaxPossibleSpeedStepsPerSecond();
         MaxSpeedStepsPerSecondOnAxis.put(number, maxSpeedStepsPerSecond);
         log.trace("ID{}: Stepper {} for Axis {} has a max Steps/sec of {} !", myId, number, ax, maxSpeedStepsPerSecond);
+        if(0 < Math.abs(steps))
+        {
+            hasMovement = true;
+        }
+        if(StepsOnPrimaryAxis < Math.abs(steps))
+        {
+            StepsOnPrimaryAxis = Math.abs(steps);
+            log.trace("ID{}: primary Axis is {} !", myId, number);
+            primaryAxis = number;
+            PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
+            PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
+        }
     }
 
     public int getActiveSteppersMap()
@@ -362,8 +345,15 @@ public class BasicLinearMove
         int decelStepsInThisPart = getDecelerationSteps(curPart);
         if(0 == decelStepsInThisPart)
         {
-            // no breaking so end speed is travel speed
-            return getTravelSpeedFraction(curPart);
+        	if(true == isHoming)
+        	{
+        		return 0;
+        	}
+        	else
+        	{
+        		// no breaking so end speed is travel speed
+        		return getTravelSpeedFraction(curPart);
+        	}
         }
         else if(DecelerationSteps == decelStepsInThisPart)
         {

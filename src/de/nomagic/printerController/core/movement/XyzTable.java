@@ -86,6 +86,7 @@ public class XyzTable
     private PlannedMoves planner;
     private double FeedrateMmPerMinute = 9000;
     private int MaxClientStepsPerSecond = 0;
+    private final HashMap<Axis_enum, Double> roundingErrorSteps = new HashMap<Axis_enum, Double>();
 
     public XyzTable(Cfg cfg)
     {
@@ -113,6 +114,7 @@ public class XyzTable
             endStopmaxOn[axis.ordinal()] = false;
             endStop_min[axis.ordinal()] = -1;
             endStop_max[axis.ordinal()] = -1;
+            roundingErrorSteps.put(axis, 0.0);
         }
         autoEndStopDisable    = cfg.getGeneralSetting(CFG_NAME_AUTO_END_STOP_DISABLE,
                                                       true);
@@ -370,6 +372,16 @@ public class XyzTable
        }
    }
 
+   private int getSteps(Stepper stepper, Axis_enum ax, BasicLinearMove aMove, double distanceMm)
+   {
+       final double exactSteps = roundingErrorSteps.get(ax) + (distanceMm * stepper.getStepsPerMm());
+       int steps = (int) Math.round(exactSteps);
+       log.debug("ID{}: exact Steps = {}, got rounded to {}", aMove.getId(), exactSteps, steps);
+       final Double difference = exactSteps - steps;
+       roundingErrorSteps.put(ax, difference);
+       return steps;
+   }
+   
    public boolean addRelativeMove(RelativeMove relMov)
    {
        log.trace("adding the move {}", relMov);
@@ -413,7 +425,8 @@ public class XyzTable
                {
                    if(null != Steppers[ax.ordinal()][i])
                    {
-                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
+                       final int steps = getSteps(Steppers[ax.ordinal()][i], ax, aMove, distanceMm);
+                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax, steps);
                    }
                }
            }
@@ -481,7 +494,8 @@ public class XyzTable
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
                        }
-                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
+                       final int steps = getSteps(Steppers[ax.ordinal()][i], ax, aMove, -homingDistanceMm);
+                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax, steps);
                    }
                }
            }
@@ -515,7 +529,8 @@ public class XyzTable
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
                        }
-                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
+                       final int steps = getSteps(Steppers[ax.ordinal()][i], ax, aMove, homingDistanceMm);
+                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax, steps);
                    }
                }
            }
@@ -549,7 +564,8 @@ public class XyzTable
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
                        }
-                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
+                       final int steps = getSteps(Steppers[ax.ordinal()][i], ax, aMove, -homingDistanceMm);
+                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax, steps);
                    }
                }
            }
