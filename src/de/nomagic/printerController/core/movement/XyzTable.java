@@ -419,6 +419,7 @@ public class XyzTable
            }
            // else axis not used
        }
+       
        return updateEndStopActivation(aMove);
    }
 

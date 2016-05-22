@@ -34,9 +34,6 @@ import de.nomagic.printerController.pacemaker.Protocol;
  */
 public class BasicLinearMove
 {
-    /** everything shorter than this will be assumed to be 0 */
-    public static final double MIN_MOVEMENT_DISTANCE_MM_SECOND = 0.00001;
-
     public static final double MOVEMENT_SPEED_TOLERANCE_MM_SECOND = 0.0001;
     /** if the axis has steps the speed may not be 0. So this is the speed is will have at least */
     public static final double MIN_MOVEMENT_SPEED_MM_SECOND = 0.1;
@@ -109,21 +106,18 @@ public class BasicLinearMove
     {
         log.debug("ID{}: adding {} = {} mm", myId, axis, distanceMm);
         distancesMm.put(axis, distanceMm);
-        if(MIN_MOVEMENT_DISTANCE_MM_SECOND < Math.abs(distanceMm))
-        {
-            hasMovement = true;
-        }
     }
 
     public double getMm(Axis_enum axis)
     {
-        try
+        Double dist = distancesMm.get(axis);
+        if(null == dist)
         {
-            return distancesMm.get(axis);
+        	return 0.0;
         }
-        catch(NullPointerException e)
+        else
         {
-            return 0.0;
+        	return dist.doubleValue();
         }
     }
 
@@ -170,14 +164,15 @@ public class BasicLinearMove
 
     public int getStepsOnActiveStepper(int i)
     {
-        try
-        {
-            return StepsOnAxis.get(i);
-        }
-        catch(NullPointerException e)
-        {
+    	Integer res = StepsOnAxis.get(i);
+    	if(null == res)
+    	{
             return 0;
-        }
+    	}
+    	else
+    	{
+    		return res.intValue();
+    	}
     }
 
     public int getPrimaryAxis()
@@ -236,11 +231,10 @@ public class BasicLinearMove
         log.debug("ID{}: exact Steps = {}, got rounded to {}", myId, exactSteps, steps);
         final Double difference = exactSteps - steps;
         roundingErrorSteps.put(ax, difference);
-        if(0 == steps)
+        if(0 < Math.abs(steps))
         {
-            return 0;
+            hasMovement = true;
         }
-        hasMovement = true;
         if(StepsOnPrimaryAxis < Math.abs(steps))
         {
             StepsOnPrimaryAxis = Math.abs(steps);
@@ -259,15 +253,9 @@ public class BasicLinearMove
         {
             return;
         }
-
         final int steps = getSteps(stepper, ax);
-        if(1 > Math.abs(steps))
-        {
-            return;
-        }
-
         final Integer number = stepper.getStepperNumber();
-        log.debug("ID{}: adding Stepper {} for Axis {}", myId, number, ax);
+        log.debug("ID{}: adding Stepper {} for Axis {} with {} steps", myId, number, ax, steps);
         AxisMapping.put(number, ax);
         if(maxStepperNumber < number)
         {
@@ -530,7 +518,18 @@ public class BasicLinearMove
 
     public double getMaxPossibleSpeedStepsPerSecond()
     {
-        double maxSpeedStepPerSec = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
+        double maxSpeedStepPerSec = 0.0;
+    	Integer res = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
+    	if(res != null)
+    	{
+    		maxSpeedStepPerSec = res;
+    	}
+    	else
+    	{
+    		log.error("Missing max steps setting for Axis {} !", primaryAxis);
+    		primaryAxis = 1;
+    	}
+    		
         log.trace("ID{}: Max Speed = {}", myId, maxSpeedStepPerSec);
         // Test if this speed is ok for the other axis
         // (speed on primary Axis) / (steps on primary axis) = a
@@ -599,7 +598,7 @@ public class BasicLinearMove
             }
         }
         log.trace("ID{}: Max end speed = {} mm/sec", myId, maxEndSpeedMmS);
-        // Test if this speed is ok for the other axis
+        // Test if this speed is OK for the other axis
         // speed on primary Axis / steps on primary axis = a
         // a * steps on the axis = speed on that axis
         // speed on each axis must be smaller than the max speed on that axis

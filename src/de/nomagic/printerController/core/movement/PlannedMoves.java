@@ -92,7 +92,6 @@ public class PlannedMoves implements EventSource
                 }
                 else
                 {
-                    // TODO Can we do something better here ?
                     System.exit(99);
                 }
             }
@@ -166,7 +165,7 @@ public class PlannedMoves implements EventSource
         }
     }
 
-    private int entriesSize() // TODO find better name
+    private int entriesSize()
     {
         synchronized(entries)
         {
@@ -181,7 +180,7 @@ public class PlannedMoves implements EventSource
             if(true == aMove.hasMovementData())
             {
                 synchronized(entries)
-                { // TODO make synchronized block shorter
+                {
                     // we can now calculate the max end Speed for the last added move
                     int idxOfFirstMove = entries.size() -1; // last element
                     BasicLinearMove firstMove = entries.get(idxOfFirstMove);
@@ -343,13 +342,7 @@ public class PlannedMoves implements EventSource
             log.trace("travelSpeed = {} mm/s", travelSpeedMmS);
             int accell = 0;
             int decell = 0;
-            if(travelSpeedMmS > maxPossibleSpeedMmS)
-            {
-                log.error("Travel speed too high! end speed = {} mm/s currentSpeed = {} mm/s",
-                           desiredEndSpeedMmS, currentSpeedMmS);
-                aMove.setTravelSpeedMms(maxPossibleSpeedMmS);
-            }
-            else if(travelSpeedMmS + maxSpeedChangeMmS > maxPossibleSpeedMmS)
+            if(travelSpeedMmS + maxSpeedChangeMmS > maxPossibleSpeedMmS)
             {
                 log.trace("we can not use all the steps to accelerate");
                 final int accelerateSteps = Math.abs(

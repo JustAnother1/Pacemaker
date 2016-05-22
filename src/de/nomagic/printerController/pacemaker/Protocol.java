@@ -210,9 +210,7 @@ public class Protocol implements EventSource
     private static final int QUEUE_SEND_BUFFER_SIZE = 200;
 
     // the client needs at lest this(in milliseconds) time to free up one slot in the Queue
-    private final long QUEUE_POLL_DELAY = 10;
-    // blocking command will try not more than MAX_ENQUEUE_DELAY times to enqueue the block
-    private final int MAX_ENQUEUE_DELAY = 100;
+    private final long QUEUE_POLL_DELAY = 100;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final ClientConnection cc;
@@ -224,7 +222,7 @@ public class Protocol implements EventSource
     private DeviceInformation di = null;
 
     private final Vector<byte[]> sendQueue = new Vector<byte[]>();
-    private volatile int ClientQueueFreeSlots = 0;
+    private volatile int ClientQueueFreeSlots = 6;
     private volatile int ClientQueueKeepFreeSlots = 5;
     private volatile int ClientQueueNumberOfEnqueuedCommands = 0;
     private volatile int ClientExecutedJobs = 0;
@@ -1439,11 +1437,11 @@ public class Protocol implements EventSource
             // nothing to send -> poll client to get number of Slots used
             return sendDataToClientQueue(new byte[0], 0, 0);
         }
-        if(0 == ClientQueueFreeSlots)
+        if(1 > (ClientQueueFreeSlots - ClientQueueKeepFreeSlots))
         {
-            // send only the first command from the command queue
-            final byte[] firstCommand = sendQueue.get(0);
-            return sendDataToClientQueue(firstCommand, firstCommand.length, 1);
+        	// client queue is full so wait for next slot to become available
+        	sendDataToClientQueue(new byte[0], 0, 0);
+        	return RESULT_TRY_AGAIN_LATER;
         }
         else
         {
@@ -1492,7 +1490,6 @@ public class Protocol implements EventSource
         }
     }
 
-
     /** Enqueues the data for _one_ command into the Queue.
      *
      * If the Queue is full this function waits until a free spot becomes
@@ -1519,25 +1516,14 @@ public class Protocol implements EventSource
         int Result = enqueueCommand(param);
         if(RESULT_TRY_AGAIN_LATER == Result)
         {
-            int delayCounter = 0;
             do
             {
-                if((delayCounter < MAX_ENQUEUE_DELAY))
+                try
                 {
-                    try
-                    {
-                        Thread.sleep(QUEUE_POLL_DELAY);
-                    }
-                    catch(InterruptedException e)
-                    {
-                    }
-                    delayCounter++;
+                    Thread.sleep(QUEUE_POLL_DELAY);
                 }
-                else
+                catch(InterruptedException e)
                 {
-                    lastErrorReason = "Could not enque - Timeout !";
-                    log.error(lastErrorReason);
-                    return false;
                 }
                 Result = enqueueCommand(null);
             }while(RESULT_TRY_AGAIN_LATER == Result);
