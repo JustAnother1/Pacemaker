@@ -82,12 +82,7 @@ public class BasicLinearMove
         myId = nextId;
         nextId++;
     }
-
-    public boolean hasMovementData()
-    {
-        return hasMovement;
-    }
-
+    
     public void setFeedrateMmPerMinute(double feedrateMmPerMinute)
     {
         if(MIN_MOVEMENT_SPEED_MM_SECOND * 60 < feedrateMmPerMinute)
@@ -96,11 +91,163 @@ public class BasicLinearMove
         }
         // else ignore invalid Feedrate
     }
-
+    
     public void setDistanceMm(Axis_enum axis, double distanceMm)
     {
         log.debug("ID{}: adding {} = {} mm", myId, axis, distanceMm);
         distancesMm.put(axis, distanceMm);
+    }
+    
+    private void addSteppersJerk(Stepper stepper)
+    {
+        final double jerkMms = stepper.getMaxJerkSpeedMmS();
+        if(false == JerkIsSet)
+        {
+            JerkIsSet = true; // first jerk setting for this move
+            maxJerkMms = jerkMms;
+        }
+        if(maxJerkMms > jerkMms)
+        {
+            // this axis can not do as much Jerk as the other Axis
+            // so the Jerk for this move needs to be reduced
+            maxJerkMms = jerkMms;
+            // TODO handle Jerk on a per Axis basis
+        }
+    }
+    
+    private void addSteppersSteps(Stepper stepper, int steps)
+    {
+        if(false == stepper.isDirectionInverted())
+        {
+            if(0 < steps)
+            {
+                AxisDirectionIncreasing.put(stepper.getStepperNumber(), true);
+            }
+            else
+            {
+                AxisDirectionIncreasing.put(stepper.getStepperNumber(), false);
+            }
+        }
+        else
+        {
+            if(0 < steps)
+            {
+                AxisDirectionIncreasing.put(stepper.getStepperNumber(), false);
+            }
+            else
+            {
+                AxisDirectionIncreasing.put(stepper.getStepperNumber(), true);
+            }
+        }
+        StepsOnAxis.put(stepper.getStepperNumber(), Math.abs(steps));
+    }
+    
+    public void addMovingAxis(Stepper stepper, Axis_enum ax, int steps)
+    {
+        if(null == stepper)
+        {
+            return;
+        }
+        final Integer number = stepper.getStepperNumber();
+        log.debug("ID{}: adding Stepper {} for Axis {} with {} steps", myId, number, ax, steps);
+        AxisMapping.put(number, ax);
+        if(maxStepperNumber < number)
+        {
+            maxStepperNumber = number;
+        }
+        addSteppersJerk(stepper);
+        activeAxises.add(number);
+        addSteppersSteps(stepper, steps);
+        final int maxSpeedStepsPerSecond = stepper.getMaxPossibleSpeedStepsPerSecond();
+        MaxSpeedStepsPerSecondOnAxis.put(number, maxSpeedStepsPerSecond);
+        log.trace("ID{}: Stepper {} for Axis {} has a max Steps/sec of {} !", myId, number, ax, maxSpeedStepsPerSecond);
+        if(0 < Math.abs(steps))
+        {
+            hasMovement = true;
+        }
+        if(StepsOnPrimaryAxis < Math.abs(steps))
+        {
+            StepsOnPrimaryAxis = Math.abs(steps);
+            log.trace("ID{}: primary Axis is {} !", myId, number);
+            primaryAxis = number;
+            PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
+            PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
+        }
+    }
+    
+    public void setTravelSpeedMms(double speedMms)
+    {
+        log.trace("ID{}: Nominal speed set to {} mm/s!", myId, speedMms);
+        travelSpeedMms = speedMms;
+    }
+
+    public void setEndSpeedMms(double theSpeedMms)
+    {
+        endSpeedMms = theSpeedMms;
+        log.trace("ID{}: end speed set to {} mm/s", myId, theSpeedMms);
+        hasEndSpeed = true;
+    }
+    
+    public void setAccelerationSteps(int steps)
+    {
+        AccelerationSteps = steps;
+    }
+
+    public void setDecelerationSteps(int steps)
+    {
+        DecelerationSteps = steps;
+    }
+    
+    public void setEndSpeedFactor(double endSpeedFactor)
+    {
+        if((1 < endSpeedFactor) || (0 > endSpeedFactor))
+        {
+            // not possible
+            log.error("Invalid End Speed Factor of {} !", endSpeedFactor);
+            return;
+        }
+        this.endSpeedFactor = endSpeedFactor;
+    }
+    
+    public boolean isNowComplete()
+    {
+    	// check for steppers that do not have steps on them -> remove them
+    	// make sure that primary axis is correct
+    	boolean foundMovement = false;
+    	int maxSteps = -1;
+    	Integer PrimAxis = -1;
+    	Iterator<Integer> it = activeAxises.iterator();
+    	while(true == it.hasNext())
+    	{
+    		Integer stepperNumber = it.next();
+    		Integer steps = StepsOnAxis.get(stepperNumber);
+    		if(0 == steps)
+    		{
+    			// there are no steps on this axis!
+    			// Possible Reason: Very short move that got rounded to 0 Steps.
+    			// -> remove Axis
+    			activeAxises.removeElement(stepperNumber);
+    			AxisDirectionIncreasing.remove(stepperNumber);
+    		}
+    		else
+    		{
+    			foundMovement = true;
+    			// check if this is the primary axis
+    			if(Math.abs(steps) > maxSteps)
+    			{
+    				maxSteps = Math.abs(steps);
+    				PrimAxis = stepperNumber;
+    			}
+    		}
+    	}
+    	primaryAxis = PrimAxis;
+    	hasMovement = foundMovement;
+    	return true;
+    }
+
+    public boolean hasMovementData()
+    {
+        return hasMovement;
     }
 
     public double getMm(Axis_enum axis)
@@ -175,83 +322,6 @@ public class BasicLinearMove
         return primaryAxis;
     }
 
-    private void addSteppersJerk(Stepper stepper)
-    {
-        final double jerkMms = stepper.getMaxJerkSpeedMmS();
-        if(false == JerkIsSet)
-        {
-            JerkIsSet = true; // first jerk setting for this move
-            maxJerkMms = jerkMms;
-        }
-        if(maxJerkMms > jerkMms)
-        {
-            // this axis can not do as much Jerk as the other Axis
-            // so the Jerk for this move needs to be reduced
-            maxJerkMms = jerkMms;
-            // TODO handle Jerk on a per Axis basis
-        }
-    }
-
-    private void addSteppersSteps(Stepper stepper, int steps)
-    {
-        if(false == stepper.isDirectionInverted())
-        {
-            if(0 < steps)
-            {
-                AxisDirectionIncreasing.put(stepper.getStepperNumber(), true);
-            }
-            else
-            {
-                AxisDirectionIncreasing.put(stepper.getStepperNumber(), false);
-            }
-        }
-        else
-        {
-            if(0 < steps)
-            {
-                AxisDirectionIncreasing.put(stepper.getStepperNumber(), false);
-            }
-            else
-            {
-                AxisDirectionIncreasing.put(stepper.getStepperNumber(), true);
-            }
-        }
-        StepsOnAxis.put(stepper.getStepperNumber(), Math.abs(steps));
-    }
-
-    public void addMovingAxis(Stepper stepper, Axis_enum ax, int steps)
-    {
-        if(null == stepper)
-        {
-            return;
-        }
-        final Integer number = stepper.getStepperNumber();
-        log.debug("ID{}: adding Stepper {} for Axis {} with {} steps", myId, number, ax, steps);
-        AxisMapping.put(number, ax);
-        if(maxStepperNumber < number)
-        {
-            maxStepperNumber = number;
-        }
-        addSteppersJerk(stepper);
-        activeAxises.add(number);
-        addSteppersSteps(stepper, steps);
-        final int maxSpeedStepsPerSecond = stepper.getMaxPossibleSpeedStepsPerSecond();
-        MaxSpeedStepsPerSecondOnAxis.put(number, maxSpeedStepsPerSecond);
-        log.trace("ID{}: Stepper {} for Axis {} has a max Steps/sec of {} !", myId, number, ax, maxSpeedStepsPerSecond);
-        if(0 < Math.abs(steps))
-        {
-            hasMovement = true;
-        }
-        if(StepsOnPrimaryAxis < Math.abs(steps))
-        {
-            StepsOnPrimaryAxis = Math.abs(steps);
-            log.trace("ID{}: primary Axis is {} !", myId, number);
-            primaryAxis = number;
-            PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
-            PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
-        }
-    }
-
     public int getActiveSteppersMap()
     {
         int ActiveSteppersMap = 0;
@@ -310,19 +380,6 @@ public class BasicLinearMove
         return fraction;
     }
 
-    public void setTravelSpeedMms(double speedMms)
-    {
-        log.trace("ID{}: Nominal speed set to {} mm/s!", myId, speedMms);
-        travelSpeedMms = speedMms;
-    }
-
-    public void setEndSpeedMms(double theSpeedMms)
-    {
-        endSpeedMms = theSpeedMms;
-        log.trace("ID{}: end speed set to {} mm/s", myId, theSpeedMms);
-        hasEndSpeed = true;
-    }
-
     public double getEndSpeedMms()
     {
         return endSpeedMms;
@@ -367,23 +424,12 @@ public class BasicLinearMove
         }
     }
 
-
     public int getEndSpeedFraction()
     {
         final int fraction =  (int)((endSpeedMms * PrimaryAxisStepsPerMm * 255)
                                       / MaxPossibleClientSpeedInStepsPerSecond);
         log.trace("ID{}: end speed = {} mm/s -> fraction = {}", myId, endSpeedMms, fraction);
         return fraction;
-    }
-
-    public void setAccelerationSteps(int steps)
-    {
-        AccelerationSteps = steps;
-    }
-
-    public void setDecelerationSteps(int steps)
-    {
-        DecelerationSteps = steps;
     }
 
     public int getAccelerationSteps(int curPart)
@@ -626,17 +672,6 @@ public class BasicLinearMove
         }
         log.trace("ID{}: Max end Speed = {} mm/sec", myId, maxEndSpeedMmS);
         return maxEndSpeedMmS;
-    }
-
-    public void setEndSpeedFactor(double endSpeedFactor)
-    {
-        if((1 < endSpeedFactor) || (0 > endSpeedFactor))
-        {
-            // not possible
-            log.error("Invalid End Speed Factor of {} !", endSpeedFactor);
-            return;
-        }
-        this.endSpeedFactor = endSpeedFactor;
     }
 
     public int getId()

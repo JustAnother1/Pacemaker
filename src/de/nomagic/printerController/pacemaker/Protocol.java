@@ -1202,6 +1202,14 @@ public class Protocol implements EventSource
             lastErrorReason = "no Queue - no chance to add to it.";
             return false;
         }
+        if(false == aMove.isNowComplete())
+        {
+        	// this move is inconsistent / missing data
+        	// we can not send this crap
+        	lastErrorReason = "tried to send an incomplete move";
+        	return false;
+        }
+        
         if(false == aMove.hasMovementData())
         {
             // no movement in this move, so no need to send anything.
