@@ -1,5 +1,6 @@
 .settings
 bin
+build
 README.html
 /*.gcode
 /*.sh
