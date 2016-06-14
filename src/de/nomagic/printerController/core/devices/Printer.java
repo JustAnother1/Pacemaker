@@ -14,6 +14,7 @@
  */
 package de.nomagic.printerController.core.devices;
 
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.pacemaker.Protocol;
 import de.nomagic.printerController.pacemaker.Reply;
 
@@ -52,14 +53,14 @@ public class Printer
         return pro.sendRawOrder(Order, parameterBytes, length);
     }
 
-    public boolean doShutDown()
+    public boolean doShutDown(Reference ref)
     {
-        return pro.doStopPrint();
+        return pro.doStopPrint(ref);
     }
 
-    public boolean doImmediateShutDown()
+    public boolean doImmediateShutDown(Reference ref)
     {
-        return pro.doEmergencyStopPrint();
+        return pro.doEmergencyStopPrint(ref);
     }
 
 }

@@ -6,6 +6,8 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.nomagic.printerController.core.Reference;
+
 /** Information about the Client.
 *
 * @author Lars P&ouml;tter
@@ -116,9 +118,9 @@ public class DeviceInformation
         return res;
     }
 
-    private int readValueOf(int which, String Name) throws IOException
+    private int readValueOf(int which, String Name, Reference ref) throws IOException
     {
-        final int res = requestInteger(which);
+        final int res = requestInteger(which, ref);
         if(0 > res)
         {
             log.debug("Could not read the {} !", Name);
@@ -126,10 +128,10 @@ public class DeviceInformation
         return res;
     }
 
-    private int readDeviceCount(int device, String Name) throws IOException
+    private int readDeviceCount(int device, String Name, Reference ref) throws IOException
     {
 
-        final Reply r = pro.sendDeviceCountRequest(device);
+        final Reply r = pro.sendDeviceCountRequest(device, ref);
         if(null == r)
         {
             hasBeenRead = false;
@@ -161,19 +163,19 @@ public class DeviceInformation
         return res;
     }
 
-    public boolean readDeviceInformationFrom(final Protocol pro) throws IOException
+    public boolean readDeviceInformationFrom(final Protocol pro, Reference ref) throws IOException
     {
         this.pro = pro;
         hasBeenRead = true;
-        FirmwareName = requestString(Protocol.INFO_FIRMWARE_NAME_STRING);
+        FirmwareName = requestString(Protocol.INFO_FIRMWARE_NAME_STRING, ref);
         if(false == hasBeenRead) { return false;}
-        SerialNumber = requestString(Protocol.INFO_SERIAL_NUMBER_STRING);
+        SerialNumber = requestString(Protocol.INFO_SERIAL_NUMBER_STRING, ref);
         if(false == hasBeenRead) { return false;}
-        BoardName = requestString(Protocol.INFO_BOARD_NAME_STRING);
+        BoardName = requestString(Protocol.INFO_BOARD_NAME_STRING, ref);
         if(false == hasBeenRead) { return false;}
-        givenName = requestString(Protocol.INFO_GIVEN_NAME_STRING);
+        givenName = requestString(Protocol.INFO_GIVEN_NAME_STRING, ref);
         if(false == hasBeenRead) { return false;}
-        majorVersionsSupported = requestList(Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR);
+        majorVersionsSupported = requestList(Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MAJOR, ref);
         if(false == hasBeenRead) { return false;}
         if(null == majorVersionsSupported)
         {
@@ -181,9 +183,9 @@ public class DeviceInformation
             hasBeenRead = false;
             return false;
         }
-        minorVersionSupportedUpTo = requestInteger(Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MINOR);
+        minorVersionSupportedUpTo = requestInteger(Protocol.INFO_SUPPORTED_PROTOCOL_VERSION_MINOR, ref);
         if(false == hasBeenRead) { return false;}
-        final Vector<Integer> extensions = requestList(Protocol.INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS);
+        final Vector<Integer> extensions = requestList(Protocol.INFO_LIST_OF_SUPPORTED_PROTOCOL_EXTENSIONS, ref);
         if(false == hasBeenRead) { return false;}
         if(null == extensions)
         {
@@ -218,38 +220,38 @@ public class DeviceInformation
             }
         }
 
-        FirmwareType = readValueOf(Protocol.INFO_FIRMWARE_TYPE, "Firmware Type");
+        FirmwareType = readValueOf(Protocol.INFO_FIRMWARE_TYPE, "Firmware Type", ref);
         if(false == hasBeenRead) { return false;}
-        FirmwareRevisionMajor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MAJOR, "Firmware Revision Major");
+        FirmwareRevisionMajor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MAJOR, "Firmware Revision Major", ref);
         if(false == hasBeenRead) { return false;}
-        FirmwareRevisionMinor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MINOR, "Firmware Revision Minor");
+        FirmwareRevisionMinor = readValueOf(Protocol.INFO_FIRMWARE_REVISION_MINOR, "Firmware Revision Minor", ref);
         if(false == hasBeenRead) { return false;}
-        HardwareType = readValueOf(Protocol.INFO_HARDWARE_TYPE, "Hardware Type");
+        HardwareType = readValueOf(Protocol.INFO_HARDWARE_TYPE, "Hardware Type", ref);
         if(false == hasBeenRead) { return false;}
-        HardwareRevision = readValueOf(Protocol.INFO_HARDWARE_REVISION, "Hardware Revision");
+        HardwareRevision = readValueOf(Protocol.INFO_HARDWARE_REVISION, "Hardware Revision", ref);
         if(false == hasBeenRead) { return false;}
-        maxSteppsPerSecond = readValueOf(Protocol.INFO_MAX_STEP_RATE, "maximum supported step rate");
+        maxSteppsPerSecond = readValueOf(Protocol.INFO_MAX_STEP_RATE, "maximum supported step rate", ref);
         if(false == hasBeenRead) { return false;}
-        hostTimeoutSeconds = readValueOf(Protocol.INFO_HOST_TIMEOUT, "host timeout");
+        hostTimeoutSeconds = readValueOf(Protocol.INFO_HOST_TIMEOUT, "host timeout", ref);
         if(false == hasBeenRead) { return false;}
-        NumberSteppers = readDeviceCount(Protocol.DEVICE_TYPE_STEPPER, "number of stepper motors");
+        NumberSteppers = readDeviceCount(Protocol.DEVICE_TYPE_STEPPER, "number of stepper motors", ref);
         if(false == hasBeenRead) { return false;}
-        NumberHeaters = readDeviceCount(Protocol.DEVICE_TYPE_HEATER, "number of Heaters");
+        NumberHeaters = readDeviceCount(Protocol.DEVICE_TYPE_HEATER, "number of Heaters", ref);
         if(false == hasBeenRead) { return false;}
-        NumberPwmSwitchedOutputs = readDeviceCount(Protocol.DEVICE_TYPE_PWM_OUTPUT, "number of PWM switched Outputs");
+        NumberPwmSwitchedOutputs = readDeviceCount(Protocol.DEVICE_TYPE_PWM_OUTPUT, "number of PWM switched Outputs", ref);
         if(false == hasBeenRead) { return false;}
-        NumberTemperatureSensors = readDeviceCount(Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR, "number of Temperature Sensors");
+        NumberTemperatureSensors = readDeviceCount(Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR, "number of Temperature Sensors", ref);
         if(false == hasBeenRead) { return false;}
-        NumberSwitches = readDeviceCount(Protocol.DEVICE_TYPE_INPUT, "number of Switches");
+        NumberSwitches = readDeviceCount(Protocol.DEVICE_TYPE_INPUT, "number of Switches", ref);
         if(false == hasBeenRead) { return false;}
-        NumberOutputSignals = readDeviceCount(Protocol.DEVICE_TYPE_OUTPUT, "number of Output Signals");
+        NumberOutputSignals = readDeviceCount(Protocol.DEVICE_TYPE_OUTPUT, "number of Output Signals", ref);
         if(false == hasBeenRead) { return false;}
-        NumberBuzzer = readDeviceCount(Protocol.DEVICE_TYPE_BUZZER, "number of buzzers");
+        NumberBuzzer = readDeviceCount(Protocol.DEVICE_TYPE_BUZZER, "number of buzzers", ref);
         if(false == hasBeenRead) { return false;}
         return hasBeenRead;
     }
 
-    public boolean readConnectorNames() throws IOException
+    public boolean readConnectorNames(Reference ref) throws IOException
     {
         if(null == pro)
         {
@@ -259,49 +261,49 @@ public class DeviceInformation
         {
             if(-1 != NumberSteppers)
             {
-                stepperNames = getAllNames(NumberSteppers, Protocol.DEVICE_TYPE_STEPPER);
+                stepperNames = getAllNames(NumberSteppers, Protocol.DEVICE_TYPE_STEPPER, ref);
             }
             if(-1 != NumberHeaters)
             {
-                heaterNames = getAllNames(NumberHeaters, Protocol.DEVICE_TYPE_HEATER);
+                heaterNames = getAllNames(NumberHeaters, Protocol.DEVICE_TYPE_HEATER, ref);
             }
             if(-1 != NumberPwmSwitchedOutputs)
             {
-                pwmOutputNames = getAllNames(NumberPwmSwitchedOutputs, Protocol.DEVICE_TYPE_PWM_OUTPUT);
+                pwmOutputNames = getAllNames(NumberPwmSwitchedOutputs, Protocol.DEVICE_TYPE_PWM_OUTPUT, ref);
             }
             if(-1 != NumberTemperatureSensors)
             {
-                tempertureSensorNames = getAllNames(NumberTemperatureSensors, Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR);
+                tempertureSensorNames = getAllNames(NumberTemperatureSensors, Protocol.DEVICE_TYPE_TEMPERATURE_SENSOR, ref);
             }
             if(-1 != NumberSwitches)
             {
-                switchesNames = getAllNames(NumberSwitches, Protocol.DEVICE_TYPE_INPUT);
+                switchesNames = getAllNames(NumberSwitches, Protocol.DEVICE_TYPE_INPUT, ref);
             }
             if(-1 != NumberOutputSignals)
             {
-                outputSignalNames = getAllNames(NumberOutputSignals, Protocol.DEVICE_TYPE_OUTPUT);
+                outputSignalNames = getAllNames(NumberOutputSignals, Protocol.DEVICE_TYPE_OUTPUT, ref);
             }
             if(-1 != NumberBuzzer)
             {
-                buzzerNames = getAllNames(NumberBuzzer, Protocol.DEVICE_TYPE_BUZZER);
+                buzzerNames = getAllNames(NumberBuzzer, Protocol.DEVICE_TYPE_BUZZER, ref);
             }
             return true;
         }
     }
 
-    private String[] getAllNames(int Number, byte deviceType) throws IOException
+    private String[] getAllNames(int Number, byte deviceType, Reference ref) throws IOException
     {
         final String[] allNames = new String[Number];
         for(int i = 0; i < Number; i++)
         {
-            allNames[i] = requestDeviceNameString(deviceType, i);
+            allNames[i] = requestDeviceNameString(deviceType, i, ref);
         }
         return allNames;
     }
 
-    private String requestDeviceNameString(final byte type, final int index) throws IOException
+    private String requestDeviceNameString(final byte type, final int index, Reference ref) throws IOException
     {
-        final Reply r = pro.sendDeviceNameRequest(type, index);
+        final Reply r = pro.sendDeviceNameRequest(type, index, ref);
         if(null == r)
         {
             log.error("Device Name Request Failed !");
@@ -310,9 +312,9 @@ public class DeviceInformation
         return r.getParameterAsString(0);
     }
 
-    private int requestInteger(final int which) throws IOException
+    private int requestInteger(final int which, Reference ref) throws IOException
     {
-        final Reply r = pro.sendInformationRequest(which);
+        final Reply r = pro.sendInformationRequest(which, ref);
         if(null == r)
         {
             hasBeenRead = false;
@@ -361,9 +363,9 @@ public class DeviceInformation
         return res;
     }
 
-    private String requestString(final int which) throws IOException
+    private String requestString(final int which, Reference ref) throws IOException
     {
-        final Reply r = pro.sendInformationRequest(which);
+        final Reply r = pro.sendInformationRequest(which, ref);
         if(null == r)
         {
             hasBeenRead = false;
@@ -380,9 +382,9 @@ public class DeviceInformation
         }
     }
 
-    private Vector<Integer> requestList(final int which) throws IOException
+    private Vector<Integer> requestList(final int which, Reference ref) throws IOException
     {
-        final Reply r = pro.sendInformationRequest(which);
+        final Reply r = pro.sendInformationRequest(which, ref);
         if(null == r)
         {
             log.error("Received no Reply !");

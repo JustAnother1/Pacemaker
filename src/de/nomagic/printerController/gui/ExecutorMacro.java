@@ -26,6 +26,7 @@ import de.nomagic.printerController.Heater_enum;
 import de.nomagic.printerController.Switch_enum;
 import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.core.RelativeMove;
 
 /**
@@ -74,6 +75,7 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
     private Integer[] function;
     private Object[] parameter;
     private Object[] parameter2;
+    private Reference ref = new Reference(this.getSource());
 
     public ExecutorMacro(Integer[] function, Object[] parameter, Object[] parameter2)
     {
@@ -135,35 +137,35 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
             switch(function[i])
             {
             case FUNC_DO_SHUT_DOWN:
-                res = exe.doShutDown();
+                res = exe.doShutDown(ref);
                 break;
 
             case FUNC_DO_IMMEDIATE_SHUT_DOWN:
-                res = exe.doImmediateShutDown();
+                res = exe.doImmediateShutDown(ref);
                 break;
 
             case FUNC_ADD_PAUSE_FOR:
-                res = exe.addPauseFor((Double)parameter[i]);
+                res = exe.addPauseFor((Double)parameter[i], ref);
                 break;
 
             case FUNC_ADD_MOVE_TO:
-                res = exe.addMoveTo((RelativeMove)parameter[i]);
+                res = exe.addMoveTo((RelativeMove)parameter[i], ref);
                 break;
 
             case FUNC_LET_MOVEMENT_STOP:
-                res = exe.letMovementStop();
+                res = exe.letMovementStop(ref);
                 break;
 
             case FUNC_START_HOMING:
-                res = exe.startHoming((Axis_enum[])parameter[i]);
+                res = exe.startHoming((Axis_enum[])parameter[i], ref);
                 break;
 
             case FUNC_DISABLE_ALL_STEPPER_MOTORS:
-                res = exe.disableAllStepperMotors();
+                res = exe.disableAllStepperMotors(ref);
                 break;
 
             case FUNC_ENABLE_ALL_STEPPER_MOTORS:
-                res = exe.enableAllStepperMotors();
+                res = exe.enableAllStepperMotors(ref);
                 break;
 
             case FUNC_SET_STEPS_PER_MILIMETER:
@@ -171,45 +173,45 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
                 break;
 
             case FUNC_SET_FAN_SPEED_FOR:
-                res = exe.setFanSpeedfor((Integer)parameter[i], (Integer)parameter2[i]);
+                res = exe.setFanSpeedfor((Integer)parameter[i], (Integer)parameter2[i], ref);
                 break;
 
             case FUNC_SET_CURRENT_EXTRUDER_TEMPERATURE_NO_WAIT:
-                res = exe.setCurrentExtruderTemperatureNoWait((Double)parameter[i]);
+                res = exe.setCurrentExtruderTemperatureNoWait((Double)parameter[i], ref);
                 break;
 
             case FUNC_SET_CURRENT_EXTRUDER_TEMPERATURE_AND_DO_WAIT:
-                res = exe.setCurrentExtruderTemperatureAndDoWait((Double)parameter[i], this);
+                res = exe.setCurrentExtruderTemperatureAndDoWait((Double)parameter[i], this, ref);
                 break;
 
             case FUNC_WAIT_FOR_EVERYTHING_IN_LIMITS:
-                res = exe.waitForEverythingInLimits(this);
+                res = exe.waitForEverythingInLimits(this, ref);
                 break;
 
             case FUNC_SET_PRINT_BED_TEMPERATURE_NO_WAIT:
-                res = exe.setPrintBedTemperatureNoWait((Double)parameter[i]);
+                res = exe.setPrintBedTemperatureNoWait((Double)parameter[i], ref);
                 break;
 
             case FUNC_SET_CHAMBER_TEMPERATURE_NO_WAIT:
-                res = exe.setChamberTemperatureNoWait((Double)parameter[i]);
+                res = exe.setChamberTemperatureNoWait((Double)parameter[i], ref);
                 break;
 
             case FUNC_SET_PRINT_BED_TEMPERATURE_AND_DO_WAIT:
-                res = exe.setPrintBedTemperatureAndDoWait((Double)parameter[i], this);
+                res = exe.setPrintBedTemperatureAndDoWait((Double)parameter[i], this, ref);
                 break;
 
             case FUNC_GET_CURRENT_EXTRUDER_TEMPERATURE:
-                log.info(exe.getCurrentExtruderTemperature());
+                log.info(exe.getCurrentExtruderTemperature(ref));
                 res = true;
                 break;
 
             case FUNC_GET_HEATED_BED_TEMPERATURE:
-                log.info(exe.getHeatedBedTemperature());
+                log.info(exe.getHeatedBedTemperature(ref));
                 res = true;
                 break;
 
             case FUNC_GET_STATE_OF_SWITCH:
-                final int state = exe.getStateOfSwitch((Switch_enum)parameter[i]);
+                final int state = exe.getStateOfSwitch((Switch_enum)parameter[i], ref);
                 switch(state)
                 {
                 case Executor.SWITCH_STATE_CLOSED:
@@ -233,11 +235,11 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
                 break;
 
             case FUNC_SWITCH_EXTRUDER_TO:
-                res = exe.switchExtruderTo((Integer)parameter[i]);
+                res = exe.switchExtruderTo((Integer)parameter[i], ref);
                 break;
 
             case FUNC_WAIT_FOR_CLIENT_QUEUE_EMPTY:
-                exe.waitForEverythingInLimits(this);
+                exe.waitForEverythingInLimits(this, ref);
                 res = true;
                 break;
 
@@ -463,4 +465,10 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
     {
         log.debug(msg);
     }
+
+	@Override
+	public String getSource() 
+	{
+		return "Macro";
+	}
 }

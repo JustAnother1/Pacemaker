@@ -91,7 +91,7 @@ public final class CoreStateMachine
         }
     }
 
-    public void close()
+    public void close(Reference ref)
     {
         if(null != decoder)
         {
@@ -99,7 +99,7 @@ public final class CoreStateMachine
         }
         if(null != exe)
         {
-            exe.close();
+            exe.close(ref);
         }
     }
 

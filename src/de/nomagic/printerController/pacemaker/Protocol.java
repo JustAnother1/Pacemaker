@@ -28,6 +28,7 @@ import de.nomagic.printerController.core.Action_enum;
 import de.nomagic.printerController.core.Event;
 import de.nomagic.printerController.core.EventSource;
 import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.core.devices.Switch;
@@ -245,7 +246,7 @@ public class Protocol implements EventSource
         else
         {
             // take client out of Stopped Mode
-            isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
+            isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE, new Reference("Protocol Initialisation"));
         }
         this.timeout = timeout;
         if(null != timeout)
@@ -708,26 +709,26 @@ public class Protocol implements EventSource
 
 // Information
 
-    public Reply sendInformationRequest(final int which) throws IOException
+    public Reply sendInformationRequest(final int which, Reference ref) throws IOException
     {
         final byte[] request = new byte[1];
         request[0] = (byte)(0xff & which);
-        return cc.sendRequest(ORDER_REQ_INFORMATION, request);
+        return cc.sendRequest(ORDER_REQ_INFORMATION, request, ref);
     }
 
-    public Reply sendDeviceCountRequest(final int device) throws IOException
+    public Reply sendDeviceCountRequest(final int device, Reference ref) throws IOException
     {
         final byte[] request = new byte[1];
         request[0] = (byte)(0xff & device);
-        return cc.sendRequest(ORDER_REQUEST_DEVICE_COUNT, request);
+        return cc.sendRequest(ORDER_REQUEST_DEVICE_COUNT, request, ref);
     }
 
-    public Reply sendDeviceNameRequest(final byte type, final int index) throws IOException
+    public Reply sendDeviceNameRequest(final byte type, final int index, Reference ref) throws IOException
     {
         final byte[] request = new byte[2];
         request[0] = type;
         request[1] = (byte)(0xff & index);
-        return cc.sendRequest(ORDER_REQ_DEVICE_NAME, request);
+        return cc.sendRequest(ORDER_REQ_DEVICE_NAME, request, ref);
     }
 
     public static String getDeviceTypeName(int deviceType)
@@ -746,12 +747,12 @@ public class Protocol implements EventSource
         }
     }
 
-    public DeviceInformation getDeviceInformation()
+    public DeviceInformation getDeviceInformation(Reference ref)
     {
         final DeviceInformation paceMaker = new DeviceInformation();
         try
         {
-            if(true == paceMaker.readDeviceInformationFrom(this))
+            if(true == paceMaker.readDeviceInformationFrom(this, ref))
             {
                 di = paceMaker;
                 hostTimeout = di.getHostTimeoutSeconds();
@@ -771,24 +772,24 @@ public class Protocol implements EventSource
 
 // Input
 
-    public int getSwitchState(final int num)
+    public int getSwitchState(final int num, Reference ref)
     {
         final byte[] param = new byte[2];
         param[0] = DEVICE_TYPE_INPUT;
         param[1] = (byte) num;
-        final int reply = sendOrderExpectInt(Protocol.ORDER_REQ_INPUT, param);
+        final int reply = sendOrderExpectInt(Protocol.ORDER_REQ_INPUT, param, ref);
         switch(reply)
         {
         case INPUT_HIGH: return Executor.SWITCH_STATE_CLOSED;
         case INPUT_LOW:  return Executor.SWITCH_STATE_OPEN;
-        default :        log.error("Get Switch State returned {} !", reply);
+        default :        log.error("({}):Get Switch State returned {} !", ref, reply);
                          return Executor.SWITCH_STATE_NOT_AVAILABLE;
         }
     }
 
 // Temperature Sensor - Heater
 
-    public boolean setTemperature(final int heaterNum, Double temperature)
+    public boolean setTemperature(final int heaterNum, Double temperature, Reference ref)
     {
         temperature = temperature * 10; // Client expects Temperature in 0.1 degree units.
         final int tempi = temperature.intValue();
@@ -796,15 +797,15 @@ public class Protocol implements EventSource
         param[0] = (byte) heaterNum;
         param[1] = (byte)(0xff & (tempi/256));
         param[2] = (byte)(tempi & 0xff);
-        return sendOrderExpectOK(Protocol.ORDER_SET_HEATER_TARGET_TEMPERATURE, param);
+        return sendOrderExpectOK(Protocol.ORDER_SET_HEATER_TARGET_TEMPERATURE, param, ref);
     }
 
-    public double readTemperatureFrom(int sensorNumber)
+    public double readTemperatureFrom(int sensorNumber, Reference ref)
     {
         final byte[] param = new byte[2];
         param[0] = DEVICE_TYPE_TEMPERATURE_SENSOR;
         param[1] = (byte) sensorNumber;
-        final Reply r = cc.sendRequest(ORDER_REQ_TEMPERATURE, param);
+        final Reply r = cc.sendRequest(ORDER_REQ_TEMPERATURE, param, ref);
         if(null == r)
         {
             return TEMPERATURE_ERROR_NO_REPLY;
@@ -840,8 +841,9 @@ public class Protocol implements EventSource
      *
      * @param fan specifies the effected fan.
      * @param speed 0 = off; 65535 = max
+     * @param ref 
      */
-    public boolean setFanSpeedfor(final int fan, final int speed)
+    public boolean setFanSpeedfor(final int fan, final int speed, Reference ref)
     {
         if((-1 < fan) && (fan < di.getNumberPwmSwitchedOutputs()))
         {
@@ -850,7 +852,7 @@ public class Protocol implements EventSource
             param[1] = (byte)fan;
             param[2] = (byte)(speed/256);
             param[3] = (byte)(0xff & speed);
-            if(false == sendOrderExpectOK(ORDER_SET_PWM, param))
+            if(false == sendOrderExpectOK(ORDER_SET_PWM, param, ref))
             {
                 log.error("Falied to set Speed on the Fan !");
                 lastErrorReason = "Falied to set Speed on the Fan !";
@@ -863,8 +865,8 @@ public class Protocol implements EventSource
         }
         else
         {
-            log.warn("Client does not have the Fan {} ! It has only {} + 1 fans!",
-                    fan,  di.getNumberPwmSwitchedOutputs());
+            log.warn("({}): Client does not have the Fan {} ! It has only {} + 1 fans!",
+                    ref, fan,  di.getNumberPwmSwitchedOutputs());
             return true;
         }
     }
@@ -875,8 +877,9 @@ public class Protocol implements EventSource
      *
      * @param output specifies the effected output.
      * @param state 0 = low; 1 = high; 2 = disabled / high-Z
+     * @param ref 
      */
-    public boolean setOutputState(final int output, final int state)
+    public boolean setOutputState(final int output, final int state, Reference ref)
     {
         if((-1 < output) && (output < di.getNumberOutputSignals()))
         {
@@ -884,9 +887,9 @@ public class Protocol implements EventSource
             param[0] = DEVICE_TYPE_OUTPUT;
             param[1] = (byte)output;
             param[2] = (byte)(0xff & state);
-            if(false == sendOrderExpectOK(ORDER_SET_OUTPUT, param))
+            if(false == sendOrderExpectOK(ORDER_SET_OUTPUT, param, ref))
             {
-                log.error("Falied to set output state !");
+                log.error("({}): Falied to set output state !", ref);
                 lastErrorReason = "Falied to set output state !";
                 return false;
             }
@@ -897,22 +900,22 @@ public class Protocol implements EventSource
         }
         else
         {
-            log.warn("Client does not have the output {} ! It has only {} + 1 output!",
-                    output,  di.getNumberOutputSignals());
+            log.warn("({}): Client does not have the output {} ! It has only {} + 1 output!",
+                       ref, output,  di.getNumberOutputSignals());
             return true;
         }
     }
 
 // Stepper Motors
 
-    public boolean activateStepperControl()
+    public boolean activateStepperControl(Reference ref)
     {
         final byte[] param = new byte[1];
         param[0] = 0x01;
-        return sendOrderExpectOK(Protocol.ORDER_ACTIVATE_STEPPER_CONTROL, param);
+        return sendOrderExpectOK(Protocol.ORDER_ACTIVATE_STEPPER_CONTROL, param, ref);
     }
 
-    public boolean configureUnderRunAvoidance(int stepperNumber, int maxSpeedStepsPerSecond, int maxAccelleration)
+    public boolean configureUnderRunAvoidance(int stepperNumber, int maxSpeedStepsPerSecond, int maxAccelleration, Reference ref)
     {
         final byte[] param = new byte[9];
         param[0] = (byte)(0xff & stepperNumber);
@@ -924,10 +927,10 @@ public class Protocol implements EventSource
         param[6] = (byte)(0xff & (maxAccelleration>>16));
         param[7] = (byte)(0xff & (maxAccelleration>>8));
         param[8] = (byte)(0xff & maxAccelleration);
-        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS, param);
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS, param, ref);
     }
 
-    public boolean configureStepperMovementRate(int stepperNumber, int maxSpeedStepsPerSecond)
+    public boolean configureStepperMovementRate(int stepperNumber, int maxSpeedStepsPerSecond, Reference ref)
     {
         final byte[] param = new byte[5];
         param[0] = (byte)(0xff & stepperNumber);
@@ -935,10 +938,10 @@ public class Protocol implements EventSource
         param[2] = (byte)(0xff & (maxSpeedStepsPerSecond>>16));
         param[3] = (byte)(0xff & (maxSpeedStepsPerSecond>>8));
         param[4] = (byte)(0xff & maxSpeedStepsPerSecond);
-        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_AXIS_MOVEMENT_RATES, param);
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_AXIS_MOVEMENT_RATES, param, ref);
     }
 
-    public boolean configureEndStop(Stepper motor, Switch min, Switch max)
+    public boolean configureEndStop(Stepper motor, Switch min, Switch max, Reference ref)
     {
         if((null == min) && (null == max))
         {
@@ -969,13 +972,14 @@ public class Protocol implements EventSource
             param[startpos + 1] = 1; // MAX
             startpos = startpos + 2;
         }
-        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_END_STOPS, param);
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_END_STOPS, param, ref);
     }
 
     /** only needed to implement M17
+     * @param ref 
      *
      */
-    public boolean enableAllStepperMotors()
+    public boolean enableAllStepperMotors(Reference ref)
     {
         final int numSteppers = di.getNumberSteppers();
         final byte[] parameter = new byte[2];
@@ -983,9 +987,9 @@ public class Protocol implements EventSource
         for(int i = 0; i < numSteppers; i++)
         {
             parameter[0] = (byte)i;
-            if(false == sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter))
+            if(false == sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter, ref))
             {
-                log.error("Falied to enable the Steppers !");
+                log.error("({}): Falied to enable the Steppers !", ref);
                 lastErrorReason = "Falied to enable the Steppers !";
                 return false;
             }
@@ -993,11 +997,11 @@ public class Protocol implements EventSource
         return true;
     }
 
-    public boolean disableAllStepperMotors()
+    public boolean disableAllStepperMotors(Reference ref)
     {
-        if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, null))
+        if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, null, ref))
         {
-            log.error("Falied to disable the Steppers !");
+            log.error("({}): Falied to disable the Steppers !", ref);
             lastErrorReason = "Falied to disable the Steppers !";
             return false;
         }
@@ -1007,23 +1011,23 @@ public class Protocol implements EventSource
         }
     }
 
-    public boolean doStopPrint()
+    public boolean doStopPrint(Reference ref)
     {
         final byte[] param = new byte[1];
         param[0] = ORDERED_STOP;
-        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param);
+        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param, ref);
     }
 
-    public boolean doEmergencyStopPrint()
+    public boolean doEmergencyStopPrint(Reference ref)
     {
         final byte[] param = new byte[1];
         param[0] = EMERGENCY_STOP;
-        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param);
+        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param, ref);
     }
 
 // Queue handling:
 
-    public int getNumberOfCommandsInClientQueue()
+    public int getNumberOfCommandsInClientQueue(Reference ref)
     {
         final long now = System.currentTimeMillis();
         if((now - timeofLastClientQueueUpdate) > QUEUE_TIMEOUT_MS)
@@ -1068,9 +1072,9 @@ public class Protocol implements EventSource
         }
     }
 
-    public void ClearQueue()
+    public void ClearQueue(Reference ref)
     {
-        final Reply r = cc.sendRequest(ORDER_CLEAR_COMMAND_BLOCK_QUEUE, null);
+        final Reply r = cc.sendRequest(ORDER_CLEAR_COMMAND_BLOCK_QUEUE, null, ref);
         if(true == r.isOKReply())
         {
             parseQueueReply(r.getParameter());
@@ -1423,6 +1427,7 @@ public class Protocol implements EventSource
      * call. If in this situation try calling enqueueCommandBlocking() !
      *
      * @param param Data of only one command !
+     * @param ref 
      * @return RESULT_SUCCESS,  RESULT_ERROR or RESULT_TRY_AGAIN_LATER
      */
     private int enqueueCommand(byte[] param)
@@ -1555,7 +1560,7 @@ public class Protocol implements EventSource
 
 // Firmware specific configuration:
 
-    public boolean writeFirmwareConfigurationValue(String name, String value)
+    public boolean writeFirmwareConfigurationValue(String name, String value, Reference ref)
     {
         final byte[] nameBuf = name.getBytes(Charset.forName("UTF-8"));
         final byte[] valueBuf = value.getBytes(Charset.forName("UTF-8"));
@@ -1569,7 +1574,7 @@ public class Protocol implements EventSource
         {
             parameter[i+nameBuf.length + 1] = valueBuf[i];
         }
-        if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter))
+        if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter, ref))
         {
             log.error("Failed to write Firmware Setting {} = {} !", name, value);
             lastErrorReason = "Failed to write Firmware Setting " + name + " = " + value + " !";
@@ -1581,7 +1586,7 @@ public class Protocol implements EventSource
         }
     }
 
-    public String getCompleteDescriptionForSetting(String curSetting)
+    public String getCompleteDescriptionForSetting(String curSetting, Reference ref)
     {
         if(null == curSetting)
         {
@@ -1596,7 +1601,7 @@ public class Protocol implements EventSource
         {
             return "";
         }
-        final Reply r = cc.sendRequest(ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES, strbuf);
+        final Reply r = cc.sendRequest(ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES, strbuf, ref);
         if(null == r)
         {
             return "";
@@ -1652,7 +1657,7 @@ public class Protocol implements EventSource
         return description.toString();
     }
 
-    public String traverseFirmwareConfiguration(String curSetting)
+    public String traverseFirmwareConfiguration(String curSetting, Reference ref)
     {
         if(null == curSetting)
         {
@@ -1667,7 +1672,7 @@ public class Protocol implements EventSource
         {
             strbuf = new byte[0];
         }
-        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES, strbuf);
+        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES, strbuf, ref);
         if(null == r)
         {
             return "";
@@ -1692,7 +1697,7 @@ public class Protocol implements EventSource
         }
     }
 
-    public String readFirmwareConfigurationValue(String curSetting)
+    public String readFirmwareConfigurationValue(String curSetting, Reference ref)
     {
         if(null == curSetting)
         {
@@ -1707,7 +1712,7 @@ public class Protocol implements EventSource
         {
             return "";
         }
-        final Reply r = cc.sendRequest(ORDER_READ_FIRMWARE_CONFIGURATION, strbuf);
+        final Reply r = cc.sendRequest(ORDER_READ_FIRMWARE_CONFIGURATION, strbuf, ref);
         if(null == r)
         {
             return "";
@@ -1732,35 +1737,35 @@ public class Protocol implements EventSource
         }
     }
 
-    private boolean sendOrderExpectOK(final byte order, final byte parameter)
+    private boolean sendOrderExpectOK(final byte order, final byte parameter, Reference ref)
     {
         final byte[] help = new byte[1];
         help[0] = parameter;
-        return sendOrderExpectOK(order, help);
+        return sendOrderExpectOK(order, help, ref);
     }
 
-    private boolean sendOrderExpectOK(final byte order, final byte[] parameter)
+    private boolean sendOrderExpectOK(final byte order, final byte[] parameter, Reference ref)
     {
-        final Reply r = cc.sendRequest(order, parameter);
+        final Reply r = cc.sendRequest(order, parameter, ref);
         if(null == r)
         {
-            log.error("Received no Reply !");
+            log.error("({}): Received no Reply !", ref);
             lastErrorReason = "Received no Reply !";
             return false;
         }
         return r.isOKReply();
     }
 
-    private int sendOrderExpectInt(final byte order, final byte[] parameter)
+    private int sendOrderExpectInt(final byte order, final byte[] parameter, Reference ref)
     {
-        final Reply r = cc.sendRequest(order, parameter);
+        final Reply r = cc.sendRequest(order, parameter, ref);
         if(null == r)
         {
             return -1;
         }
         if(false  == r.isOKReply())
         {
-            log.error("Reply is not an OK ! " + r);
+            log.error("({}): Reply is not an OK ! " + r, ref);
             return -2;
         }
         final byte[] reply = r.getParameter();
@@ -1779,7 +1784,7 @@ public class Protocol implements EventSource
 
     private void sendKeepAliveSignal()
     {
-        final int timeout = sendOrderExpectInt(ORDER_REQ_INFORMATION, new byte[]{INFO_HOST_TIMEOUT});
+        final int timeout = sendOrderExpectInt(ORDER_REQ_INFORMATION, new byte[]{INFO_HOST_TIMEOUT}, new Reference("Host Timeout Poll"));
         if(0 < timeout)
         {
             // read a vaild value

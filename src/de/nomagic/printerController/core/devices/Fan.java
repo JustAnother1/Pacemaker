@@ -14,6 +14,7 @@
  */
 package de.nomagic.printerController.core.devices;
 
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
@@ -51,24 +52,24 @@ public class Fan
         return lastErrorReason;
     }
 
-    public boolean setSpeed(int speed)
+    public boolean setSpeed(int speed, Reference ref)
     {
         if(speed != curSpeed)
         {
             boolean result = false;
             if(true == isPWM)
             {
-                result = pro.setFanSpeedfor(num, speed);
+                result = pro.setFanSpeedfor(num, speed, ref);
             }
             else
             {
                 if(speed > HALF_SPEED)
                 {
-                    result = pro.setOutputState(num, Protocol.OUTPUT_STATE_HIGH);
+                    result = pro.setOutputState(num, Protocol.OUTPUT_STATE_HIGH, ref);
                 }
                 else
                 {
-                    result = pro.setOutputState(num, Protocol.OUTPUT_STATE_LOW);
+                    result = pro.setOutputState(num, Protocol.OUTPUT_STATE_LOW, ref);
                 }
             }
             if(false == result)

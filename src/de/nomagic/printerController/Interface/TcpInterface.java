@@ -69,4 +69,10 @@ public class TcpInterface extends InteractiveInterface
         }
     }
 
+	@Override
+	public String getSource() 
+	{
+		return "TCP";
+	}
+
 }

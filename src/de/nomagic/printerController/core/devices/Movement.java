@@ -26,6 +26,7 @@ import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.Switch_enum;
 import de.nomagic.printerController.core.Action_enum;
 import de.nomagic.printerController.core.Event;
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.core.RelativeMove;
 import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.core.movement.PlannedMoves;
@@ -53,6 +54,7 @@ public class Movement
     private XyzTable table;
     private final TimeoutHandler to;
     private int TimeoutId;
+    private Reference ref = new Reference("Movement Initialisation");
 
     public Movement(TimeoutHandler to, Cfg cfg)
     {
@@ -149,7 +151,7 @@ public class Movement
                 }
             }
         }
-        if(false == pro.activateStepperControl())
+        if(false == pro.activateStepperControl(ref))
         {
             log.error("Could not activate Stepper control !");
             return false;
@@ -161,7 +163,8 @@ public class Movement
     {
         final boolean res = pro.configureUnderRunAvoidance(motor.getStepperNumber(),
                                                            motor.getMaxPossibleSpeedStepsPerSecond(),
-                                                           (int)motor.getMaxAccelerationStepsPerSecond());
+                                                           (int)motor.getMaxAccelerationStepsPerSecond(),
+                                                           ref);
         if(false == res)
         {
             log.error("Could not configure the under run avoidance !");
@@ -172,7 +175,8 @@ public class Movement
     private boolean configureStepperMaxSpeed(Stepper motor, Protocol pro)
     {
         final boolean res = pro.configureStepperMovementRate(motor.getStepperNumber(),
-                                                             motor.getMaxPossibleSpeedStepsPerSecond());
+                                                             motor.getMaxPossibleSpeedStepsPerSecond(),
+                                                             ref);
         if(false == res)
         {
             log.error("Could not configure the Maximum Speed  of {} for the Stepper {} !",
@@ -194,19 +198,19 @@ public class Movement
         case X:
             min = switches.get(Switch_enum.Xmin);
             max = switches.get(Switch_enum.Xmax);
-            res = pro.configureEndStop(motor, min, max);
+            res = pro.configureEndStop(motor, min, max, ref);
             break;
 
         case Y:
             min = switches.get(Switch_enum.Ymin);
             max = switches.get(Switch_enum.Ymax);
-            res = pro.configureEndStop(motor, min, max);
+            res = pro.configureEndStop(motor, min, max, ref);
             break;
 
         case Z:
             min = switches.get(Switch_enum.Zmin);
             max = switches.get(Switch_enum.Zmax);
-            res = pro.configureEndStop(motor, min, max);
+            res = pro.configureEndStop(motor, min, max, ref);
             break;
 
         default:
@@ -255,17 +259,18 @@ public class Movement
     }
 
     /** This causes all axis to decelerate to a full stop.
+     * @param ref 
      *
      */
-    public boolean letMovementStop()
+    public boolean letMovementStop(Reference ref)
     {
         to.stopTimeout(TimeoutId);
-        return table.letMovementStop();
+        return table.letMovementStop(ref);
     }
 
-    public boolean addRelativeMove(RelativeMove relMov)
+    public boolean addRelativeMove(RelativeMove relMov, Reference ref)
     {
-        if(true == table.addRelativeMove(relMov))
+        if(true == table.addRelativeMove(relMov, ref))
         {
             to.startTimeout(TimeoutId);
             return true;
@@ -276,13 +281,13 @@ public class Movement
         }
     }
 
-    public boolean homeAxis(Axis_enum[] axis)
+    public boolean homeAxis(Axis_enum[] axis, Reference ref)
     {
         to.stopTimeout(TimeoutId);
-        return table.homeAxis(axis);
+        return table.homeAxis(axis, ref);
     }
 
-    public boolean enableAllMotors()
+    public boolean enableAllMotors(Reference ref)
     {
         final Collection<Protocol> col = protocols.values();
         final Iterator<Protocol> it = col.iterator();
@@ -290,7 +295,7 @@ public class Movement
         while(true == it.hasNext())
         {
             final Protocol pro = it.next();
-            if(false == pro.enableAllStepperMotors())
+            if(false == pro.enableAllStepperMotors(ref))
             {
                 success = false;
             }
@@ -298,7 +303,7 @@ public class Movement
         return success;
     }
 
-    public boolean disableAllMotors()
+    public boolean disableAllMotors(Reference ref)
     {
         final Collection<Protocol> col = protocols.values();
         final Iterator<Protocol> it = col.iterator();
@@ -306,7 +311,7 @@ public class Movement
         while(true == it.hasNext())
         {
             final Protocol pro = it.next();
-            if(false == pro.disableAllStepperMotors())
+            if(false == pro.disableAllStepperMotors(ref))
             {
                 success = false;
             }
@@ -314,7 +319,7 @@ public class Movement
         return success;
     }
 
-    public int getNumberOfUsedSlotsInClientQueue()
+    public int getNumberOfUsedSlotsInClientQueue(Reference ref)
     {
         final Collection<Protocol> col = protocols.values();
         final Iterator<Protocol> it = col.iterator();
@@ -322,7 +327,7 @@ public class Movement
         while(true == it.hasNext())
         {
             final Protocol pro = it.next();
-            final int cur = pro.getNumberOfCommandsInClientQueue();
+            final int cur = pro.getNumberOfCommandsInClientQueue(ref);
             if(0 > cur)
             {
                 lastErrorReason = "Client in Stopped Mode !";

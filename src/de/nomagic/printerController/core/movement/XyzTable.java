@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.Switch_enum;
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.core.RelativeMove;
 import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.core.devices.Switch;
@@ -354,9 +355,10 @@ public class XyzTable
     }
 
     /** This sends out the last move command. The one that waits for the next move to calculate the end Speed.
+     * @param ref 
     *
     */
-   public boolean letMovementStop()
+   public boolean letMovementStop(Reference ref)
    {
        log.trace("letting the movement stop");
        if(null == planner)
@@ -370,7 +372,7 @@ public class XyzTable
        }
    }
 
-   public boolean addRelativeMove(RelativeMove relMov)
+   public boolean addRelativeMove(RelativeMove relMov, Reference ref)
    {
        log.trace("adding the move {}", relMov);
        final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
@@ -568,4 +570,9 @@ public class XyzTable
             return planner.hasAllMovementFinished();
         }
     }
+
+	public boolean homeAxis(Axis_enum[] axis, Reference ref) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

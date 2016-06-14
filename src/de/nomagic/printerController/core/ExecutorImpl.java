@@ -112,9 +112,9 @@ public class ExecutorImpl implements Executor
         return lastErrorReason;
     }
 
-    public void close()
+    public void close(Reference ref)
     {
-        letMovementStop();
+        letMovementStop(ref);
         timeout.interrupt();
     }
 
@@ -220,12 +220,13 @@ public class ExecutorImpl implements Executor
             log.info("Protocol is operational");
             // First send the configuration.
             // The configuration might have an effect on the other values.
-            if(false == applyConfiguration(pro, i))
+            Reference ref = new Reference("Executor Initialisation");
+            if(false == applyConfiguration(pro, i, ref))
             {
                 pro.closeConnection();
                 return false;
             }
-            final DeviceInformation di = pro.getDeviceInformation();
+            final DeviceInformation di = pro.getDeviceInformation(ref);
             // get available Devices
             // check for all devices if they are configured
             // if yet then create the instances for them
@@ -251,7 +252,7 @@ public class ExecutorImpl implements Executor
         return true;
     }
 
-    private boolean applyConfiguration(Protocol pro, int connectionNumber)
+    private boolean applyConfiguration(Protocol pro, int connectionNumber, Reference ref)
     {
         final Vector<Setting> settings = cfg.getAllFirmwareSettingsFor(connectionNumber);
         if(null == settings)
@@ -267,7 +268,7 @@ public class ExecutorImpl implements Executor
                 final String setting = curSetting.getName();
                 final String value = curSetting.getValue();
                 log.debug("Writing to Client : -{}- = -{}- !", setting, value);
-                if(false == pro.writeFirmwareConfigurationValue(setting, value))
+                if(false == pro.writeFirmwareConfigurationValue(setting, value, ref))
                 {
                     log.error("Failed to apply Firmware specific configuration!");
                     return false;
@@ -385,15 +386,15 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    public boolean doShutDown()
+    public boolean doShutDown(Reference ref)
     {
         boolean success = true;
         final Set<Integer> ks = print.keySet();
         final Iterator<Integer> it = ks.iterator();
         while(it.hasNext())
         {
-            final Printer curP =print.get(it.next());
-            if(false == curP.doShutDown())
+            final Printer curP = print.get(it.next());
+            if(false == curP.doShutDown(ref))
             {
                 success = false;
                 lastErrorReason = curP.getLastErrorReason();
@@ -402,7 +403,7 @@ public class ExecutorImpl implements Executor
         return success;
     }
 
-    public boolean doImmediateShutDown()
+    public boolean doImmediateShutDown(Reference ref)
     {
         boolean success = true;
         final Set<Integer> ks = print.keySet();
@@ -410,7 +411,7 @@ public class ExecutorImpl implements Executor
         while(it.hasNext())
         {
             final Printer curP =print.get(it.next());
-            if(false == curP.doImmediateShutDown())
+            if(false == curP.doImmediateShutDown(ref))
             {
                 success = false;
                 lastErrorReason = curP.getLastErrorReason();
@@ -421,7 +422,7 @@ public class ExecutorImpl implements Executor
 
 // Stepper Control
 
-    public boolean addPauseFor(final Double seconds)
+    public boolean addPauseFor(final Double seconds, Reference ref)
     {
         if(false == move.addPause(seconds))
         {
@@ -434,10 +435,10 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    public boolean addMoveTo(final RelativeMove relMove)
+    public boolean addMoveTo(final RelativeMove relMove, Reference ref)
     {
         log.trace("adding the move {}", relMove);
-        if(false == move.addRelativeMove(relMove))
+        if(false == move.addRelativeMove(relMove, ref))
         {
             lastErrorReason = move.getLastErrorReason();
             return false;
@@ -448,9 +449,9 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    public boolean letMovementStop()
+    public boolean letMovementStop(Reference ref)
     {
-        if(false == move.letMovementStop())
+        if(false == move.letMovementStop(ref))
         {
             lastErrorReason = move.getLastErrorReason();
             return false;
@@ -461,9 +462,9 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    public boolean startHoming(Axis_enum[] axis)
+    public boolean startHoming(Axis_enum[] axis, Reference ref)
     {
-        if(false == move.homeAxis(axis))
+        if(false == move.homeAxis(axis, ref))
         {
             log.error("Homing Failed!");
             lastErrorReason = move.getLastErrorReason();
@@ -475,9 +476,9 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    public boolean disableAllStepperMotors()
+    public boolean disableAllStepperMotors(Reference ref)
     {
-        if(false == move.disableAllMotors())
+        if(false == move.disableAllMotors(ref))
         {
             lastErrorReason = move.getLastErrorReason();
             return false;
@@ -488,9 +489,9 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    public boolean enableAllStepperMotors()
+    public boolean enableAllStepperMotors(Reference ref)
     {
-        if(false == move.enableAllMotors())
+        if(false == move.enableAllMotors(ref))
         {
             lastErrorReason = move.getLastErrorReason();
             return false;
@@ -522,7 +523,7 @@ public class ExecutorImpl implements Executor
      * @param fan specifies the effected fan.
      * @param speed 0 = off; 255 = max
      */
-    public boolean setFanSpeedfor(final int fan, final int speed)
+    public boolean setFanSpeedfor(final int fan, final int speed, Reference ref)
     {
         final Fan theFan = fans.get(fan);
         if(null == theFan)
@@ -532,7 +533,7 @@ public class ExecutorImpl implements Executor
         }
         else
         {
-            if(false == theFan.setSpeed(speed))
+            if(false == theFan.setSpeed(speed, ref))
             {
                 lastErrorReason = theFan.getLastErrorReason();
                 return false;
@@ -552,13 +553,13 @@ public class ExecutorImpl implements Executor
      *
      * @param temperature The Temperature in degree Celsius.
      */
-    public boolean setCurrentExtruderTemperatureNoWait(final Double temperature)
+    public boolean setCurrentExtruderTemperatureNoWait(final Double temperature, Reference ref)
     {
         switch(currentExtruder)
         {
-        case 0: return setTemperatureNoWait(Heater_enum.Extruder_0, temperature);
-        case 1: return setTemperatureNoWait(Heater_enum.Extruder_1, temperature);
-        case 2: return setTemperatureNoWait(Heater_enum.Extruder_2, temperature);
+        case 0: return setTemperatureNoWait(Heater_enum.Extruder_0, temperature, ref);
+        case 1: return setTemperatureNoWait(Heater_enum.Extruder_1, temperature, ref);
+        case 2: return setTemperatureNoWait(Heater_enum.Extruder_2, temperature, ref);
         default:
             lastErrorReason = "Invalid Extruder Number !";
             return false;
@@ -566,15 +567,16 @@ public class ExecutorImpl implements Executor
     }
 
     public boolean setCurrentExtruderTemperatureAndDoWait(final Double temperature,
-                                                          final GCodeResultStream resultStream)
+                                                          final GCodeResultStream resultStream,
+                                                          Reference ref)
     {
-        if(false == letMovementStop())
+        if(false == letMovementStop(ref))
         {
             return false;
         }
-        if(true == setCurrentExtruderTemperatureNoWait(temperature))
+        if(true == setCurrentExtruderTemperatureNoWait(temperature, ref))
         {
-            return waitForEverythingInLimits(resultStream);
+            return waitForEverythingInLimits(resultStream, ref);
         }
         else
         {
@@ -583,11 +585,11 @@ public class ExecutorImpl implements Executor
     }
 
     /** waits until all heaters created the required Temperatures. */
-    public boolean waitForEverythingInLimits(final GCodeResultStream resultStream)
+    public boolean waitForEverythingInLimits(final GCodeResultStream resultStream, Reference ref)
     {
         for(Heater_enum heater : Heater_enum.values())
         {
-            if(false == waitForHeaterInLimits(heater, resultStream))
+            if(false == waitForHeaterInLimits(heater, resultStream, ref))
             {
                 return false;
             }
@@ -595,25 +597,25 @@ public class ExecutorImpl implements Executor
         return true;
     }
 
-    public boolean setPrintBedTemperatureNoWait(final Double temperature)
+    public boolean setPrintBedTemperatureNoWait(final Double temperature, Reference ref)
     {
-        return setTemperatureNoWait(Heater_enum.Print_Bed, temperature);
+        return setTemperatureNoWait(Heater_enum.Print_Bed, temperature, ref);
     }
 
-    public boolean setChamberTemperatureNoWait(final Double temperature)
+    public boolean setChamberTemperatureNoWait(final Double temperature, Reference ref)
     {
-        return setTemperatureNoWait(Heater_enum.Chamber, temperature);
+        return setTemperatureNoWait(Heater_enum.Chamber, temperature,ref);
     }
 
-    public boolean setPrintBedTemperatureAndDoWait(final Double temperature, final GCodeResultStream resultStream)
+    public boolean setPrintBedTemperatureAndDoWait(final Double temperature, final GCodeResultStream resultStream, Reference ref)
     {
-        if(false == letMovementStop())
+        if(false == letMovementStop(ref))
         {
             return false;
         }
-        if(true == setTemperatureNoWait(Heater_enum.Print_Bed, temperature))
+        if(true == setTemperatureNoWait(Heater_enum.Print_Bed, temperature, ref))
         {
-            return waitForHeaterInLimits(Heater_enum.Print_Bed, resultStream);
+            return waitForHeaterInLimits(Heater_enum.Print_Bed, resultStream, ref);
         }
         else
         {
@@ -621,7 +623,7 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    private double handleGetTemperature(final Heater_enum heater)
+    private double handleGetTemperature(final Heater_enum heater, Reference ref)
     {
         final TemperatureSensor sensor = TempSensors.get(heater);
         if(null == sensor)
@@ -631,7 +633,7 @@ public class ExecutorImpl implements Executor
         }
         else
         {
-            final double curTemp = sensor.getTemperature();
+            final double curTemp = sensor.getTemperature(ref);
             Fan theFan = null;
             switch(heater)
             {
@@ -655,18 +657,18 @@ public class ExecutorImpl implements Executor
             {
                 if(curTemp > HOT_END_FAN_ON_TEMPERATURE)
                 {
-                    theFan.setSpeed(Fan.MAX_SPEED);
+                    theFan.setSpeed(Fan.MAX_SPEED, ref);
                 }
                 else
                 {
-                    theFan.setSpeed(0);
+                    theFan.setSpeed(0, ref);
                 }
             }
             return curTemp;
         }
     }
 
-    private boolean waitForHeaterInLimits(final Heater_enum heater, final GCodeResultStream resultStream)
+    private boolean waitForHeaterInLimits(final Heater_enum heater, final GCodeResultStream resultStream, Reference ref)
     {
         double lastTemperature = 0.0;
         double curTemperature = 0.0;
@@ -690,7 +692,7 @@ public class ExecutorImpl implements Executor
             catch(InterruptedException e)
             {
             }
-            curTemperature = handleGetTemperature(heater);
+            curTemperature = handleGetTemperature(heater, ref);
             resultStream.writeLine("T : " + curTemperature + " °C");
             for(int i = 0; i < observers.size(); i++)
             {
@@ -718,7 +720,7 @@ public class ExecutorImpl implements Executor
         return true;
     }
 
-    private boolean setTemperatureNoWait( final Heater_enum heater, final Double temperature)
+    private boolean setTemperatureNoWait( final Heater_enum heater, final Double temperature, Reference ref)
     {
         targetTemperatures[heater.ordinal()] = temperature;
         final Heater theHeater = heaters.get(heater);
@@ -729,7 +731,7 @@ public class ExecutorImpl implements Executor
         }
         else
         {
-            if(false == theHeater.setTemperature(temperature))
+            if(false == theHeater.setTemperature(temperature, ref))
             {
                 lastErrorReason = theHeater.getLastErrorReason();
                 return false;
@@ -741,10 +743,10 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    public double requestTemperatureOfHeater(Heater_enum pos)
+    public double requestTemperatureOfHeater(Heater_enum pos, Reference ref)
     {
         double curTemperature = 0.0;
-        curTemperature = handleGetTemperature(pos);
+        curTemperature = handleGetTemperature(pos, ref);
         for(int i = 0; i < observers.size(); i++)
         {
             final TemperatureObserver watcher = observers.get(i);
@@ -753,7 +755,7 @@ public class ExecutorImpl implements Executor
         return curTemperature;
     }
 
-    public String getCurrentExtruderTemperature()
+    public String getCurrentExtruderTemperature(Reference ref)
     {
         Heater_enum h;
         switch(currentExtruder)
@@ -763,18 +765,18 @@ public class ExecutorImpl implements Executor
         case 2: h = Heater_enum.Extruder_2; break;
         default: h = Heater_enum.Extruder_0; break;
         }
-        return  String.valueOf(requestTemperatureOfHeater(h));
+        return  String.valueOf(requestTemperatureOfHeater(h, ref));
     }
 
-    public String getHeatedBedTemperature()
+    public String getHeatedBedTemperature(Reference ref)
     {
-        return  String.valueOf(requestTemperatureOfHeater(Heater_enum.Print_Bed));
+        return  String.valueOf(requestTemperatureOfHeater(Heater_enum.Print_Bed, ref));
     }
 
 
 // Switches
 
-    public int getStateOfSwitch(Switch_enum theSwitch)
+    public int getStateOfSwitch(Switch_enum theSwitch, Reference ref)
     {
         final Switch sw = Switches.get(theSwitch);
         if(null == sw)
@@ -784,11 +786,11 @@ public class ExecutorImpl implements Executor
         }
         else
         {
-            return sw.getState();
+            return sw.getState(ref);
         }
     }
 
-    public boolean switchExtruderTo(int num)
+    public boolean switchExtruderTo(int num, Reference ref)
     {
         /*
          * The sequence followed is:
@@ -816,10 +818,10 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    public void waitForClientQueueEmpty()
+    public void waitForClientQueueEmpty(Reference ref)
     {
-        letMovementStop();
-        int numUsedSlots = getNumberOfUserSlotsInClientQueue();
+        letMovementStop(ref);
+        int numUsedSlots = getNumberOfUserSlotsInClientQueue(ref);
         if(0 < numUsedSlots)
         {
             do
@@ -831,16 +833,16 @@ public class ExecutorImpl implements Executor
                 catch(InterruptedException e)
                 {
                 }
-                numUsedSlots = getNumberOfUserSlotsInClientQueue();
+                numUsedSlots = getNumberOfUserSlotsInClientQueue(ref);
                 log.debug("used Slots: {}", numUsedSlots);
             }while(0 < numUsedSlots);
         }
         // else Queue already empty
     }
 
-    private int getNumberOfUserSlotsInClientQueue()
+    private int getNumberOfUserSlotsInClientQueue(Reference ref)
     {
-        final int res = move.getNumberOfUsedSlotsInClientQueue();
+        final int res = move.getNumberOfUsedSlotsInClientQueue(ref);
         if(0 > res)
         {
             lastErrorReason = move.getLastErrorReason();
@@ -851,7 +853,8 @@ public class ExecutorImpl implements Executor
     public boolean runPIDautotune(Heater_enum Extruder,
                                   Double Temperature,
                                   int numCycles,
-                                  GCodeResultStream resultStream)
+                                  GCodeResultStream resultStream,
+                                  Reference ref)
     {
         // TODO Auto-generated method stub
         // configure Heater to Bang Bang

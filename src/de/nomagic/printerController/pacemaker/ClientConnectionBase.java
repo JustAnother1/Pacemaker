@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Tool;
+import de.nomagic.printerController.core.Reference;
 
 /** implements basic functionality shred by all ClientConnections.
  *
@@ -90,7 +91,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         super(TaskName);
     }
 
-    public Reply sendRequest(final byte order, final byte[] parameter)
+    public Reply sendRequest(final byte order, final byte[] parameter, Reference ref)
     {
         if(null == parameter)
         {

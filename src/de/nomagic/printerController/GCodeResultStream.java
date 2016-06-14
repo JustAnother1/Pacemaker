@@ -14,7 +14,7 @@
  */
 package de.nomagic.printerController;
 
-/** This represents the Data Stream that goes back to where the G-Codes came from.
+/** This represents the Data Stream that goes back to where the G-Codes came from. It also knows where the Request came from.
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
@@ -23,4 +23,5 @@ public interface GCodeResultStream
 {
     void write(String msg);
     void writeLine(String msg);
+    String getSource();
 }
