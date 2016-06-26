@@ -87,6 +87,8 @@ public class XyzTable
     private PlannedMoves planner;
     private double FeedrateMmPerMinute = 9000;
     private int MaxClientStepsPerSecond = 0;
+    
+    private String lastErrorReason = null;
 
     public XyzTable(Cfg cfg)
     {
@@ -127,6 +129,11 @@ public class XyzTable
                                                       DEFAULT_HOMING_MOVE_SLOW_APPROACH_SPEED);
         homeBackOffDistanceMm   = cfg.getGeneralSetting(CFG_NAME_HOME_BACK_OFF_DISTANCE,
                                                       DEFAULT_HOMING_BACK_OFF_DISTANCE_MM);
+    }
+    
+    public String getLastErrorReason()
+    {
+        return lastErrorReason;
     }
 
     public void addMovementQueue(PlannedMoves queue)
@@ -423,28 +430,32 @@ public class XyzTable
        }
        return updateEndStopActivation(aMove);
    }
-
-   public boolean homeAxis(Axis_enum[] axis)
+   
+   public boolean homeAxis(Axis_enum[] axis, Reference ref)
    {
        if(null == planner)
        {
            log.error("Cann not home as no steppers available !");
+           lastErrorReason = "Cann not home as no steppers available !";
            return false;
        }
        log.trace("homing Axis");
        if(false == sendInitialHomingMoveToEndStops(axis))
        {
            log.error("Initial Homing Move Failed !");
+           lastErrorReason = "Initial Homing Move Failed !";
            return false;
        }
        if(false == sendHomingBackOffMove(axis))
        {
            log.error("Homing Back off Move Failed !");
+           lastErrorReason = "Homing Back off Move Failed !";
            return false;
        }
        if(false == sendHomingSlowApproachMoveToEndStops(axis))
        {
            log.error("Homing Slow approach Move Failed !");
+           lastErrorReason = "Homing Slow approach Move Failed !";
            return false;
        }
 
@@ -454,7 +465,16 @@ public class XyzTable
            isHomed[ax.ordinal()] = true; // axis is now homed
            curPositionMm[ax.ordinal()] = 0.0;
        }
-       return planner.flushQueueToClient();
+       if(false == planner.flushQueueToClient())
+       {
+    	   log.error("Flush to Client failed !");
+    	   lastErrorReason = "Flush to Client failed";
+    	   return false;
+       }
+       else
+       {
+    	   return true;
+       }
    }
 
    private boolean sendInitialHomingMoveToEndStops(Axis_enum[] axis)
@@ -570,9 +590,4 @@ public class XyzTable
             return planner.hasAllMovementFinished();
         }
     }
-
-	public boolean homeAxis(Axis_enum[] axis, Reference ref) {
-		// TODO Auto-generated method stub
-		return false;
-	}
 }

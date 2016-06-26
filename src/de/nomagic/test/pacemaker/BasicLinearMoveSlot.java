@@ -228,7 +228,7 @@ public class BasicLinearMoveSlot extends Slot
         			}
         			else
         			{
-        				log.info("{} : chnaging direction to backwards!", i);
+        				log.info("{} : changing direction to backwards!", i);
         				curState.setDirectionIsForward(i, false);
         				if(speed != 0)
         				{
@@ -240,7 +240,7 @@ public class BasicLinearMoveSlot extends Slot
         		{
         			if(0 < StepsOn[i])
         			{
-        				log.info("{} : chnaging direction to backwards!", i);
+        				log.info("{} : changing direction to backwards!", i);
         				curState.setDirectionIsForward(i, true);
         				if(speed != 0)
         				{

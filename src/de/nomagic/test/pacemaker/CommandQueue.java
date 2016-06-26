@@ -14,10 +14,13 @@
  */
 package de.nomagic.test.pacemaker;
 
+import java.io.IOException;
 import java.util.LinkedList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
  * @author Lars P&ouml;tter
@@ -86,8 +89,13 @@ public class CommandQueue
             final int type = parameter[1 + usedBytes];
             if(0 == length)
             {
-                log.error("ERROR: invalid length !");
+                log.error("ERROR: length = 0 !");
                 break;
+            }            
+            if(1 == length)
+            {
+            	// empty packet -> Host needs to know how many free slots,..
+            	return senRawOKReply();
             }
             log.trace("Found Block of Type " + type + " and length " + length);
             if(length + usedBytes < ParameterLength)
@@ -110,18 +118,18 @@ public class CommandQueue
             }
             else
             {
-                log.error("ERROR: invalid Data !");
-                break;
+                log.error("ERROR: length inconsistent !");
+                return sendRawErrorReply(Protocol.MOVEMENT_BLOCK_MALFORMED_BLOCK);                
             }
         } while((usedBytes + 2) < ParameterLength);
-        return sendOKReply();
+        return senRawOKReply();
     }
 
-    private void validate(Slot theSlot)
+	private void validate(Slot theSlot)
     {
         if(null == theSlot)
         {
-            log.error("ERROR: invalid Data !");
+            log.error("ERROR: invalid Slot !");
             return;
         }
         theSlot.validate();
@@ -137,6 +145,41 @@ public class CommandQueue
         {
             return null;
         }
+    }
+    
+    private byte[] sendRawErrorReply(byte cause) 
+    {
+        final byte[] res = new byte[9 + Protocol.REPLY_POS_OF_START_OF_PARAMETER];
+        res[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_ORDER_SPECIFIC_ERROR;
+        res[Protocol.REPLY_POS_OF_LENGTH] = (byte) (9 + 2);
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 0] = cause;
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 1] = 0;
+        final int availableSlots = totalSlots - queue.size();
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 2] = (byte)(0xff & (availableSlots /256));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 3] = (byte)(0xff & (availableSlots));
+        final int usedSlots =  0;//queue.size();
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 4] = (byte)(0xff & (usedSlots /256));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 5] = (byte)(0xff & (usedSlots));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 6] = (byte)(0xff & (executedSlots /256));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 7] = (byte)(0xff & (executedSlots));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 8] = (byte)0xff;
+        return res;
+	}
+    
+    private byte[] senRawOKReply()
+    {
+        final byte[] res = new byte[6 + Protocol.REPLY_POS_OF_START_OF_PARAMETER];
+        res[Protocol.REPLY_POS_OF_REPLY_CODE] = Protocol.RESPONSE_OK;
+        res[Protocol.REPLY_POS_OF_LENGTH] = (byte) (6 + 2);
+        final int availableSlots = totalSlots - queue.size();
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 0] = (byte)(0xff & (availableSlots /256));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 1] = (byte)(0xff & (availableSlots));
+        final int usedSlots =  0;//queue.size();
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 2] = (byte)(0xff & (usedSlots /256));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 3] = (byte)(0xff & (usedSlots));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 4] = (byte)(0xff & (executedSlots /256));
+        res[Protocol.REPLY_POS_OF_START_OF_PARAMETER + 5] = (byte)(0xff & (executedSlots));
+        return res;
     }
 
     private byte[] sendOKReply()

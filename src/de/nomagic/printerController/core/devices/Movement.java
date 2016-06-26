@@ -284,7 +284,15 @@ public class Movement
     public boolean homeAxis(Axis_enum[] axis, Reference ref)
     {
         to.stopTimeout(TimeoutId);
-        return table.homeAxis(axis, ref);
+        if(false == table.homeAxis(axis, ref))
+        {
+        	lastErrorReason = "Movement: " + table.getLastErrorReason();
+        	return false;
+        }
+        else
+        {
+        	return true;
+        }
     }
 
     public boolean enableAllMotors(Reference ref)

@@ -530,7 +530,13 @@ public class BasicLinearMove
 
     public double getMaxPossibleSpeedStepsPerSecond()
     {
-        double maxSpeedStepPerSec = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
+    	Integer help = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
+    	if(null == help)
+    	{
+    		log.error("No Max Steps per Second for Axis {} !", primaryAxis);
+    		return MIN_MOVEMENT_SPEED_MM_SECOND;
+    	}
+        double maxSpeedStepPerSec = help.doubleValue();
         log.trace("ID{}: Max Speed = {}", myId, maxSpeedStepPerSec);
         // Test if this speed is ok for the other axis
         // (speed on primary Axis) / (steps on primary axis) = a
@@ -584,7 +590,12 @@ public class BasicLinearMove
 
     public double getMaxEndSpeedMmS()
     {
-        final double maxSpeedMmS = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis) / PrimaryAxisStepsPerMm;
+    	Integer help = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
+    	if(null == help)
+    	{
+    		return 0.0;
+    	}
+        final double maxSpeedMmS =  help.doubleValue() / PrimaryAxisStepsPerMm;
         log.trace("ID{}: Max Speed = {} mm/sec", myId, maxSpeedMmS);
         double maxEndSpeedMmS = maxSpeedMmS * endSpeedFactor;
         if(maxEndSpeedMmS < maxJerkMms)

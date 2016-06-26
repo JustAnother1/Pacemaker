@@ -124,6 +124,7 @@ public class ProtocolClient
                 length + Protocol.ORDER_POS_OF_START_OF_PARAMETER - 2);
         log.trace("calculating CRC for : " + Tool.fromByteBufferToHexString(data)
                     + " -> " + String.format("%02X", res));
+        log.trace(Protocol.parse(data));
         return res;
     }
 
@@ -305,7 +306,7 @@ public class ProtocolClient
 
                 // Queued Command Extension
             case Protocol.ORDER_QUEUE_COMMAND_BLOCKS:
-                sendByteArray(cmdQueue.add(parameter, length));
+                sendRaw(cmdQueue.add(parameter, length));
                 break;
 
             case Protocol.ORDER_CLEAR_COMMAND_BLOCK_QUEUE:
@@ -382,7 +383,7 @@ public class ProtocolClient
         }
     }
 
-    private void handleOrderEnableDisableStepperMotors() throws IOException
+	private void handleOrderEnableDisableStepperMotors() throws IOException
     {
         if(true == StepperControlActive)
         {
@@ -868,6 +869,22 @@ public class ProtocolClient
         }
         addChecksumControlAndSend(list.length + (Protocol.REPLY_POS_OF_START_OF_PARAMETER - 1));
     }
+    
+    private void sendRaw(byte[] list) throws IOException
+    {
+        if(null == list)
+        {
+            return;
+        }
+        response[Protocol.REPLY_POS_OF_REPLY_CODE] = list[Protocol.REPLY_POS_OF_REPLY_CODE];
+        response[Protocol.REPLY_POS_OF_LENGTH] = list[Protocol.REPLY_POS_OF_LENGTH];
+        // 3 = control
+        for(int i = Protocol.REPLY_POS_OF_START_OF_PARAMETER; i < list.length; i++)
+        {
+            response[i] = list[i];
+        }
+        addChecksumControlAndSend(list.length -1);
+	}
 
     private void sendByte(final int parameterByte) throws IOException
     {

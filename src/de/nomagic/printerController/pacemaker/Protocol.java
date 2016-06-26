@@ -190,6 +190,11 @@ public class Protocol implements EventSource
     public static final int FIRMWARE_SETTING_TYPE_STATISTIC = 2;
     public static final int FIRMWARE_SETTING_TYPE_SWITCH = 3;
     public static final int FIRMWARE_SETTING_TYPE_DEBUG = 4;
+    
+    public static final byte MOVEMENT_BLOCK_QUEUE_FULL = 0x01;
+    public static final byte MOVEMENT_BLOCK_UNKNOWN_BLOCK = 0x02;
+    public static final byte MOVEMENT_BLOCK_MALFORMED_BLOCK = 0x03;
+    public static final byte MOVEMENT_BLOCK_ERROR_IN_BLOCK = 0x04;
 
     ////////////////////////////////////////////////////////////////////////////
     // end of Magic Number from Protocol Definition

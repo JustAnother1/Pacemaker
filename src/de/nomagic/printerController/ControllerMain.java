@@ -68,6 +68,13 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
 
     public ControllerMain(final String[] args)
     {
+    	 Thread.setDefaultUncaughtExceptionHandler(
+                 new Thread.UncaughtExceptionHandler() {
+                     @Override public void uncaughtException(Thread t, Throwable e) {
+                         System.out.println(t.getName()+": "+e);
+                         System.exit(-1);
+                     }
+                 });
         startLogging(args);
     }
 

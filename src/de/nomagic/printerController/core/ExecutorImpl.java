@@ -467,7 +467,7 @@ public class ExecutorImpl implements Executor
         if(false == move.homeAxis(axis, ref))
         {
             log.error("Homing Failed!");
-            lastErrorReason = move.getLastErrorReason();
+            lastErrorReason = "Homing Failed : " + move.getLastErrorReason();
             return false;
         }
         else
