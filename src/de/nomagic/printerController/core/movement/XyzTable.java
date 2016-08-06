@@ -87,6 +87,7 @@ public class XyzTable
     private PlannedMoves planner;
     private double FeedrateMmPerMinute = 9000;
     private int MaxClientStepsPerSecond = 0;
+    private PrinterProperties printerProps = new PrinterProperties();
     
     private String lastErrorReason = null;
 
@@ -292,7 +293,7 @@ public class XyzTable
         }
     }
 
-    private boolean updateEndStopActivation(BasicLinearMove move)
+    private boolean updateEndStopActivation(CartesianMove move)
     {
         if(null == planner)
         {
@@ -312,14 +313,14 @@ public class XyzTable
             if(0 < stopsOn.size())
             {
                 log.trace("Adding stops On !(not homed)");
-                planner.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
+                planner.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]), printerProps);
                 stopsOn.clear();
             }
         }
         if(0 < stopsOff.size())
         {
             log.trace("Adding stops Off !");
-            planner.addEndStopOnOffCommand(false, stopsOff.toArray(new Integer[0]));
+            planner.addEndStopOnOffCommand(false, stopsOff.toArray(new Integer[0]), printerProps);
         }
         if(null != move)
         {
@@ -329,13 +330,15 @@ public class XyzTable
         if(0 < stopsOn.size())
         {
             log.trace("Adding stops On !");
-            planner.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]));
+            planner.addEndStopOnOffCommand(true, stopsOn.toArray(new Integer[0]), printerProps);
         }
         return success;
     }
 
     public void addStepper(Axis_enum ae, Stepper motor)
     {
+    	printerProps.addStepperForAxis(ae, motor.getStepperNumber());
+    	printerProps.setSteppsPerMmOn(motor.getStepperNumber(), motor.getStepsPerMm());
         for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
         {
             if(null == Steppers[ae.ordinal()][i])
@@ -382,7 +385,7 @@ public class XyzTable
    public boolean addRelativeMove(RelativeMove relMov, Reference ref)
    {
        log.trace("adding the move {}", relMov);
-       final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       final CartesianMove aMove = new CartesianMove(MaxClientStepsPerSecond, printerProps);
        log.trace("created Move({}) to hold the move{}.", aMove.getId(), relMov);
        // Feedrate
        if(true == relMov.hasFeedrate())
@@ -417,17 +420,9 @@ public class XyzTable
                }
                curPositionMm[ax.ordinal()] = curPositionMm[ax.ordinal()] + distanceMm;
                aMove.setDistanceMm(ax, distanceMm);
-
-               for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
-               {
-                   if(null != Steppers[ax.ordinal()][i])
-                   {
-                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
-                   }
-               }
            }
            // else axis not used
-       }
+       } 
        return updateEndStopActivation(aMove);
    }
    
@@ -479,7 +474,7 @@ public class XyzTable
 
    private boolean sendInitialHomingMoveToEndStops(Axis_enum[] axis)
    {
-       final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       final CartesianMove aMove = new CartesianMove(MaxClientStepsPerSecond, printerProps);
        log.trace("created Move({}) to hold the initial homing move", aMove.getId());
        aMove.setIsHoming(true);
        aMove.setFeedrateMmPerMinute(homeMaxSpeedMms * 60);
@@ -502,7 +497,6 @@ public class XyzTable
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
                        }
-                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
                }
            }
@@ -513,7 +507,7 @@ public class XyzTable
 
    private boolean sendHomingBackOffMove(Axis_enum[] axis)
    {
-       final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       final CartesianMove aMove = new CartesianMove(MaxClientStepsPerSecond, printerProps);
        log.trace("created Move({}) to hold the homing back off move", aMove.getId());
        aMove.setIsHoming(true);
        aMove.setFeedrateMmPerMinute(homeBackOffSpeedMms * 60);
@@ -536,7 +530,6 @@ public class XyzTable
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
                        }
-                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
                }
            }
@@ -547,7 +540,7 @@ public class XyzTable
 
    private boolean sendHomingSlowApproachMoveToEndStops(Axis_enum[] axis)
    {
-       final BasicLinearMove aMove = new BasicLinearMove(MaxClientStepsPerSecond);
+       final CartesianMove aMove = new CartesianMove(MaxClientStepsPerSecond, printerProps);
        log.trace("created Move({}) to hold the slow approach homing move", aMove.getId());
        aMove.setIsHoming(true);
        aMove.setFeedrateMmPerMinute(homeSlowApproachSpeedMms * 60);
@@ -570,7 +563,6 @@ public class XyzTable
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
                        }
-                       aMove.addMovingAxis(Steppers[ax.ordinal()][i], ax);
                    }
                }
            }

@@ -59,6 +59,18 @@ public class BasicLinearMoveSlot extends Slot
             dataDescription = parseBasicLinearMove(data);
         }
     }
+    
+    private String getRawDataAsHexString()
+    {
+    	StringBuilder sb = new StringBuilder();
+    	sb.append("[");
+    	for(int i = 0; i < rawDataLength; i++)
+    	{
+    		sb.append(String.format("%02x ", 0xff & rawData[i]));
+    	}
+    	sb.append(" ]");
+    	return sb.toString();
+    }
 
     private String parseBasicLinearMove(int[] data)
     {
@@ -196,6 +208,7 @@ public class BasicLinearMoveSlot extends Slot
         {
             log.error("ERROR: nominal Speed lower than end Speed !"
                     + " (nominal = " + nominalSpeed + ", end speed = " + endSpeed + ")");
+        	log.error("That happened on this move: " + getRawDataAsHexString());
         }
         if(Math.abs(StepsOn[primaryAxis]) < (Math.abs(accelerationSteps) + Math.abs(decelerationSteps)))
         {
@@ -203,6 +216,7 @@ public class BasicLinearMoveSlot extends Slot
                     + " (acceleration = " + accelerationSteps
                     + ", deceleration = " + decelerationSteps
                     + ", steps on primary Axis = " + StepsOn[primaryAxis] + ")");
+        	log.error("That happened on this move: " + getRawDataAsHexString());
         }
         boolean hasMovement = false;
         for(int i = 0; i < NUM_MAX_AXIS; i++)
@@ -215,6 +229,24 @@ public class BasicLinearMoveSlot extends Slot
             	{
             		log.info("{} : changing speed from {} to {} in {} Steps !",
             				   i,                     speed, nominalSpeed, accelerationSteps);
+            		if(speed < nominalSpeed)
+            		{
+            			// we accelerate
+            			if(0 == accelerationSteps)
+            			{
+            	        	log.error("Acceleration in 0 Steps !");
+            	        	log.error("That happened on this move: " + getRawDataAsHexString());
+            			}
+            		}
+            		else if(speed > nominalSpeed)
+            		{
+            			// we decellerate
+            			if(0 == decelerationSteps)
+            			{
+            	        	log.error("Decelleration in 0 Steps !");
+            	        	log.error("That happened on this move: " + getRawDataAsHexString());
+            			}
+            		}
             	}
         	}
         	if(speed != nominalSpeed)
@@ -257,12 +289,37 @@ public class BasicLinearMoveSlot extends Slot
         	{
         		log.info("{} : changing speed from {} to {} in {} Steps !",
         				  i,                     nominalSpeed, endSpeed, decelerationSteps);
+        		if(endSpeed > nominalSpeed)
+        		{
+        			// we accelerate
+        			if(0 == accelerationSteps)
+        			{
+        	        	log.error("Acceleration in 0 Steps !");
+        	        	log.error("That happened on this move: " + getRawDataAsHexString());
+        			}
+        		}
+        		else if(endSpeed < nominalSpeed)
+        		{
+        			// we decellerate
+        			if(0 == decelerationSteps)
+        			{
+        	        	log.error("Decelleration in 0 Steps !");
+        	        	log.error("That happened on this move: " + getRawDataAsHexString());
+        			}
+        		}
         	}
         	curState.setSpeed(i, endSpeed);
         }
         if(false == hasMovement)
         {
         	log.error("Move order has no move data !");
+        	log.error("That happened on this move: " + getRawDataAsHexString());
+        }
+        // check that travel speed is not 0 !
+        if(0 == nominalSpeed)
+        {
+        	log.error("Nominal Speed is 0 !");
+        	log.error("That happened on this move: " + getRawDataAsHexString());
         }
         // TODO add further checks
     }

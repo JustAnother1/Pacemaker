@@ -82,6 +82,11 @@ public class CommandQueue
         {
             log.error("ERROR: Parameter to short !");
         }
+        if(2 == ParameterLength)
+        {
+        	// Host is polling to know free slots -> no data in this Request
+        	return senRawOKReply();
+        }
         int usedBytes = 0;
         do
         {

@@ -460,11 +460,23 @@ public class ProtocolClient
         final int devType = parameter[0];
         final int devIdx = parameter[1];
         final int pwm = (parameter[2] * 256) + parameter[3];
-        if(Protocol.DEVICE_TYPE_OUTPUT == devType)
+        if(Protocol.DEVICE_TYPE_PWM_OUTPUT == devType)
         {
             if((-1 < devIdx) && (devIdx < hw.getNumberPwm()))
             {
                 hw.setPwmTo(devIdx, pwm);
+                sendOK();
+            }
+            else
+            {
+                sendReply(Protocol.RESPONSE_GENERIC_APPLICATION_ERROR,
+                          Protocol.RESPONSE_INVALID_DEVICE_NUMBER);
+            }
+        } else if(Protocol.DEVICE_TYPE_OUTPUT == devType)
+        {
+            if((-1 < devIdx) && (devIdx < hw.getNumberOutput()))
+            {
+                hw.setOutputTo(devIdx, pwm);
                 sendOK();
             }
             else

@@ -162,7 +162,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
             catch (final IOException e)
             {
                 e.printStackTrace();
-                log.error("Failed to send Request - Exception !");
+                log.error("Failed to send Request - IOException !");
                 return null;
             }
             needsToRetransmitt = retransmissionNeeded(r);
@@ -554,22 +554,29 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
                 }
 
                 final Reply curReply = new Reply(buf);
-                if(true == log.isTraceEnabled())
+                if(false == curReply.isValid())
                 {
-                	log.trace("Received : " + Protocol.parse(buf) + " : " + curReply.getDump());
-                }
-                timeOfLastSuccessfulReply = System.currentTimeMillis();
-                if(true == curReply.isDebugFrame())
-                {
-                    log.info(curReply.toString());
-                    if(Protocol.RESPONSE_DEBUG_FRAME_NEW_EVENT == curReply.getReplyCode())
-                    {
-                        //TODO react to the new event
-                    }
+                	log.error("Received invalid Reply! ({})", Tool.fromByteBufferToHexString(buf));
                 }
                 else
                 {
-                    receiveQueue.put(curReply);
+	                if(true == log.isTraceEnabled())
+	                {
+	                	log.trace("Received : " + Protocol.parse(buf) + " : " + curReply.getDump());
+	                }
+	                timeOfLastSuccessfulReply = System.currentTimeMillis();
+	                if(true == curReply.isDebugFrame())
+	                {
+	                    log.info(curReply.toString());
+	                    if(Protocol.RESPONSE_DEBUG_FRAME_NEW_EVENT == curReply.getReplyCode())
+	                    {
+	                        //TODO react to the new event
+	                    }
+	                }
+	                else
+	                {
+	                    receiveQueue.put(curReply);
+	                }
                 }
             }
         }

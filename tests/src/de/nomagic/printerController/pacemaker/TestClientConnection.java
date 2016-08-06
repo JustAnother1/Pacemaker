@@ -14,6 +14,8 @@
  */
 package de.nomagic.printerController.pacemaker;
 
+import de.nomagic.printerController.core.Reference;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
@@ -28,7 +30,7 @@ public class TestClientConnection implements ClientConnection
     }
 
     @Override
-    public Reply sendRequest(byte order, byte[] parameter)
+    public Reply sendRequest(byte order, byte[] parameter, Reference ref)
     {
         // reply is a OK Frame
         Reply res = new Reply(new byte[] {0x42, // sync
