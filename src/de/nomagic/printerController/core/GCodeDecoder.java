@@ -150,7 +150,15 @@ public class GCodeDecoder
                 lastLineNumber = lineNumber;
             }
         }
-        Reference ref = new Reference(resultStream.getSource());
+        Reference ref;
+        if(null != resultStream)
+        {
+            ref = new Reference(resultStream.getSource());
+        }
+        else
+        {
+            ref = new Reference("unknown");
+        }
         ref.setCommand(line);
         if(true == code.hasWord('G'))
         {
@@ -231,17 +239,17 @@ public class GCodeDecoder
         {
         case 0: // Stop Print
             if(false == exe.doShutDown(ref))
-            { 
+            {
             	return RESULT_ERROR;
-            } 
-            else 
+            }
+            else
             {
             	return RESULT_OK;
             }
 
         case 17: // Enable/Power all stepper motors
             if(false == exe.enableAllStepperMotors(ref))
-            { 
+            {
             	return RESULT_ERROR;
             }
             else
@@ -282,8 +290,8 @@ public class GCodeDecoder
             if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile))
             {
             	return RESULT_ERROR;
-            } 
-            else 
+            }
+            else
             {
             	return RESULT_OK;
             }
@@ -295,10 +303,10 @@ public class GCodeDecoder
         case 26: // set SD position
             Double bytePosition = code.getWordValue('S');
             if(false == sdPrinterWorker.setSDCardPosition(bytePosition.longValue()))
-            { 
+            {
             	return RESULT_ERROR;
-            } 
-            else 
+            }
+            else
             {
             	return RESULT_OK;
             }
@@ -336,10 +344,10 @@ public class GCodeDecoder
         case 32: // select file and start printing
             selectedSDCardFile = code.getLineWithoutCommentWithoutWord('M');
             if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile))
-            { 
+            {
             	return RESULT_ERROR;
-            } 
-            else 
+            }
+            else
             {
             	return RESULT_OK;
             }
@@ -355,10 +363,10 @@ public class GCodeDecoder
         case 18: // Disable all stepper motors
         case 84: // Stop Idle hold
             if(false == exe.disableAllStepperMotors(ref))
-            { 
+            {
             	return RESULT_ERROR;
-            } 
-            else 
+            }
+            else
             {
             	return RESULT_OK;
             }
@@ -404,8 +412,8 @@ public class GCodeDecoder
             if(false == exe.setCurrentExtruderTemperatureNoWait(code.getWordValue('S'), ref))
             {
             	return RESULT_ERROR;
-            } 
-            else 
+            }
+            else
             {
             	return RESULT_OK;
             }
@@ -429,7 +437,7 @@ public class GCodeDecoder
                 {
                 	return RESULT_ERROR;
                 }
-                else 
+                else
                 {
                 	return RESULT_OK;
                 }
@@ -439,7 +447,7 @@ public class GCodeDecoder
                 if(false == exe.setFanSpeedfor(0, speed, ref))
                 {
                 	return RESULT_ERROR;
-                } 
+                }
                 else
                 {
                 	return RESULT_OK;
@@ -453,8 +461,8 @@ public class GCodeDecoder
                 if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), 0, ref))
                 {
                 	return RESULT_ERROR;
-                } 
-                else 
+                }
+                else
                 {
                 	return RESULT_OK;
                 }
@@ -464,8 +472,8 @@ public class GCodeDecoder
                 if(false == exe.setFanSpeedfor(0, 0, ref))
                 {
                 	return RESULT_ERROR;
-                } 
-                else 
+                }
+                else
                 {
                 	return RESULT_OK;
                 }
@@ -595,7 +603,7 @@ public class GCodeDecoder
             {
             	return RESULT_ERROR;
             }
-            else 
+            else
             {
             	return RESULT_OK;
             }
@@ -660,9 +668,9 @@ public class GCodeDecoder
         case 0: // Rapid Linear Motion
         case 1: // Linear Motion at Feed Rate
             if(false == exe.addMoveTo(getRelativeMovefor(code), ref))
-            { 
+            {
             	return RESULT_ERROR;
-            } 
+            }
             else
             {
             	return RESULT_OK;
@@ -670,10 +678,10 @@ public class GCodeDecoder
 
         case 4: // Dwell
             if(false == exe.addPauseFor(code.getWordValue('P'), ref))
-            { 
+            {
             	return RESULT_ERROR;
-            } 
-            else 
+            }
+            else
             {
             	return RESULT_OK;
             }
