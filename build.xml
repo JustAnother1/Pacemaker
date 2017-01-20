@@ -12,7 +12,7 @@
   You should have received a copy of the GNU General Public License along
   with this program; if not, see <http://www.gnu.org/licenses/>
  -->
-<project name="Pacemaker" default="all" basedir="."  xmlns:fx="javafx:com.sun.javafx.tools.ant">
+<project name="Pacemaker" default="all" basedir="."  xmlns:fx="javafx:com.sun.javafx.tools.ant" xmlns:cs="antlib:com.puppycrawl.tools.checkstyle.ant">
 
     <property name="mainJar" value="Pacemaker.jar" />
     <property name="SimulatorJar" value="PacemakerTest.jar" />
@@ -41,7 +41,7 @@
         <pathelement path="lib/purejavacomm.jar"/>
         <pathelement path="lib/jcommon-1.0.23.jar"/>
         <pathelement path="lib/jfreechart-1.0.19.jar"/>
-    	<!-- fur JUnit : -->
+    	<!-- for JUnit : -->
     	<pathelement path="lib/junit4-4.12.jar"/>
     	<pathelement path="lib/hamcrest-core-1.3.jar"/>
     	<pathelement path="${destDir}"/>
@@ -53,6 +53,18 @@
         <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
     </path>
 
+	<!--
+	<path id="compile.class.pathtest">
+	    <pathelement location="${checkstyle.dir}/checkstyle-5.5-all.jar"/>
+	    <pathelement location="${checkstyle.dir}/checkstyle-5.5.jar"/>
+	    <pathelement location="${checkstyle.dir}/pmd-3.9.jar"/>
+	    <pathelement location="${checkstyle.dir}/asm-3.0.jar"/>
+	    <pathelement location="${checkstyle.dir}/backport-util-concurrent-2.1.jar"/>
+	    <pathelement location="${checkstyle.dir}/jaxen-1.1-beta-10.jar"/>
+	    <pathelement location="${checkstyle.dir}/saxpath-1.0-FCS.jar"/>
+	</path>
+-->
+
     <manifestclasspath property="pm.cp" jarfile="${mainJar}">
        <classpath refid="project.class.path" />
     </manifestclasspath>
@@ -60,7 +72,6 @@
     <manifestclasspath property="sim.cp" jarfile="${SimulatorJar}">
        <classpath refid="simulator.class.path" />
     </manifestclasspath>
-
 
     <target name="clean" description="delete everything that might have previously been created" >
         <delete dir="${destDir}"/>
@@ -71,7 +82,6 @@
     	<delete dir="build"/>
     	<delete dir="testResDir"/>
     </target>
-
 
     <target name="prepare" depends="clean" description="Prepare for building" >
         <tstamp>
@@ -99,14 +109,12 @@
 			classpathref="fxant"/>
     </target>
 
-
     <target name="compile" depends="prepare" description="compile *.java to *.class">
         <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false"
         	   source="1.8" target="1.8" debug="true" debuglevel="lines,vars,source">
             <classpath refid="project.class.path"/>
         </javac>
     </target>
-
 
     <target name="jar" depends="compile" description="create the Jar File">
         <jar destfile="${mainJar}" update="false">
@@ -169,9 +177,7 @@
                 <attribute name="Built-Date" value="${TODAY}"/>
 			</manifest>
 		</fx:jar>
-
     </target>
-
 
     <target name="javadoc" description="create Documentation" >
         <javadoc packagenames="de.nomagic.*"
@@ -186,9 +192,7 @@
         </javadoc>
     </target>
 
-
 	<target name="do-deploy" depends="jar">
-
 		<mkdir dir="build/build/classes/META-INF" />
 
 		<mkdir dir="deploy" />
@@ -211,7 +215,6 @@
                <fx:fileset dir="lib" includes="lib/**" type="jar"/>
            </fx:resources>
 		</fx:deploy>
-
 	</target>
 
 	<target name="unittest" depends="prepare" >
@@ -238,9 +241,23 @@
 		        </fileset>
 		    </batchtest>
 	    </junit>
+	</target>
 
+	<target name="stylecheck">
+	    <taskdef resource="checkstyletask.properties">
+	        <classpath refid="project.class.path"/>
+	    </taskdef>
+	    <cs:checkstyle config="doc/rules.xml" failOnViolation="false">
+	    	<classpath refid="project.class.path"/>
+	        <fileset dir="${srcDir}">
+	            <include name="**/*.java"/>
+	        </fileset>
+	        <formatter type="plain"/>
+	        <formatter type="xml" toFile="checkstyle-result.xml"/>
+	    </cs:checkstyle>
 	</target>
 
     <target name="all" depends="jar, do-deploy">
     </target>
+
 </project>
