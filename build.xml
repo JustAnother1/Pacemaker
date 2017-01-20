@@ -13,14 +13,16 @@
   with this program; if not, see <http://www.gnu.org/licenses/>
  -->
 <project name="Pacemaker" default="all" basedir="."  xmlns:fx="javafx:com.sun.javafx.tools.ant">
-	
+
     <property name="mainJar" value="Pacemaker.jar" />
     <property name="SimulatorJar" value="PacemakerTest.jar" />
 	<property name="cfgJar" value="ConfigurationCreator.jar" />
     <property name="destDir" value="bin" />
     <property name="javadoc" value="doc/javadoc" />
     <property name="srcDir" value="src" />
-	
+    <property name="testResDir" value="results" />
+    <property name="testsDir" value="tests/src" />
+
     <path id="project.class.path">
         <pathelement location="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
         <pathelement path="lib/logback-1.0.13/logback-core-1.0.13.jar"/>
@@ -31,12 +33,26 @@
         <pathelement path="lib/jfreechart-1.0.19.jar"/>
     </path>
 
+    <path id="junit.class.path">
+        <pathelement location="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
+        <pathelement path="lib/logback-1.0.13/logback-core-1.0.13.jar"/>
+        <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
+        <pathelement path="lib/jna-4.1.0.jar"/>
+        <pathelement path="lib/purejavacomm.jar"/>
+        <pathelement path="lib/jcommon-1.0.23.jar"/>
+        <pathelement path="lib/jfreechart-1.0.19.jar"/>
+    	<!-- fur JUnit : -->
+    	<pathelement path="lib/junit4-4.12.jar"/>
+    	<pathelement path="lib/hamcrest-core-1.3.jar"/>
+    	<pathelement path="${destDir}"/>
+    </path>
+
     <path id="simulator.class.path">
         <pathelement location="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
         <pathelement path="lib/logback-1.0.13/logback-core-1.0.13.jar"/>
         <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
     </path>
-	
+
     <manifestclasspath property="pm.cp" jarfile="${mainJar}">
        <classpath refid="project.class.path" />
     </manifestclasspath>
@@ -44,7 +60,7 @@
     <manifestclasspath property="sim.cp" jarfile="${SimulatorJar}">
        <classpath refid="simulator.class.path" />
     </manifestclasspath>
-	
+
 
     <target name="clean" description="delete everything that might have previously been created" >
         <delete dir="${destDir}"/>
@@ -53,9 +69,10 @@
         <delete file="${cfgJar}"></delete>
         <delete dir="${javadoc}"/>
     	<delete dir="build"/>
+    	<delete dir="testResDir"/>
     </target>
 
-	
+
     <target name="prepare" depends="clean" description="Prepare for building" >
         <tstamp>
             <format property="TODAY" pattern="yyyy-MM-dd HH:mm:ss" />
@@ -82,7 +99,7 @@
 			classpathref="fxant"/>
     </target>
 
-	
+
     <target name="compile" depends="prepare" description="compile *.java to *.class">
         <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false" source="1.8" target="1.8" debug="true" debuglevel="lines,vars,source">
             <classpath refid="project.class.path"/>
@@ -121,9 +138,9 @@
                 <attribute name="Built-Date" value="${TODAY}"/>
             </manifest>
         </jar>
-    	
+
 		<fx:jar id="cfgfxjar" destfile="${cfgJar}">
-			
+
 			<fx:platform basedir="${java.home}"/>
 
 			<fx:application id="fxApplication"
@@ -135,7 +152,7 @@
             <fx:resources>
             	<fx:fileset dir="lib" includes="lib/jna-4.1.0.jar" type="jar"/>
            </fx:resources>
-			
+
             <fileset dir="${destDir}">
                 <include name="**/*.class" />
 				<include name="commit-id" />
@@ -151,10 +168,10 @@
                 <attribute name="Built-Date" value="${TODAY}"/>
 			</manifest>
 		</fx:jar>
-    	
+
     </target>
 
-	
+
     <target name="javadoc" description="create Documentation" >
         <javadoc packagenames="de.nomagic.*"
                  sourcepath="${srcDir}"
@@ -188,11 +205,36 @@
 			<fx:info title="ConfigurationCreator" vendor="nomagic.de"/>
 
 			<fx:application refId="fxApplication"/>
-			
+
             <fx:resources>
                <fx:fileset dir="lib" includes="lib/**" type="jar"/>
            </fx:resources>
 		</fx:deploy>
+
+	</target>
+
+	<target name="unittest" depends="prepare" >
+        <delete dir="${testResDir}"/>
+	    <mkdir dir="${testResDir}"/>
+
+        <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false">
+            <classpath refid="project.class.path"/>
+        </javac>
+
+        <javac srcdir="${testsDir}" destdir="${destDir}" includeantruntime="false">
+            <classpath refid="junit.class.path"/>
+        </javac>
+
+	    <junit printsummary="yes" haltonfailure="no">
+	    	<classpath refid="junit.class.path"/>
+		    <formatter type="plain"/>
+		    <formatter type="xml"/>
+		    <batchtest fork="yes" todir="${testResDir}">
+		        <fileset dir="${testsDir}">
+		            <include name="**/*Test*.java"/>
+		        </fileset>
+		    </batchtest>
+	    </junit>
 
 	</target>
 

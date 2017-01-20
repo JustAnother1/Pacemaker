@@ -1,0 +1,16 @@
+Jenkins
+=======
+
+Jenkins is a continuous Integration (CI) server. This file documents the settings used to test pacemaker.
+
+Pacemaker
+=========
+Description:
+Project for Pacemaker Host (Java) software.
+Build:
+Ant Target: jar
+
+Post Build:
+Compiler Warnings: javac
+CheckStyle:
+Junit:

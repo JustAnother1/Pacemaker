@@ -13,7 +13,7 @@ import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.pacemaker.Protocol;
 
-public class CartesianMove 
+public class CartesianMove
 {
 	/** 16 bit for steps */
     private final int MAX_POSSIBLE_STEPPS_PER_BASICLINEARMOVE  = 65535;
@@ -23,12 +23,12 @@ public class CartesianMove
     public static final double MOVEMENT_SPEED_TOLERANCE_MM_SECOND = 0.0001;
     /** if the axis has steps the speed may not be 0. So this is the speed is will have at least */
     public static final double MIN_MOVEMENT_SPEED_MM_SECOND = 0.1;
-    
+
     private static int nextId = 0; // singleton
-    
+
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final int MaxPossibleClientSpeedInStepsPerSecond;
-    
+
     private double feedrateMmPerSecond = MIN_MOVEMENT_SPEED_MM_SECOND;
     private boolean isHoming = false;
     private boolean hasMovement = false;
@@ -59,10 +59,10 @@ public class CartesianMove
     private int maxStepperNumber = -1;
 
 
-    
+
     private int myId;
 
-    
+
     private PrinterProperties printer;
 
     public CartesianMove(int MaxPossibleClientSpeedStepsPerSecond, PrinterProperties printer)
@@ -96,21 +96,21 @@ public class CartesianMove
     {
         isHoming = b;
     }
-    
+
     public void setStartSpeedMms(double theSpeedMms)
     {
         startSpeedMms = theSpeedMms;
         log.trace("ID{}: start speed set to {} mm/s", myId, theSpeedMms);
         hasStartSpeed = true;
     }
-    
+
     public void setEndSpeedMms(double theSpeedMms)
     {
         endSpeedMms = theSpeedMms;
         log.trace("ID{}: end speed set to {} mm/s", myId, theSpeedMms);
         hasEndSpeed = true;
     }
-    
+
     public boolean hasEndSpeedSet()
     {
         return hasEndSpeed;
@@ -127,10 +127,10 @@ public class CartesianMove
         Command_on = on;
         Command_switches = switches;
     }
-    
-	public boolean send(Protocol pro, CartesianMove nextMove) 
+
+	public boolean send(Protocol pro, CartesianMove nextMove)
 	{
-        if(null == pro)
+        if((null == pro) || (null == nextMove))
         {
             return false;
         }
@@ -159,7 +159,7 @@ public class CartesianMove
         }
         return true;
 	}
-    
+
     private BasicLinearMove[] getMoveDataAsBasicLinearMove(CartesianMove nextMove)
     {
     	// convert distances in mm to distances in steps
@@ -176,8 +176,8 @@ public class CartesianMove
     	moves = calculateSpeedsFor(moves, nextMove);
     	return moves;
     }
-    
-    private BasicLinearMove[] calculateSpeedsFor(BasicLinearMove[] moves, CartesianMove nextMove) 
+
+    private BasicLinearMove[] calculateSpeedsFor(BasicLinearMove[] moves, CartesianMove nextMove)
     {
     	SpeedCalculation calc = new SpeedCalculation(this, nextMove);
     	if(false == calc.isValid())
@@ -201,7 +201,7 @@ public class CartesianMove
 		{
 			moves[i].setHoming(isHoming);
 		}
-		
+
 		int primaryStepsPerMove = StepsOnPrimaryAxis/numParts;
 		// acceleration steps
 		int AllaccelearionSteps = accelerationSteps;
@@ -259,7 +259,7 @@ public class CartesianMove
 			}
 			curMove++;
 		} while((0 < accelerationSteps) && (curMove < numParts));
-		
+
 		// travel Steps
 		while((0 < travelSteps) && (curMove < numParts))
 		{
@@ -285,7 +285,7 @@ public class CartesianMove
 			}
 			curMove++;
 		}
-		
+
 		// decel steps
 		while((0 < decelerationSteps) && (curMove < numParts))
 		{
@@ -302,7 +302,7 @@ public class CartesianMove
 			}
 			curMove++;
 		}
-		
+
 		return moves;
 	}
 
@@ -314,7 +314,7 @@ public class CartesianMove
     		res[i] = new BasicLinearMove(myId);
     	}
         Iterator<Entry<Integer, Integer>> it = StepsOnAxis.entrySet().iterator();
-        while (it.hasNext()) 
+        while (it.hasNext())
         {
             Map.Entry<Integer, Integer> pair = (Map.Entry<Integer, Integer>)it.next();
             Integer stepper = pair.getKey();
@@ -336,18 +336,18 @@ public class CartesianMove
         }
         return res;
     }
-    
+
     private void convertToSteps()
     {
     	maxStepperNumber = -1;
-    	
+
         Iterator<Entry<Axis_enum, Double>> it = distancesMm.entrySet().iterator();
-        while (it.hasNext()) 
+        while (it.hasNext())
         {
             Map.Entry<Axis_enum, Double> pair = (Map.Entry<Axis_enum, Double>)it.next();
             Axis_enum axis = pair.getKey();
-	    	// rounding error            
-            final double exactSteps = printer.getGathereddRoundingErrorOn(axis) 
+	    	// rounding error
+            final double exactSteps = printer.getGathereddRoundingErrorOn(axis)
             		                  + (distancesMm.get(pair.getKey()) * printer.getStepsPerMm(printer.getStepperNumberFor(axis)));
             int steps = (int) Math.round(exactSteps);
 	        log.debug("ID{}: exact Steps = {}, got rounded to {}", myId, exactSteps, steps);
@@ -362,11 +362,11 @@ public class CartesianMove
 	        {
 	        	maxStepperNumber = stepperNumber;
 	        }
-	        // steps        
+	        // steps
 	        addSteppersSteps(stepperNumber, steps);
         }
     }
-    
+
     private void addSteppersSteps(int stepperNumber, int steps)
     {
         if(false == printer.isDirectionInverted(stepperNumber))
@@ -399,12 +399,12 @@ public class CartesianMove
         	primaryAxis = stepperNumber;
         }
     }
-    
+
     public int getPrimaryStepper()
     {
     	return primaryAxis;
     }
-    
+
     public int getStepsOnStepper(int stepper)
     {
     	Integer res = StepsOnAxis.get(stepper);
