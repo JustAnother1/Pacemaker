@@ -21,10 +21,10 @@ import de.nomagic.printerController.core.Reference;
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public class TestClientConnection implements ClientConnection
+public class ClientConnectionMock implements ClientConnection
 {
 
-    public TestClientConnection()
+    public ClientConnectionMock()
     {
 
     }

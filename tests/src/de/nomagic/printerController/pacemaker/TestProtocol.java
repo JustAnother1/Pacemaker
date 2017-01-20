@@ -36,7 +36,7 @@ public class TestProtocol
         assertNotNull(pro.toString());
         System.out.println(pro.toString());
 
-        TestClientConnection connection = new TestClientConnection();
+        ClientConnectionMock connection = new ClientConnectionMock();
         Protocol pro2 = new Protocol(connection, null);
         assertTrue(pro2.isOperational());
         pro2.closeConnection();
