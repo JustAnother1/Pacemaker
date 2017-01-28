@@ -21,5 +21,5 @@ package de.nomagic.printerController.core;
  */
 public interface EventSource
 {
-    void reportEventStatus(ActionResponse response);
+    void reportEventStatus(ActionResponse response, Reference ref);
 }

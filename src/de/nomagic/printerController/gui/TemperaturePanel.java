@@ -59,7 +59,6 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
     private TimeoutHandler timeOut;
     private int[] timeOutId = new int[Heater_enum.size];
     private Executor exe;
-    private Reference ref = new Reference("TemperaturePanel");
 
     public TemperaturePanel(Executor exe)
     {
@@ -181,7 +180,7 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
      *
      */
     @Override
-    public void reportEventStatus(ActionResponse response)
+    public void reportEventStatus(ActionResponse response, Reference ref)
     {
         log.debug("Timeout occured!");
         final Heater_enum pos = (Heater_enum)response.getObject();

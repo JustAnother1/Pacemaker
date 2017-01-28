@@ -24,6 +24,7 @@ import de.nomagic.printerController.core.ActionResponse;
 import de.nomagic.printerController.core.Action_enum;
 import de.nomagic.printerController.core.Event;
 import de.nomagic.printerController.core.EventSource;
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.pacemaker.Protocol;
 
@@ -75,7 +76,7 @@ public class PlannedMoves implements EventSource
      *  Timeout thing to make sure single moves get send out.
      */
     @Override
-    public void reportEventStatus(ActionResponse response)
+    public void reportEventStatus(ActionResponse response, Reference ref)
     {
         to.startTimeout(timeoutID);
         final int size= entriesSize();
@@ -88,7 +89,7 @@ public class PlannedMoves implements EventSource
             else
             {
                 // OK the queue has been with a single move for two times -> flush the Queue
-                if(true == flushQueueToClient())
+                if(true == flushQueueToClient(ref))
                 {
                     needsFlushing = false;
                 }
@@ -104,16 +105,28 @@ public class PlannedMoves implements EventSource
         }
     }
 
-    public boolean flushQueueToClient()
+    public boolean flushQueueToClient(Reference ref)
     {
-        final int size= entriesSize();
+    	boolean res = true;
+        final int size = entriesSize();
         if(0 < size)
         {
-            sendAllPossibleMoves();
-            return sendLastMoves();
+            res = sendLastMoves();
         }
         // else no moves to send
-        return true;
+        // wait for client to execute all the queued moves
+        while(0 < pro.getNumberOfCommandsInClientQueue(ref))
+        {
+        	try
+        	{
+				Thread.sleep(1);
+			}
+        	catch (InterruptedException e)
+        	{
+        		// is OK
+			}
+        }
+        return res;
     }
 
     public boolean addMove(CartesianMove aMove)
@@ -171,7 +184,7 @@ public class PlannedMoves implements EventSource
             return entries.size();
         }
     }
-    
+
     private CartesianMove getFirstMove()
     {
         CartesianMove firstMove;
@@ -195,6 +208,7 @@ public class PlannedMoves implements EventSource
         if(1 > size)
         {
             // no moves available to send
+        	log.trace("No Move to send");
             return;
         }
         CartesianMove firstMove;
@@ -203,6 +217,7 @@ public class PlannedMoves implements EventSource
 	        firstMove = getFirstMove();
 	        if(null == firstMove)
 	        {
+	        	log.trace("Could not get move!(size = {})", size);
 	        	return;
 	        }
 	        CartesianMove secondMove;
@@ -216,6 +231,7 @@ public class PlannedMoves implements EventSource
 	            }
 	            if(false == res)
 	            {
+	            	log.error("Failed to send move");
 	            	return;
 	            }
 	        }
@@ -223,6 +239,7 @@ public class PlannedMoves implements EventSource
 	        {
 	        	if(false == firstMove.send(pro, null))
 	        	{
+	        		log.error("Failed to get Queue size");
 	        		return;
 	        	}
 	        }
@@ -235,6 +252,7 @@ public class PlannedMoves implements EventSource
         if(1 > size)
         {
             // no moves available to send
+        	log.trace("No last move to send.");
             return true;
         }
         synchronized(entries)

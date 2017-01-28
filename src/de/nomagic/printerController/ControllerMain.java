@@ -328,7 +328,10 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
                     break;
                 }
             }
-            System.out.println("Closing G-Code File,..");
+            // flush movement queue
+            Executor exe = pp.getExecutor();
+            exe.letMovementStop(new Reference("G-Code File"));
+            log.trace("Closing G-Code File,..");
             br.close();
         }
         catch (final FileNotFoundException e)
@@ -469,7 +472,7 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
     }
 
 	@Override
-	public String getSource() 
+	public String getSource()
 	{
 		if(true == hasFileToPrint())
 		{

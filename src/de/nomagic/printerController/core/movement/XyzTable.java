@@ -88,7 +88,7 @@ public class XyzTable
     private double FeedrateMmPerMinute = 9000;
     private int MaxClientStepsPerSecond = 0;
     private PrinterProperties printerProps = new PrinterProperties();
-    
+
     private String lastErrorReason = null;
 
     public XyzTable(Cfg cfg)
@@ -131,7 +131,7 @@ public class XyzTable
         homeBackOffDistanceMm   = cfg.getGeneralSetting(CFG_NAME_HOME_BACK_OFF_DISTANCE,
                                                       DEFAULT_HOMING_BACK_OFF_DISTANCE_MM);
     }
-    
+
     public String getLastErrorReason()
     {
         return lastErrorReason;
@@ -365,7 +365,7 @@ public class XyzTable
     }
 
     /** This sends out the last move command. The one that waits for the next move to calculate the end Speed.
-     * @param ref 
+     * @param ref
     *
     */
    public boolean letMovementStop(Reference ref)
@@ -378,7 +378,7 @@ public class XyzTable
        }
        else
        {
-           return planner.flushQueueToClient();
+           return planner.flushQueueToClient(ref);
        }
    }
 
@@ -422,10 +422,10 @@ public class XyzTable
                aMove.setDistanceMm(ax, distanceMm);
            }
            // else axis not used
-       } 
+       }
        return updateEndStopActivation(aMove);
    }
-   
+
    public boolean homeAxis(Axis_enum[] axis, Reference ref)
    {
        if(null == planner)
@@ -460,7 +460,7 @@ public class XyzTable
            isHomed[ax.ordinal()] = true; // axis is now homed
            curPositionMm[ax.ordinal()] = 0.0;
        }
-       if(false == planner.flushQueueToClient())
+       if(false == planner.flushQueueToClient(ref))
        {
     	   log.error("Flush to Client failed !");
     	   lastErrorReason = "Flush to Client failed";

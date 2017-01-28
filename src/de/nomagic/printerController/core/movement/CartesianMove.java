@@ -130,17 +130,19 @@ public class CartesianMove
 
 	public boolean send(Protocol pro, CartesianMove nextMove)
 	{
-        if((null == pro) || (null == nextMove))
+        if((null == pro))
         {
+        	log.warn("No Protocol available to send the move!");
             return false;
         }
         if(false == hasMovement)
         {
+        	log.trace("No movement to send available in move {}", myId);
         	return true;
         }
         if(false == hasStartSpeed)
         {
-        	// log.error("Tried to send Move without start Speed set!");
+        	log.trace("Tried to send Move without start Speed set!");
         	startSpeedMms = 0;
         	hasStartSpeed = true;
         }
@@ -150,6 +152,7 @@ public class CartesianMove
 		// send BasicLinearMoves
         if(false == pro.addBasicLinearMove(basicMoves))
         {
+        	log.error("Failed to send the Basic Linear Move !");
             return false;
         }
 		// send switch commands

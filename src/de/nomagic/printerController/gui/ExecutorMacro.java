@@ -150,6 +150,10 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
 
             case FUNC_ADD_MOVE_TO:
                 res = exe.addMoveTo((RelativeMove)parameter[i], ref);
+                if(true == res)
+                {
+                	res = exe.letMovementStop(ref);
+                }
                 break;
 
             case FUNC_LET_MOVEMENT_STOP:
@@ -467,7 +471,7 @@ public class ExecutorMacro extends Macro implements GCodeResultStream
     }
 
 	@Override
-	public String getSource() 
+	public String getSource()
 	{
 		return "Macro";
 	}

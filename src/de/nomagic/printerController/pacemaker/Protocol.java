@@ -190,7 +190,7 @@ public class Protocol implements EventSource
     public static final int FIRMWARE_SETTING_TYPE_STATISTIC = 2;
     public static final int FIRMWARE_SETTING_TYPE_SWITCH = 3;
     public static final int FIRMWARE_SETTING_TYPE_DEBUG = 4;
-    
+
     public static final byte MOVEMENT_BLOCK_QUEUE_FULL = 0x01;
     public static final byte MOVEMENT_BLOCK_UNKNOWN_BLOCK = 0x02;
     public static final byte MOVEMENT_BLOCK_MALFORMED_BLOCK = 0x03;
@@ -270,7 +270,7 @@ public class Protocol implements EventSource
     }
 
     @Override
-    public void reportEventStatus(ActionResponse response)
+    public void reportEventStatus(ActionResponse response, Reference Ref)
     {
         if(true == isOperational)
         {
@@ -388,7 +388,7 @@ public class Protocol implements EventSource
             return Tool.fromByteBufferToUtf8String(buf, length, offset);
 
         default:
-            return Tool.fromByteBufferToHexString(buf, length, offset);
+            return Tool.fromByteBufferToHexString(buf, length, offset) + " == " + Tool.fromByteBufferToUtf8String(buf, length, offset);
         }
     }
 
@@ -897,7 +897,7 @@ public class Protocol implements EventSource
      *
      * @param fan specifies the effected fan.
      * @param speed 0 = off; 65535 = max
-     * @param ref 
+     * @param ref
      */
     public boolean setFanSpeedfor(final int fan, final int speed, Reference ref)
     {
@@ -933,7 +933,7 @@ public class Protocol implements EventSource
      *
      * @param output specifies the effected output.
      * @param state 0 = low; 1 = high; 2 = disabled / high-Z
-     * @param ref 
+     * @param ref
      */
     public boolean setOutputState(final int output, final int state, Reference ref)
     {
@@ -1032,7 +1032,7 @@ public class Protocol implements EventSource
     }
 
     /** only needed to implement M17
-     * @param ref 
+     * @param ref
      *
      */
     public boolean enableAllStepperMotors(Reference ref)
@@ -1163,7 +1163,7 @@ public class Protocol implements EventSource
         for(int i = 0; i < aMove.length; i++)
         {
 	        log.trace("Sending move {} - {}", aMove[i].getId(), aMove[i]);
-	        
+
 	        // Send the data
 	        byte[] data = aMove[i].getMoveData();
 	        // TODO remove
@@ -1286,25 +1286,25 @@ public class Protocol implements EventSource
                 }
             }
             parseQueueReply(response, 2);
-            if(MOVEMENT_BLOCK_QUEUE_FULL != response[3]) // First Parameter Byte = Cause 
+            if(MOVEMENT_BLOCK_QUEUE_FULL != response[0]) // First Parameter Byte = Cause
             {
                 // Error caused by bad Data !
-            	switch(response[3])
+            	switch(response[0])
             	{
             	case MOVEMENT_BLOCK_UNKNOWN_BLOCK:
             		log.error("Unknown or unsupported Block Type");
             		break;
-            		
+
             	case MOVEMENT_BLOCK_MALFORMED_BLOCK:
             		log.error("malformed block");
             		break;
-            		
+
             	case MOVEMENT_BLOCK_ERROR_IN_BLOCK:
             		log.error("error in Block");
             		break;
-            		
+
             	default:
-	            	log.error("Invalid Cause ({}) !", response[3]);
+	            	log.error("Invalid Cause ({}) !", response[0]);
 	            	break;
             	}
                 lastErrorReason = "Could not Queue Block as Client Reports invalid Data !";
@@ -1353,7 +1353,7 @@ public class Protocol implements EventSource
      * call. If in this situation try calling enqueueCommandBlocking() !
      *
      * @param param Data of only one command !
-     * @param ref 
+     * @param ref
      * @return RESULT_SUCCESS,  RESULT_ERROR or RESULT_TRY_AGAIN_LATER
      */
     private int enqueueCommand(byte[] param)
