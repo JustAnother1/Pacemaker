@@ -14,695 +14,296 @@
  */
 package de.nomagic.printerController.core.movement;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Vector;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
-import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.pacemaker.Protocol;
 
-
-
-/**
- * @author Lars P&ouml;tter
- * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
- *
- */
 public class BasicLinearMove
 {
-    public static final double MOVEMENT_SPEED_TOLERANCE_MM_SECOND = 0.0001;
-    /** if the axis has steps the speed may not be 0. So this is the speed is will have at least */
-    public static final double MIN_MOVEMENT_SPEED_MM_SECOND = 0.1;
-
-    private static int nextId = 0; // singleton
-
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 
-    private double feedrateMmPerMinute = MIN_MOVEMENT_SPEED_MM_SECOND * 60;
-    private boolean isHoming = false;
-    private HashMap<Axis_enum, Double> distancesMm = new HashMap<Axis_enum, Double>();
-    private HashMap<Integer, Axis_enum> AxisMapping = new HashMap<Integer, Axis_enum>();
-    private Vector<Integer> activeAxises = new Vector<Integer>();
-    private HashMap<Integer, Integer> StepsOnAxis = new HashMap<Integer, Integer>();
-    private HashMap<Integer, Integer> MaxSpeedStepsPerSecondOnAxis = new HashMap<Integer, Integer>();
-    private HashMap<Integer, Boolean> AxisDirectionIncreasing = new HashMap<Integer, Boolean>();
-    private int primaryAxis = -1;
-    private int StepsOnPrimaryAxis = -1;
-    private double PrimaryAxisStepsPerMm = 1;
-    private double PrimaryAxisMaxAceleration = 1;
+	private int maxSteps = 0;
+	private boolean isHomingMove = false;
+	private int TravelSpeedFraction = 0;
+	private int EndSpeedFraction = 0;
+	private int activeSteppersMap = 0;
+	private int directionsMap = 0;
+	private int primaryAxis = 0;
+	private int accelerationSteps = 0;
+	private int decellerationsteps = 0;
+	private HashMap<Integer, Integer> StepsOnAxis = new HashMap<Integer, Integer>();
 
-    private boolean hasCommand = false;
-    private boolean hasMovement = false;
-    private boolean Command_on = true;
-    private Integer[] Command_switches;
 
-    private final int MaxPossibleClientSpeedInStepsPerSecond;
-    private int maxStepperNumber = -1;
-    private double endSpeedMms = 0.0;
-    private boolean hasEndSpeed = false;
-    private double endSpeedFactor = 1.0; // no limitation
-    private double travelSpeedMms = 0.0;
-    private int AccelerationSteps = 0;
-    private int DecelerationSteps = 0;
-    // this speed in mm/s can be reduced to 0 in an instant( with an allowed Jerk)
-    private double maxJerkMms = 0;
-    private boolean JerkIsSet = false;
+	private final int id;
+    private byte[] movementCommand = null;
 
-    private int myId;
-
-    private int numParts = 1;
-
-    public BasicLinearMove(int MaxPossibleClientSpeedStepsPerSecond)
+    public BasicLinearMove(int id)
     {
-        this.MaxPossibleClientSpeedInStepsPerSecond = MaxPossibleClientSpeedStepsPerSecond;
-        myId = nextId;
-        nextId++;
-    }
-    
-    public void setFeedrateMmPerMinute(double feedrateMmPerMinute)
-    {
-        if(MIN_MOVEMENT_SPEED_MM_SECOND * 60 < feedrateMmPerMinute)
-        {
-            this.feedrateMmPerMinute = feedrateMmPerMinute;
-        }
-        // else ignore invalid Feedrate
-    }
-    
-    public void setDistanceMm(Axis_enum axis, double distanceMm)
-    {
-        log.debug("ID{}: adding {} = {} mm", myId, axis, distanceMm);
-        distancesMm.put(axis, distanceMm);
-    }
-    
-    private void addSteppersJerk(Stepper stepper)
-    {
-        final double jerkMms = stepper.getMaxJerkSpeedMmS();
-        if(false == JerkIsSet)
-        {
-            JerkIsSet = true; // first jerk setting for this move
-            maxJerkMms = jerkMms;
-        }
-        if(maxJerkMms > jerkMms)
-        {
-            // this axis can not do as much Jerk as the other Axis
-            // so the Jerk for this move needs to be reduced
-            maxJerkMms = jerkMms;
-            // TODO handle Jerk on a per Axis basis
-        }
-    }
-    
-    private void addSteppersSteps(Stepper stepper, int steps)
-    {
-        if(false == stepper.isDirectionInverted())
-        {
-            if(0 < steps)
-            {
-                AxisDirectionIncreasing.put(stepper.getStepperNumber(), true);
-            }
-            else
-            {
-                AxisDirectionIncreasing.put(stepper.getStepperNumber(), false);
-            }
-        }
-        else
-        {
-            if(0 < steps)
-            {
-                AxisDirectionIncreasing.put(stepper.getStepperNumber(), false);
-            }
-            else
-            {
-                AxisDirectionIncreasing.put(stepper.getStepperNumber(), true);
-            }
-        }
-        StepsOnAxis.put(stepper.getStepperNumber(), Math.abs(steps));
-    }
-    
-    public void addMovingAxis(Stepper stepper, Axis_enum ax, int steps)
-    {
-        if(null == stepper)
-        {
-            return;
-        }
-        final Integer number = stepper.getStepperNumber();
-        log.debug("ID{}: adding Stepper {} for Axis {} with {} steps", myId, number, ax, steps);
-        AxisMapping.put(number, ax);
-        if(maxStepperNumber < number)
-        {
-            maxStepperNumber = number;
-        }
-        addSteppersJerk(stepper);
-        activeAxises.add(number);
-        addSteppersSteps(stepper, steps);
-        final int maxSpeedStepsPerSecond = stepper.getMaxPossibleSpeedStepsPerSecond();
-        MaxSpeedStepsPerSecondOnAxis.put(number, maxSpeedStepsPerSecond);
-        log.trace("ID{}: Stepper {} for Axis {} has a max Steps/sec of {} !", myId, number, ax, maxSpeedStepsPerSecond);
-        if(0 < Math.abs(steps))
-        {
-            hasMovement = true;
-        }
-        if(StepsOnPrimaryAxis < Math.abs(steps))
-        {
-            StepsOnPrimaryAxis = Math.abs(steps);
-            log.trace("ID{}: primary Axis is {} !", myId, number);
-            primaryAxis = number;
-            PrimaryAxisStepsPerMm = stepper.getStepsPerMm();
-            PrimaryAxisMaxAceleration = stepper.getMaxAccelerationStepsPerSecond();
-        }
-    }
-    
-    public void setTravelSpeedMms(double speedMms)
-    {
-        log.trace("ID{}: Nominal speed set to {} mm/s!", myId, speedMms);
-        travelSpeedMms = speedMms;
+    	this.id = id;
     }
 
-    public void setEndSpeedMms(double theSpeedMms)
+    @Override
+	public String toString() {
+    	StringBuilder sb = new StringBuilder();
+        Iterator<Entry<Integer, Integer>> it = StepsOnAxis.entrySet().iterator();
+        while (it.hasNext())
+        {
+            Map.Entry<Integer, Integer> pair = (Map.Entry<Integer, Integer>)it.next();
+            Integer axis = pair.getKey();
+            Integer steps = pair.getValue();
+            sb.append("(" + steps + " steps on Stepper " + axis + ")");
+        }
+
+		return "BasicLinearMove " + sb.toString() + " [maxSteps=" + maxSteps + ", isHomingMove=" + isHomingMove
+				+ ", TravelSpeedFraction=" + TravelSpeedFraction + ", EndSpeedFraction=" + EndSpeedFraction
+				+ ", activeSteppersMap=" + activeSteppersMap + ", directionsMap=" + directionsMap + ", primaryAxis="
+				+ primaryAxis + ", accelerationSteps=" + accelerationSteps + ", decellerationsteps="
+				+ decellerationsteps + ", id=" + id + ", movementCommand="
+				+ Arrays.toString(movementCommand) + "]";
+	}
+
+
+
+	public int getId()
     {
-        endSpeedMms = theSpeedMms;
-        log.trace("ID{}: end speed set to {} mm/s", myId, theSpeedMms);
-        hasEndSpeed = true;
-    }
-    
-    public void setAccelerationSteps(int steps)
-    {
-        AccelerationSteps = steps;
+    	return id;
     }
 
-    public void setDecelerationSteps(int steps)
+    public void addAxis(int stepper, int steps)
     {
-        DecelerationSteps = steps;
-    }
-    
-    public void setEndSpeedFactor(double endSpeedFactor)
-    {
-        if((1 < endSpeedFactor) || (0 > endSpeedFactor))
-        {
-            // not possible
-            log.error("Invalid End Speed Factor of {} !", endSpeedFactor);
-            return;
-        }
-        this.endSpeedFactor = endSpeedFactor;
-    }
-    
-    public boolean isNowComplete()
-    {
-    	// check for steppers that do not have steps on them -> remove them
-    	// make sure that primary axis is correct
-    	boolean foundMovement = false;
-    	int maxSteps = -1;
-    	Integer PrimAxis = -1;
-    	Iterator<Integer> it = activeAxises.iterator();
-    	while(true == it.hasNext())
+    	if(0 > steps)
     	{
-    		Integer stepperNumber = it.next();
-    		Integer steps = StepsOnAxis.get(stepperNumber);
-    		if(0 == steps)
-    		{
-    			// there are no steps on this axis!
-    			// Possible Reason: Very short move that got rounded to 0 Steps.
-    			// -> remove Axis
-    			activeAxises.removeElement(stepperNumber);
-    			AxisDirectionIncreasing.remove(stepperNumber);
-    		}
-    		else
-    		{
-    			foundMovement = true;
-    			// check if this is the primary axis
-    			if(Math.abs(steps) > maxSteps)
-    			{
-    				maxSteps = Math.abs(steps);
-    				PrimAxis = stepperNumber;
-    			}
-    		}
+    		// inverted
+    		directionsMap = directionsMap | (1<<stepper);
+    		steps = Math.abs(steps);
     	}
-    	primaryAxis = PrimAxis;
-    	hasMovement = foundMovement;
-    	return true;
-    }
-
-    public boolean hasMovementData()
-    {
-        return hasMovement;
-    }
-
-    public double getMm(Axis_enum axis)
-    {
-        Double dist = distancesMm.get(axis);
-        if(null == dist)
-        {
-        	return 0.0;
-        }
-        else
-        {
-        	return dist.doubleValue();
-        }
-    }
-
-    public void setIsHoming(boolean b)
-    {
-        isHoming = b;
-    }
-
-    public boolean isHomingMove()
-    {
-        return isHoming;
-    }
-
-    public void splitTo(int parts)
-    {
-        numParts = parts;
-    }
-
-    public int getNumberOfActiveSteppers()
-    {
-        return activeAxises.size();
-    }
-
-    public int getHighestStepperNumber()
-    {
-        return maxStepperNumber;
-    }
-
-    public int getStepsOnActiveStepper(int i, int curPart)
-    {
-        int allSteps = getStepsOnActiveStepper(i);
-        int stepsPerPart = allSteps/numParts;
-        if(curPart < (numParts -1))
-        {
-            return stepsPerPart;
-        }
-        else
-        {
-            // last part
-            // fix rounding
-            return allSteps - ((numParts -1) * stepsPerPart);
-        }
-    }
-
-    public int getStepsOnActiveStepper(int i)
-    {
-    	Integer res = StepsOnAxis.get(i);
-    	if(null == res)
+    	if(0 == steps)
     	{
-            return 0;
+    		// We don't need an Axis with no steps on it.
+    		return;
+    	}
+    	if(maxSteps < steps)
+    	{
+    		primaryAxis = stepper;
+    		maxSteps = steps;
+    	}
+    	StepsOnAxis.put(stepper, steps);
+    	activeSteppersMap = activeSteppersMap | (1<<stepper);
+    }
+
+    public int getStepsOnStepper(int stepper)
+    {
+    	Integer Steps = StepsOnAxis.get(stepper);
+    	if(null == Steps)
+    	{
+    		return 0;
     	}
     	else
     	{
-    		return res.intValue();
+    		return Steps.intValue();
     	}
     }
 
-    public int getPrimaryAxis()
+    public void setHoming(boolean isHoming)
     {
-        return primaryAxis;
+    	isHomingMove = isHoming;
     }
 
-    public int getActiveSteppersMap()
+    public void setTravelSpeedFraction(int TravelSpeedFraction)
+	{
+	this.TravelSpeedFraction = TravelSpeedFraction;
+	}
+
+    public void setEndSpeedFraction(int EndSpeedFraction)
+	{
+    	this.EndSpeedFraction = EndSpeedFraction;
+	}
+
+    public void setAccelerationSteps(int accelerationSteps)
     {
-        int ActiveSteppersMap = 0;
-        for(int i = 0; i < activeAxises.size(); i++)
-        {
-            ActiveSteppersMap = ActiveSteppersMap | 1 << activeAxises.get(i);
-        }
-        return ActiveSteppersMap;
+    	this.accelerationSteps = accelerationSteps;
+	}
+
+    public void setDecellerationSteps(int decellerationsteps)
+    {
+    	this.decellerationsteps = decellerationsteps;
     }
 
-    public int getDirectionMap()
+    public  byte[] getMoveData()
     {
-        int DirectionMap = 0;
-        for(int i = 0; i < activeAxises.size(); i++)
+        // Prepare data
+        int steppsStart;
+        if(StepsOnAxis.size() < 7)
         {
-            final int StepperNumber = activeAxises.get(i);
-            if(true == AxisDirectionIncreasing.get(StepperNumber))
+            // 1 byte Axis selection mode
+            if(255 > maxSteps)
             {
-                DirectionMap = DirectionMap | (1 << StepperNumber);
+                fillTopPartForUpTo8Axis(1);
             }
-        }
-        return DirectionMap;
-    }
-
-    public int getTravelSpeedFraction(int curPart)
-    {
-        int curPartAccelSteps= getAccelerationSteps(curPart);
-        if(0 == curPartAccelSteps)
-        {
-            // Acceleration is finished
-            return getTravelSpeedFraction();
-        }
-        else if(AccelerationSteps == curPartAccelSteps)
-        {
-            // complete acceleration in this part so travel speed is the same
-            return getTravelSpeedFraction();
-        }
-        else
-        {
-            // this part does only a part of the acceleration.
-            return getTravelSpeedFraction() * (curPartAccelSteps/AccelerationSteps);
-        }
-    }
-
-    public int getTravelSpeedFraction()
-    {
-        int fraction = (int)((travelSpeedMms * PrimaryAxisStepsPerMm * 255)
-                                / MaxPossibleClientSpeedInStepsPerSecond);
-        if(1 > fraction)
-        {
-            // speed of 0 is not allowed !
-            log.info("ID{}: Increased Travel Speed Fraction to 1 !", myId);
-            fraction = 1;
-        }
-        log.trace("ID{}: travel speed = {} mm/s -> fraction = {}", myId, travelSpeedMms, fraction);
-        return fraction;
-    }
-
-    public double getEndSpeedMms()
-    {
-        return endSpeedMms;
-    }
-
-    public boolean endSpeedIsZero()
-    {
-        if(MOVEMENT_SPEED_TOLERANCE_MM_SECOND < endSpeedMms)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
-    }
-
-    public int getEndSpeedFraction(int curPart)
-    {
-        int decelStepsInThisPart = getDecelerationSteps(curPart);
-        if(0 == decelStepsInThisPart)
-        {
-        	if(true == isHoming)
-        	{
-        		return 0;
-        	}
-        	else
-        	{
-        		// no breaking so end speed is travel speed
-        		return getTravelSpeedFraction(curPart);
-        	}
-        }
-        else if(DecelerationSteps == decelStepsInThisPart)
-        {
-            // all breaking in this part
-            return getEndSpeedFraction();
-        }
-        else
-        {
-            // only part of the breaking in this part
-            return getEndSpeedFraction() * (decelStepsInThisPart/DecelerationSteps);
-        }
-    }
-
-    public int getEndSpeedFraction()
-    {
-        final int fraction =  (int)((endSpeedMms * PrimaryAxisStepsPerMm * 255)
-                                      / MaxPossibleClientSpeedInStepsPerSecond);
-        log.trace("ID{}: end speed = {} mm/s -> fraction = {}", myId, endSpeedMms, fraction);
-        return fraction;
-    }
-
-    public int getAccelerationSteps(int curPart)
-    {
-        int primaryStepsPerPart = StepsOnPrimaryAxis / numParts;
-        int stepsInThisPhase = AccelerationSteps - (curPart * primaryStepsPerPart);
-        if(1 > stepsInThisPhase)
-        {
-            return 0;
-        }
-        else if(primaryStepsPerPart < stepsInThisPhase)
-        {
-            return primaryStepsPerPart;
-        }
-        else
-        {
-            return stepsInThisPhase;
-        }
-    }
-
-    public int getAccelerationSteps()
-    {
-        return AccelerationSteps;
-    }
-
-    public int getDecelerationSteps(int curPart)
-    {
-        int primaryStepsPerPart = StepsOnPrimaryAxis / numParts;
-        int stepsInThisPhase =  DecelerationSteps - ((numParts-(curPart + 1)) * primaryStepsPerPart);
-        if(1 > stepsInThisPhase)
-        {
-            return 0;
-        }
-        else
-        {
-            return stepsInThisPhase;
-        }
-    }
-
-    public int getDecelerationSteps()
-    {
-        return DecelerationSteps;
-    }
-
-    public boolean hasEndSpeedSet()
-    {
-        return hasEndSpeed;
-    }
-
-    private double getBrakingDistance(double v1, double v2, double a)
-    {
-        // v1, v2 = mm per second
-        // a = mm /second*second
-        // t = time in seconds
-        // v2 = v1 - a*t -> t = (v2 - v1)/a
-        // s = v * t
-        // ->
-        // S = abs(v1 - v2)/2 * abs(v1 - v2)/a
-        final double deltaV = Math.abs(v1 - v2);
-        return (deltaV/2) * (deltaV/a);
-    }
-
-    public int getNumberOfStepsOnPrimaryAxisForSpeedChange(double startSpeedMmS, double endSpeedMmS)
-    {
-        startSpeedMmS = Math.abs(startSpeedMmS);
-        endSpeedMmS = Math.abs(endSpeedMmS);
-        final double distanceMm = Math.abs(getBrakingDistance(startSpeedMmS, endSpeedMmS, getMaxAcceleration()));
-        final int res = (int)(distanceMm * PrimaryAxisStepsPerMm);
-        log.trace("ID{}: We need {} steps to accelerate from {} mm/s to {} mms/s (in {} mm)",
-                   myId,        res,                 startSpeedMmS, endSpeedMmS, distanceMm);
-        return res;
-    }
-
-    public double getMaxAcceleration()
-    {
-        return PrimaryAxisMaxAceleration;
-    }
-
-    public double getSpeedChangeMmSOnPrimaryAxisForSteps(int steps)
-    {
-        // V = sqr(2 * s* a)
-        final double change = Math.sqrt(2 * (steps/PrimaryAxisStepsPerMm) * getMaxAcceleration());
-        log.trace("ID{}: Speed change of {} mm/s possible with {} steps", myId, change, steps);
-        return change;
-    }
-
-    private double getDistanceOnXYZinMm()
-    {
-        double distanceOnXYZMm = 0.0;
-        final Iterator<Double> it = distancesMm.values().iterator();
-        while(it.hasNext())
-        {
-            distanceOnXYZMm = distanceOnXYZMm + Math.abs(it.next());
-        }
-        log.trace("ID{}: distance on X Y Z = {} mm", myId, distanceOnXYZMm);
-        return distanceOnXYZMm;
-    }
-
-    private double getFeedrateOnPrimaryAxisMmSec()
-    {
-        // TODO : Currently 10mm on Y and 10mm on X lead to a Speed on primary axis of 0.5 of the Feedrate.
-        // But the Distance traveled in such a move is not 20mm but only about 14mm. So the Feedrate could be higher.
-        // TODO The angle of the move has to be taken into account.
-        double SpeedPerMmSec = 0;
-        log.trace("ID{}: Feedrate = {} mm/minute", myId, feedrateMmPerMinute);
-        final double distanceOnXYZMm = getDistanceOnXYZinMm();
-        final double distanceOnPrimaryAxis = Math.abs(distancesMm.get(AxisMapping.get(primaryAxis)));
-        if(distanceOnXYZMm > distanceOnPrimaryAxis)
-        {
-            final double factor = distanceOnPrimaryAxis/distanceOnXYZMm;
-            log.trace("ID{}: Speed Factor = {}", myId, factor);
-            SpeedPerMmSec = (feedrateMmPerMinute/60) * factor;
-        }
-        else
-        {
-            // move with only one Axis involved
-            SpeedPerMmSec = feedrateMmPerMinute/60;
-        }
-        log.trace("ID{}: Feedrate on primary Axis = {} mm/sec", myId, SpeedPerMmSec);
-        return SpeedPerMmSec;
-    }
-
-    public double getMaxPossibleSpeedStepsPerSecond()
-    {
-        double maxSpeedStepPerSec = 0.0;
-    	Integer res = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis);
-    	if(res != null)
-    	{
-    		maxSpeedStepPerSec = res;
-    	}
-    	else
-    	{
-    		log.error("Missing max steps setting for Axis {} !", primaryAxis);
-    		primaryAxis = 1;
-    	}
-    		
-        log.trace("ID{}: Max Speed = {}", myId, maxSpeedStepPerSec);
-        // Test if this speed is ok for the other axis
-        // (speed on primary Axis) / (steps on primary axis) = a
-        // a * (steps on the axis) = (speed on that axis)
-        // speed on each axis must be smaller than the max speed on that axis
-        double a = maxSpeedStepPerSec / Math.abs(StepsOnAxis.get(primaryAxis));
-        for(int i = 0; i < activeAxises.size(); i++)
-        {
-            final int axisNumber = activeAxises.get(i);
-            final int steps = StepsOnAxis.get(axisNumber);
-            final int speed = (int) (a * steps);
-            if(speed > MaxSpeedStepsPerSecondOnAxis.get(axisNumber))
+            else
             {
-                log.info("ID{}: Speed of {}steps/s to high for this Axis !", myId, speed);
-                // calculate new possible max Speed
-                a = MaxSpeedStepsPerSecondOnAxis.get(axisNumber) / steps;
-                maxSpeedStepPerSec = a * Math.abs(StepsOnAxis.get(primaryAxis));
-                log.info("ID{}: max Speed of {}steps/s (a={}) for this Axis !",myId, maxSpeedStepPerSec, a);
-                if(MIN_MOVEMENT_SPEED_MM_SECOND > maxSpeedStepPerSec)
+                fillTopPartForUpTo8Axis(2);
+            }
+            steppsStart = 7;
+        }
+        else if(StepsOnAxis.size() < 15)
+        {
+            // 2 byte Axis selection mode
+            if(255 > maxSteps)
+            {
+                fillTopPartForUpTo16Axis(1);
+            }
+            else
+            {
+                fillTopPartForUpTo16Axis(2);
+            }
+            steppsStart = 9;
+        }
+        else
+        {
+            log.error("Too Many Steppers - Can only handle 15 !");
+            return null;
+        }
+        // Add Steps
+        if(255 > maxSteps)
+        {
+            fillBottomPartUsingOneByteForSteps(steppsStart);
+        }
+        else
+        {
+            fillBottomPartUsingTwoByteForSteps(steppsStart);
+        }
+    	return movementCommand;
+    }
+
+    private void fillTopPartForUpTo8Axis(int BytesPerStep)
+    {
+        movementCommand = new byte[7 + (BytesPerStep * (2 + StepsOnAxis.size()))];
+        movementCommand[0] = (byte)(0xff & movementCommand.length - 1); // Length
+        movementCommand[1] = Protocol.MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
+        // active Steppers
+        movementCommand[2] = (byte)activeSteppersMap;
+        // Byte per steps
+        if(1 == BytesPerStep)
+        {
+            movementCommand[3] = 0;
+        }
+        else
+        {
+            movementCommand[3] = (byte) 0x80;
+        }
+        // directions
+        movementCommand[3] =  (byte)(movementCommand[3] | (0x7f & directionsMap));
+        // Homing
+        if(true == isHomingMove)
+        {
+            movementCommand[4] = 0x10;
+        }
+        // Primary Axis
+        movementCommand[4] =(byte)(movementCommand[4] | (0x0f & primaryAxis));
+        // Nominal Speed
+        movementCommand[5] = (byte)(0xff & TravelSpeedFraction);
+        // end Speed
+        movementCommand[6] = (byte)(0xff & EndSpeedFraction);
+    }
+
+    private void fillTopPartForUpTo16Axis(int BytesPerStep)
+    {
+        movementCommand = new byte[9 + (BytesPerStep * (2 + StepsOnAxis.size()))];
+        movementCommand[0] = (byte)(0xff & movementCommand.length - 1); // Length
+        movementCommand[1] = Protocol.MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
+        // Active Steppers
+        final int ActiveSteppersMap =  activeSteppersMap;
+        movementCommand[3] = (byte)(0xff & ActiveSteppersMap);
+        movementCommand[2] = (byte)(0x80 | (0x7f & (ActiveSteppersMap >> 8)));
+        // Byte per steps
+        if(1 == BytesPerStep)
+        {
+            movementCommand[4] = 0;
+        }
+        else
+        {
+            movementCommand[4] = (byte) 0x80;
+        }
+        // directions
+        final int DirectionMap = directionsMap;
+        movementCommand[5] =  (byte)(0xff & DirectionMap);
+        movementCommand[4] =  (byte)(movementCommand[4] | (0x7f & (DirectionMap>>8)));
+        // Homing
+        if(true == isHomingMove)
+        {
+            movementCommand[6] = 0x10;
+        }
+        // Primary Axis
+        movementCommand[6] =(byte)(movementCommand[6] | (0x0f & (primaryAxis + 1))); // TODO
+        // Nominal Speed
+        movementCommand[7] = (byte)(0xff & TravelSpeedFraction);
+        // end Speed
+        movementCommand[8] = (byte)(0xff & EndSpeedFraction);
+    }
+
+    private void fillBottomPartUsingOneByteForSteps(int offset)
+    {
+        movementCommand[offset    ] = (byte)(0xff & accelerationSteps);
+        movementCommand[offset + 1] = (byte)(0xff & decellerationsteps);
+        final int numStepperToGo = StepsOnAxis.size();
+        int stepperfound = 0;
+        for(int i = 0; i < 16; i++)
+        {
+        	Integer steps = StepsOnAxis.get(i);
+        	if(null == steps)
+        	{
+        		continue;
+        	}
+            if(0 != steps)
+            {
+                movementCommand[offset + 2 + stepperfound] = (byte)(0xff & steps);
+                stepperfound ++;
+                if(stepperfound == numStepperToGo)
                 {
-                    maxSpeedStepPerSec = MIN_MOVEMENT_SPEED_MM_SECOND;
+                    break;
                 }
-                log.info("ID{}: Reduced Speed to {}steps/s !", myId, maxSpeedStepPerSec);
-                // try again
-                i = 0;
-                continue;
             }
-            // else ok
         }
-        final double FeedrateStepPerSec = getFeedrateOnPrimaryAxisMmSec() * PrimaryAxisStepsPerMm;
-        if(maxSpeedStepPerSec > FeedrateStepPerSec)
-        {
-            // speed is restricted by Feedrate
-            maxSpeedStepPerSec = FeedrateStepPerSec;
-        }
-        final double maxClientSpeedStepsPerSecond = MaxPossibleClientSpeedInStepsPerSecond;
-        log.trace("ID{}: Max client Speed = {} setps per second", myId, maxClientSpeedStepsPerSecond);
-        if(maxSpeedStepPerSec > maxClientSpeedStepsPerSecond)
-        {
-            // speed is restricted by the number of steps the client can do per second
-            maxSpeedStepPerSec = maxClientSpeedStepsPerSecond;
-        }
-        log.trace("ID{}: Max possible Speed = {}", myId, maxSpeedStepPerSec);
-        return maxSpeedStepPerSec;
     }
 
-    public double getMaxPossibleSpeedMmS()
+    private void fillBottomPartUsingTwoByteForSteps(int offset)
     {
-        return getMaxPossibleSpeedStepsPerSecond() / PrimaryAxisStepsPerMm;
-    }
-
-    public double getMaxEndSpeedMmS()
-    {
-        final double maxSpeedMmS = MaxSpeedStepsPerSecondOnAxis.get(primaryAxis) / PrimaryAxisStepsPerMm;
-        log.trace("ID{}: Max Speed = {} mm/sec", myId, maxSpeedMmS);
-        double maxEndSpeedMmS = maxSpeedMmS * endSpeedFactor;
-        if(maxEndSpeedMmS < maxJerkMms)
+        movementCommand[offset    ] = (byte)(0xff & (accelerationSteps>>8));
+        movementCommand[offset + 1] = (byte)(0xff & accelerationSteps);
+        movementCommand[offset + 2] = (byte)(0xff & (decellerationsteps>>8));
+        movementCommand[offset + 3] = (byte)(0xff & decellerationsteps);
+        final int numStepperToGo = StepsOnAxis.size();
+        int stepperfound = 0;
+        // highest Stepper Number can be 0 -> then we still have one stepper
+        for(int i = 0; i < 16; i++)
         {
-            if(maxSpeedMmS > maxJerkMms)
+        	Integer steps = StepsOnAxis.get(i);
+        	if(null == steps)
+        	{
+        		continue;
+        	}
+            if(0 != steps)
             {
-                maxEndSpeedMmS = maxJerkMms;
-            }
-            else
-            {
-                maxEndSpeedMmS = maxSpeedMmS;
-            }
-        }
-        log.trace("ID{}: Max end speed = {} mm/sec", myId, maxEndSpeedMmS);
-        // Test if this speed is OK for the other axis
-        // speed on primary Axis / steps on primary axis = a
-        // a * steps on the axis = speed on that axis
-        // speed on each axis must be smaller than the max speed on that axis
-        double a = (maxEndSpeedMmS * PrimaryAxisStepsPerMm) / StepsOnAxis.get(primaryAxis);
-        for(int i = 0; i < activeAxises.size(); i++)
-        {
-            final int axisNumber = activeAxises.get(i);
-            final int steps = StepsOnAxis.get(axisNumber);
-            final int speedStepsPerSecond = (int) (a * steps);
-            if(speedStepsPerSecond > MaxSpeedStepsPerSecondOnAxis.get(axisNumber))
-            {
-                log.info("ID{}: Speed to high for other Axis !", myId);
-                // calculate new possible max Speed
-                a = MaxSpeedStepsPerSecondOnAxis.get(axisNumber) / steps;
-                maxEndSpeedMmS = (a * StepsOnAxis.get(primaryAxis))/PrimaryAxisStepsPerMm;
-                // try again
-                i = 0;
-                continue;
-            }
-            // else ok
-        }
-
-        final double SpeedPerMmSec = getFeedrateOnPrimaryAxisMmSec();
-        if(maxEndSpeedMmS > SpeedPerMmSec)
-        {
-            // speed is restricted by Feedrate
-            maxEndSpeedMmS = SpeedPerMmSec;
-        }
-        final double maxClientSpeedMmS = MaxPossibleClientSpeedInStepsPerSecond / PrimaryAxisStepsPerMm;
-        log.trace("ID{}: Max client Speed = {} mm/sec", myId, maxClientSpeedMmS);
-        if(maxEndSpeedMmS > maxClientSpeedMmS)
-        {
-            // speed is restricted by the number of steps the client can do per second
-            maxEndSpeedMmS = maxClientSpeedMmS;
-        }
-        log.trace("ID{}: Max end Speed = {} mm/sec", myId, maxEndSpeedMmS);
-        return maxEndSpeedMmS;
-    }
-
-    public int getId()
-    {
-        return myId;
-    }
-
-    // Functions relating to the end Stop command that can be attached to a movement command:
-
-    public void addEndStopOnOffCommand(boolean on, Integer[] switches)
-    {
-        hasCommand = true;
-        Command_on = on;
-        Command_switches = switches;
-    }
-
-    public boolean hasACommand()
-    {
-        return hasCommand;
-    }
-
-    public boolean sendCommandTo(Protocol pro)
-    {
-        if(true == hasCommand)
-        {
-            if(null != pro)
-            {
-                return pro.endStopOnOff(Command_on, Command_switches);
+                movementCommand[offset + 4 + stepperfound*2] = (byte)(0xff & (steps>>8));
+                movementCommand[offset + 5 + stepperfound*2] = (byte)(0xff & steps);
+                stepperfound ++;
+                if(stepperfound == numStepperToGo)
+                {
+                    break;
+                }
             }
         }
-        // else nothing to send
-        return false;
     }
+
+
 }
+

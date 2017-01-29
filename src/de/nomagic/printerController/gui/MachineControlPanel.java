@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import de.nomagic.printerController.Cfg;
 import de.nomagic.printerController.GCodeResultStream;
 import de.nomagic.printerController.core.CoreStateMachine;
+import de.nomagic.printerController.core.Reference;
 
 /**
  * @author Lars P&ouml;tter
@@ -105,7 +106,7 @@ public class MachineControlPanel implements GCodeResultStream
     public void handleActionCloseClient()
     {
         log.trace("User requests to close the connection to the client!");
-        pp.close();
+        pp.close(new Reference(this.getSource()));
         clientPane.updateButtons();
         printerStatusPanel.setToOffline();
         directControlPane.setToOffline();
@@ -136,7 +137,7 @@ public class MachineControlPanel implements GCodeResultStream
         cfg.setClientDeviceString(0, clientPane.getConnectionDefinition());
         if(null != pp)
         {
-            pp.close();
+            pp.close(new Reference(this.getSource()));
         }
         pp = new CoreStateMachine(cfg);
         if(true == pp.isOperational())
@@ -210,4 +211,10 @@ public class MachineControlPanel implements GCodeResultStream
     {
         log.debug(msg);
     }
+
+	@Override
+	public String getSource() 
+	{
+		return "MachineControlPanel";
+	}
 }

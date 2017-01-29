@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Tool;
+import de.nomagic.printerController.core.Reference;
 
 /** implements basic functionality shred by all ClientConnections.
  *
@@ -83,13 +84,14 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     private int numberOfTransmissions = 0;
 
     private volatile long timeOfLastSuccessfulReply = 0;
+    private String ConnectionName = "";
 
-    public ClientConnectionBase(String name)
+    public ClientConnectionBase(String TaskName)
     {
-        super(name);
+        super(TaskName);
     }
 
-    public Reply sendRequest(final byte order, final byte[] parameter)
+    public Reply sendRequest(final byte order, final byte[] parameter, Reference ref)
     {
         if(null == parameter)
         {
@@ -160,7 +162,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
             catch (final IOException e)
             {
                 e.printStackTrace();
-                log.error("Failed to send Request - Exception !");
+                log.error("Failed to send Request - IOException !");
                 return null;
             }
             needsToRetransmitt = retransmissionNeeded(r);
@@ -552,22 +554,29 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
                 }
 
                 final Reply curReply = new Reply(buf);
-                if(true == log.isTraceEnabled())
+                if(false == curReply.isValid())
                 {
-                	log.trace("Received : " + Protocol.parse(buf) + " : " + curReply.getDump());
-                }
-                timeOfLastSuccessfulReply = System.currentTimeMillis();
-                if(true == curReply.isDebugFrame())
-                {
-                    log.info(curReply.toString());
-                    if(Protocol.RESPONSE_DEBUG_FRAME_NEW_EVENT == curReply.getReplyCode())
-                    {
-                        //TODO react to the new event
-                    }
+                	log.error("Received invalid Reply! ({})", Tool.fromByteBufferToHexString(buf));
                 }
                 else
                 {
-                    receiveQueue.put(curReply);
+	                if(true == log.isTraceEnabled())
+	                {
+	                	log.trace("Received : " + Protocol.parse(buf) + " : " + curReply.getDump());
+	                }
+	                timeOfLastSuccessfulReply = System.currentTimeMillis();
+	                if(true == curReply.isDebugFrame())
+	                {
+	                    log.info(curReply.toString());
+	                    if(Protocol.RESPONSE_DEBUG_FRAME_NEW_EVENT == curReply.getReplyCode())
+	                    {
+	                        //TODO react to the new event
+	                    }
+	                }
+	                else
+	                {
+	                    receiveQueue.put(curReply);
+	                }
                 }
             }
         }
@@ -590,7 +599,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         isRunning = false;
     }
 
-    public void close()
+    public void disconnect()
     {
         this.interrupt();
     }
@@ -599,5 +608,17 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     {
         return timeOfLastSuccessfulReply;
     }
+
+    @Override
+    public void setConnectionName(String Name)
+    {
+    	ConnectionName = Name;
+    }
+
+    @Override
+	public String getConnectionName()
+	{
+		return ConnectionName;
+	}
 
 }

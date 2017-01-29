@@ -25,6 +25,7 @@ import purejavacomm.CommPort;
 import purejavacomm.CommPortIdentifier;
 import purejavacomm.NoSuchPortException;
 import purejavacomm.PortInUseException;
+import purejavacomm.PureJavaIllegalStateException;
 import purejavacomm.SerialPort;
 import purejavacomm.UnsupportedCommOperationException;
 
@@ -50,6 +51,7 @@ public final class UartClientConnection extends ClientConnectionBase
 
     private volatile SerialPort port;
     private volatile boolean connected = false;
+    private final String data;
 
     public static String getDescriptorFor(String DeviceName,
                                           int baudrate,
@@ -286,6 +288,10 @@ public final class UartClientConnection extends ClientConnectionBase
     public static ClientConnection establishConnectionTo(String data)
     {
         final UartClientConnection res = new UartClientConnection(data);
+        if(false == res.connect())
+        {
+        	return null;
+        }
         if(true == res.isConnected())
         {
             // Arduino Clients with Automatic Reset need a pause of one second.(Bootloader)
@@ -311,10 +317,15 @@ public final class UartClientConnection extends ClientConnectionBase
     }
 
     public UartClientConnection(String data)
-    {
+	{
         super("UartClientConnection");
+        this.data = data;
         final Properties systemProperties = System.getProperties();
         systemProperties.setProperty("jna.nosys", "true");
+	}
+
+	public boolean connect()
+    {
         final String PortName = getPortNameFromDescriptor(data);
         try
         {
@@ -322,7 +333,7 @@ public final class UartClientConnection extends ClientConnectionBase
             if(CommPortIdentifier.PORT_SERIAL != portId.getPortType())
             {
                 log.error("Specified Port {} is not a Serial Port ({})!", PortName, portId.getPortType());
-                return;
+                return false;
             }
             CommPort basePort = null;
             try
@@ -332,12 +343,17 @@ public final class UartClientConnection extends ClientConnectionBase
             catch(PortInUseException e)
             {
                 log.error("Specified Port {} is in use by another Application !", PortName);
-                return;
+                return false;
+            }
+            catch(PureJavaIllegalStateException e)
+            {
+                log.error("Specified Port {} is in an invalid state and can not be opened !", PortName);
+                return false;
             }
             if(false ==(basePort instanceof SerialPort))
             {
                 log.error("Specified Port {} is not a Serial Port Object!", PortName);
-                return;
+                return false;
             }
             port = (SerialPort)basePort;
             port.setFlowControlMode(getFlowControlFromDescriptor(data));
@@ -352,7 +368,7 @@ public final class UartClientConnection extends ClientConnectionBase
             connected = true;
             this.start();
             log.info("Serial Port is open");
-            return;
+            return true;
         }
         catch(NoSuchPortException e)
         {
@@ -369,7 +385,8 @@ public final class UartClientConnection extends ClientConnectionBase
             log.error("The Interface {} caused an IO Exception !", PortName);
             e.printStackTrace();
         }
-        close(); // In case that we had a problem after the open
+        disconnect(); // In case that we had a problem after the open
+        return false;
     }
 
     @Override
@@ -379,9 +396,9 @@ public final class UartClientConnection extends ClientConnectionBase
     }
 
     @Override
-    public void close()
+    public void disconnect()
     {
-        super.close();
+        super.disconnect();
         if(null != port)
         {
             port.close();

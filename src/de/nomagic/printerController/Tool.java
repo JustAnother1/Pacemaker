@@ -121,7 +121,37 @@ public final class Tool
         final StringBuffer sb = new StringBuffer();
         for(int i = 0; i < length; i++)
         {
-            sb.append((char)buf[i + offset]);
+        	if((buf[i + offset] > 0x19) && (buf[i + offset] < 0x80))
+        	{
+        		// 1 Byte character
+        		sb.append((char)buf[i + offset]);
+        	}
+        	else if((buf[i + offset] > 0xBF) && (buf[i + offset] < 0xE0))
+        	{
+        		// 2 byte character
+        		byte[] twobyteChar = {buf[i + offset], buf[i + offset + 1]};
+        		sb.append(new String(twobyteChar));
+        		i++; // this consumed 2 bytes
+        	}
+        	else if((buf[i + offset] > 0xDF) && (buf[i + offset] < 0xF0))
+        	{
+        		// 3 byte character
+        		byte[] twobyteChar = {buf[i + offset], buf[i + offset + 1], buf[i + offset + 2]};
+        		sb.append(new String(twobyteChar));
+        		i= i + 2; // this consumed 3 bytes
+        	}
+        	else if((buf[i + offset] > 0xEF) && (buf[i + offset] < 0xF8))
+        	{
+        		// 4 byte character
+        		byte[] twobyteChar = {buf[i + offset], buf[i + offset + 1], buf[i + offset + 2], buf[i + offset + 3]};
+        		sb.append(new String(twobyteChar));
+        		i= i + 3; // this consumed 3 bytes
+        	}
+        	else
+        	{
+        		// a non printable control char or invalid char
+        		sb.append(".");
+        	}
         }
         return "[" + (sb.toString()).trim() + "]";
     }

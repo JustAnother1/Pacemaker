@@ -40,4 +40,10 @@ public class StandardStreamInterface extends InteractiveInterface
         }
     }
 
+	@Override
+	public String getSource() 
+	{
+		return "stdin";
+	}
+
 }

@@ -42,6 +42,7 @@ import de.nomagic.printerController.ControllerMain;
 import de.nomagic.printerController.Tool;
 import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.core.Reference;
 
 /** Main Window of GUI.
  * @author Lars P&ouml;tter
@@ -267,7 +268,7 @@ public class MainWindow extends JFrame implements ActionListener
                 if(true == c.readFrom(new FileInputStream(file)))
                 {
                     log.trace("using the newly read configuration !");
-                    core.close();
+                    core.close(new Reference("MainWindow"));
                     cfg = c;
                     core = new CoreStateMachine(cfg);
                     final ClientPanel cp = machineControlPanel.getClientPanel();

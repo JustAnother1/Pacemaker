@@ -14,21 +14,23 @@
  */
 package de.nomagic.printerController.pacemaker;
 
+import de.nomagic.printerController.core.Reference;
+
 /**
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  *
  */
-public class TestClientConnection implements ClientConnection
+public class ClientConnectionMock implements ClientConnection
 {
 
-    public TestClientConnection()
+    public ClientConnectionMock()
     {
 
     }
 
     @Override
-    public Reply sendRequest(byte order, byte[] parameter)
+    public Reply sendRequest(byte order, byte[] parameter, Reference ref)
     {
         // reply is a OK Frame
         Reply res = new Reply(new byte[] {0x42, // sync
@@ -63,10 +65,16 @@ public class TestClientConnection implements ClientConnection
     }
 
     @Override
-    public void close()
+    public void disconnect()
     {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public boolean connect()
+    {
+    	return false;
     }
 
     @Override
@@ -75,5 +83,18 @@ public class TestClientConnection implements ClientConnection
         // TODO Auto-generated method stub
         return 0;
     }
+
+	@Override
+	public String getConnectionName()
+	{
+		// TODO Auto-generated method stub
+		return "TestClient";
+	}
+
+	@Override
+	public void setConnectionName(String Name)
+	{
+
+	}
 
 }

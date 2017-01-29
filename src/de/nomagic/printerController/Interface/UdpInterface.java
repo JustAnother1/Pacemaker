@@ -111,4 +111,10 @@ public class UdpInterface extends InteractiveInterface
         }
     }
 
+	@Override
+	public String getSource() 
+	{
+		return "UDP";
+	}
+
 }

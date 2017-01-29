@@ -704,7 +704,7 @@ The *hardware revision* defines the Hardware revision.
 
 The *maximum supported step rate* returns the maximum supported step rate of the client for any axis (in steps per second).
 
-The *host timeout* returns the maximum allowed pause(in seconds) between two orders from the host. If the client detectzs a longer pause with no data arriving from the host the client will enter the stopped mode. This is a safety guard against a malfunctioning/crashed host application.
+The *host timeout* returns the maximum allowed pause(in seconds) between two orders from the host. If the client detects a longer pause with no data arriving from the host the client will enter the stopped mode. This is a safety guard against a malfunctioning/crashed host application.
 
 .Hardware Types
 [width="50%",options="header", cols="30%,70%"]
@@ -724,7 +724,7 @@ The *host timeout* returns the maximum allowed pause(in seconds) between two ord
 
 ==== Request Device Count (0x11)
 
-This order requests the number of available devices of a particular type (e.g., Heaters, Output Switches, Termperature Sensors) on the client. An advertised device may still be non-functional (as indicated by the Request Device Status order).
+This order requests the number of available devices of a particular type (e.g., Heaters, Output Switches, Temperature Sensors) on the client. An advertised device may still be non-functional (as indicated by the Request Device Status order).
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -739,7 +739,7 @@ This order requests the number of available devices of a particular type (e.g., 
 
 ==== Request Device Name (0x02)
 
-This order requests the "friendly" name of the device. Normally this would return a value which matches the labelling on the board to allow a user to easily correlate the device number with the physical connector.
+This order requests the "friendly" name of the device. Normally this would return a value which matches the labeling on the board to allow a user to easily correlate the device number with the physical connector.
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]
@@ -923,7 +923,7 @@ The first byte of the Parameter contains the device type (see Definitions), the 
 
 This will switch the Output on one or more specified switch/devices to on(High/ 1/true), off(Low/0/false) or disabled (High-Z/2/Tri-state).
 
-It should be realised that some devices use active low signalling/control and so some output switch devices may need to be configured to start in an "active" state during client power-on or when stopped (assuming that appropriate external pull ups are not provided by the controller hardware).
+It should be realized that some devices use active low signaling/control and so some output switch devices may need to be configured to start in an "active" state during client power-on or when stopped (assuming that appropriate external pull ups are not provided by the controller hardware).
 
 .Parameter
 [width="50%",options="header", cols="30%,70%"]

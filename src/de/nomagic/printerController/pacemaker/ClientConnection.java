@@ -14,6 +14,8 @@
  */
 package de.nomagic.printerController.pacemaker;
 
+import de.nomagic.printerController.core.Reference;
+
 /** Client Connection API.
  *
  * @author Lars P&ouml;tter
@@ -22,10 +24,13 @@ package de.nomagic.printerController.pacemaker;
  */
 public interface ClientConnection
 {
-    Reply sendRequest(final byte order, final byte[]    parameter);
+	boolean connect();
+	void disconnect();
+    Reply sendRequest(final byte order, final byte[]    parameter, Reference ref);
     Reply sendRequest(final int  order, final Integer[] parameter, int offset, int length);
     Reply sendRequest(final int  order, final int[]     parameter, int offset, int length);
     Reply sendRequest(final byte order, final byte[]    parameter, int offset, int length);
-    void close();
     long getTimeOfLastSuccessfulReply();
+    void setConnectionName(String Name);
+	String getConnectionName();
 }

@@ -35,7 +35,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public void close()
+    public void close(Reference ref)
     {
     }
 
@@ -47,7 +47,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean doShutDown()
+    public boolean doShutDown(Reference ref)
     {
         return doShutDownReturn;
     }
@@ -60,25 +60,25 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean doImmediateShutDown()
+    public boolean doImmediateShutDown(Reference ref)
     {
         return doImmediateShutDownReturn;
     }
 
     @Override
-    public boolean addPauseFor(Double seconds)
+    public boolean addPauseFor(Double seconds, Reference ref)
     {
         return false;
     }
 
     @Override
-    public boolean addMoveTo(RelativeMove relMove)
+    public boolean addMoveTo(RelativeMove relMove, Reference ref)
     {
         return false;
     }
 
     @Override
-    public boolean letMovementStop()
+    public boolean letMovementStop(Reference ref)
     {
         return false;
     }
@@ -91,7 +91,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean startHoming(Axis_enum[] axis)
+    public boolean startHoming(Axis_enum[] axis, Reference ref)
     {
     	return startHomingReturn;
     }
@@ -104,7 +104,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean disableAllStepperMotors()
+    public boolean disableAllStepperMotors(Reference ref)
     {
         return disableAllStepperMotorsReturn;
     }
@@ -117,7 +117,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean enableAllStepperMotors()
+    public boolean enableAllStepperMotors(Reference ref)
     {
         return enableAllStepperMotorsReturn;
     }
@@ -162,7 +162,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean setFanSpeedfor(int fan, int speed)
+    public boolean setFanSpeedfor(int fan, int speed, Reference ref)
     {
     	fan_set = fan;
     	speed_set = speed;
@@ -183,7 +183,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean setCurrentExtruderTemperatureNoWait(Double temperature)
+    public boolean setCurrentExtruderTemperatureNoWait(Double temperature, Reference ref)
     {
     	ExtruderTemperatureSet = temperature;
         return setCurrentExtruderTemperatureNoWaitReturn;
@@ -212,7 +212,7 @@ public class ExecutorStub implements Executor
 
     @Override
     public boolean setCurrentExtruderTemperatureAndDoWait(Double temperature,
-            GCodeResultStream resultStream)
+            GCodeResultStream resultStream, Reference ref)
     {
     	ExtruderDoWait_setTemperature = temperature;
     	ExtruderDoWait_setResultStream = resultStream;
@@ -227,7 +227,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean waitForEverythingInLimits(GCodeResultStream resultStream)
+    public boolean waitForEverythingInLimits(GCodeResultStream resultStream, Reference ref)
     {
         return waitForEverythingInLimitsReturn;
     }
@@ -247,7 +247,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean setPrintBedTemperatureNoWait(Double temperature)
+    public boolean setPrintBedTemperatureNoWait(Double temperature, Reference ref)
     {
     	PrintBedTemperatureNoWait_setTemperature = temperature;
         return setPrintBedTemperatureNoWaitReturn;
@@ -268,7 +268,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public boolean setChamberTemperatureNoWait(Double temperature)
+    public boolean setChamberTemperatureNoWait(Double temperature, Reference ref)
     {
     	setChamberTemperatureNoWait_setTemperature = temperature;
         return setChamberTemperatureNoWaitReturn;
@@ -296,7 +296,7 @@ public class ExecutorStub implements Executor
     }
     @Override
     public boolean setPrintBedTemperatureAndDoWait(Double temperature,
-            GCodeResultStream resultStream)
+            GCodeResultStream resultStream, Reference ref)
     {
     	setPrintBedTemperatureAndDoWait_setTemperature = temperature;
     	setPrintBedTemperatureAndDoWait_setResultStream = resultStream;
@@ -304,7 +304,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public double requestTemperatureOfHeater(Heater_enum pos)
+    public double requestTemperatureOfHeater(Heater_enum pos, Reference ref)
     {
         return 0;
     }
@@ -324,7 +324,7 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public String getCurrentExtruderTemperature()
+    public String getCurrentExtruderTemperature(Reference ref)
     {
         return getCurrentExtruderTemperatureReturn;
     }
@@ -337,19 +337,19 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public String getHeatedBedTemperature()
+    public String getHeatedBedTemperature(Reference ref)
     {
         return getHeatedBedTemperatureReturn;
     }
 
     @Override
-    public int getStateOfSwitch(Switch_enum theSwitch)
+    public int getStateOfSwitch(Switch_enum theSwitch, Reference ref)
     {
         return 0;
     }
 
     @Override
-    public boolean switchExtruderTo(int num)
+    public boolean switchExtruderTo(int num, Reference ref)
     {
         return false;
     }
@@ -362,13 +362,13 @@ public class ExecutorStub implements Executor
     }
 
     @Override
-    public void waitForClientQueueEmpty()
+    public void waitForClientQueueEmpty(Reference ref)
     {
     }
 
     @Override
     public boolean runPIDautotune(Heater_enum Extruder, Double Temperature,
-            int numCycles, GCodeResultStream resultStream)
+            int numCycles, GCodeResultStream resultStream, Reference ref)
     {
         return false;
     }

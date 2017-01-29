@@ -31,6 +31,7 @@ import de.nomagic.printerController.core.Action_enum;
 import de.nomagic.printerController.core.Event;
 import de.nomagic.printerController.core.EventSource;
 import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.core.TemperatureObserver;
 import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.pacemaker.Protocol;
@@ -179,12 +180,12 @@ public class TemperaturePanel implements TemperatureObserver, EventSource
      *
      */
     @Override
-    public void reportEventStatus(ActionResponse response)
+    public void reportEventStatus(ActionResponse response, Reference ref)
     {
         log.debug("Timeout occured!");
         final Heater_enum pos = (Heater_enum)response.getObject();
         @SuppressWarnings("unused")
-        final double curTemp = exe.requestTemperatureOfHeater(pos);
+        final double curTemp = exe.requestTemperatureOfHeater(pos, ref);
         // not necessary already happened by Observer update(pos, curTemp);
         timeOut.startTimeout(timeOutId[pos.getValue()]);
     }

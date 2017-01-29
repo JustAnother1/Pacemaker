@@ -44,6 +44,7 @@ import de.nomagic.printerController.Interface.TcpInterface;
 import de.nomagic.printerController.Interface.UdpInterface;
 import de.nomagic.printerController.core.CoreStateMachine;
 import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.gui.MainWindow;
 
 /** Main Class to start Pacemaker Host.
@@ -67,6 +68,14 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
 
     public ControllerMain(final String[] args)
     {
+    	 Thread.setDefaultUncaughtExceptionHandler(
+                 new Thread.UncaughtExceptionHandler() {
+                     @Override public void uncaughtException(Thread t, Throwable e) {
+                         System.out.println(t.getName()+": "+e);
+                         e.printStackTrace();
+                         System.exit(-1);
+                     }
+                 });
         startLogging(args);
     }
 
@@ -319,7 +328,10 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
                     break;
                 }
             }
-            System.out.println("Closing G-Code File,..");
+            // flush movement queue
+            Executor exe = pp.getExecutor();
+            exe.letMovementStop(new Reference("G-Code File"));
+            log.trace("Closing G-Code File,..");
             br.close();
         }
         catch (final FileNotFoundException e)
@@ -332,9 +344,10 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
         }
         log.trace("Closing Executor,...");
         final Executor exe = pp.getExecutor();
-        exe.waitForClientQueueEmpty();
+        Reference ref = new Reference(this.getSource());
+        exe.waitForClientQueueEmpty(ref);
         log.trace("Closing Core,...");
-        pp.close();
+        pp.close(ref);
         log.trace("Finished Sending the G-Code File.");
     }
 
@@ -441,7 +454,7 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
         }
         if(null != core)
         {
-            core.close();
+            core.close(new Reference(this.getSource()));
         }
     }
 
@@ -457,5 +470,15 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
     {
         log.debug(msg);
     }
+
+	@Override
+	public String getSource()
+	{
+		if(true == hasFileToPrint())
+		{
+			return fileToPrint;
+		}
+		return "cmdline";
+	}
 
 }

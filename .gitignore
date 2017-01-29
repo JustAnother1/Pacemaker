@@ -7,3 +7,5 @@ README.html
 /*.cfg
 /*.txt
 /*.jar
+/build/
+/results/

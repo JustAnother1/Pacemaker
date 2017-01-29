@@ -150,17 +150,27 @@ public class GCodeDecoder
                 lastLineNumber = lineNumber;
             }
         }
+        Reference ref;
+        if(null != resultStream)
+        {
+            ref = new Reference(resultStream.getSource());
+        }
+        else
+        {
+            ref = new Reference("unknown");
+        }
+        ref.setCommand(line);
         if(true == code.hasWord('G'))
         {
-            result = decode_General_Function_Code(code);
+            result = decode_General_Function_Code(code, ref);
         }
         else if(true == code.hasWord('M'))
         {
-            result = decode_Miscellaneous_Function_Code(code, resultStream);
+            result = decode_Miscellaneous_Function_Code(code, resultStream, ref);
         }
         else if(true == code.hasWord('T'))
         {
-            result = decode_Tool_Function_Code(code);
+            result = decode_Tool_Function_Code(code, ref);
         }
         else
         {
@@ -221,17 +231,31 @@ public class GCodeDecoder
         return cs;
     }
 
-    private int decode_Miscellaneous_Function_Code(final GCode code, GCodeResultStream resultStream)
+    private int decode_Miscellaneous_Function_Code(final GCode code, GCodeResultStream resultStream, Reference ref)
     {
         final Double Number = code.getWordValue('M');
         final int num = Number.intValue();
         switch(num)
         {
         case 0: // Stop Print
-            if(false == exe.doShutDown()){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.doShutDown(ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 17: // Enable/Power all stepper motors
-            if(false == exe.enableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.enableAllStepperMotors(ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         // case 18: see 84
 
@@ -263,7 +287,14 @@ public class GCodeDecoder
             return RESULT_OK;
 
         case 24: // start / resume SD print
-            if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile)){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 25: // pause SD print
             sdPrinterWorker.pausePrinting();
@@ -271,7 +302,14 @@ public class GCodeDecoder
 
         case 26: // set SD position
             Double bytePosition = code.getWordValue('S');
-            if(false == sdPrinterWorker.setSDCardPosition(bytePosition.longValue())){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == sdPrinterWorker.setSDCardPosition(bytePosition.longValue()))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 27: // report SD print status
             ResultValue = sdPrinterWorker.getPrintStatus();
@@ -305,7 +343,14 @@ public class GCodeDecoder
 
         case 32: // select file and start printing
             selectedSDCardFile = code.getLineWithoutCommentWithoutWord('M');
-            if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile)){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 82: // set Extruder to absolute Mode
             isExtruderRelative = false;
@@ -317,7 +362,14 @@ public class GCodeDecoder
 
         case 18: // Disable all stepper motors
         case 84: // Stop Idle hold
-            if(false == exe.disableAllStepperMotors()){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.disableAllStepperMotors(ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 92: // Set axis_steps_per_unit
         	boolean foundOne = false;
@@ -357,10 +409,17 @@ public class GCodeDecoder
         		lastErrorReason = "Parameter S is missing";
         		return RESULT_ERROR;
         	}
-            if(false == exe.setCurrentExtruderTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.setCurrentExtruderTemperatureNoWait(code.getWordValue('S'), ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 105: // Get Extruder Temperature
-            ResultValue = "T:" + exe.getCurrentExtruderTemperature() + " B:" + exe.getHeatedBedTemperature();
+            ResultValue = "T:" + exe.getCurrentExtruderTemperature(ref) + " B:" + exe.getHeatedBedTemperature(ref);
             return RESULT_VALUE;
 
         case 106: // set Fan Speed
@@ -374,22 +433,50 @@ public class GCodeDecoder
             int speed = (code.getWordValue('S').intValue() * 256) + code.getWordValue('S').intValue();
             if(true == code.hasWord('P'))
             {
-                if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), speed)){ return RESULT_ERROR;} else {return RESULT_OK;}
+                if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), speed, ref))
+                {
+                	return RESULT_ERROR;
+                }
+                else
+                {
+                	return RESULT_OK;
+                }
             }
             else
             {
-                if(false == exe.setFanSpeedfor(0, speed)){ return RESULT_ERROR;} else {return RESULT_OK;}
+                if(false == exe.setFanSpeedfor(0, speed, ref))
+                {
+                	return RESULT_ERROR;
+                }
+                else
+                {
+                	return RESULT_OK;
+                }
             }
 
         case 107: // Fan off - deprecated
             log.warn("G-Code M107 is deprecated! Use M106 S0 instead.");
             if(true == code.hasWord('P'))
             {
-                if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), 0)){ return RESULT_ERROR;} else {return RESULT_OK;}
+                if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), 0, ref))
+                {
+                	return RESULT_ERROR;
+                }
+                else
+                {
+                	return RESULT_OK;
+                }
             }
             else
             {
-                if(false == exe.setFanSpeedfor(0, 0)){ return RESULT_ERROR;} else {return RESULT_OK;}
+                if(false == exe.setFanSpeedfor(0, 0, ref))
+                {
+                	return RESULT_ERROR;
+                }
+                else
+                {
+                	return RESULT_OK;
+                }
             }
 
         case 109: // Set Extruder Temperature and wait
@@ -398,7 +485,7 @@ public class GCodeDecoder
         		lastErrorReason = "Parameter S missing";
         		return RESULT_ERROR;
         	}
-            if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'), resultStream))
+            if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'), resultStream, ref))
             {
                 return RESULT_ERROR;
             }
@@ -419,7 +506,14 @@ public class GCodeDecoder
             }
 
         case 112: // Emergency Stop
-            if(false == exe.doImmediateShutDown()){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.doImmediateShutDown(ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 115: // get Firmware Version and capabilities
         {
@@ -432,7 +526,7 @@ public class GCodeDecoder
             return RESULT_VALUE;
 
         case 116: // wait for Heaters
-            if(false == exe.waitForEverythingInLimits(resultStream))
+            if(false == exe.waitForEverythingInLimits(resultStream, ref))
             {
                 return RESULT_ERROR;
             }
@@ -451,32 +545,32 @@ public class GCodeDecoder
             sb.append("Reporting endstop status\r\n");
             // X min
             sb.append("x_min: ");
-            int swstate = exe.getStateOfSwitch(Switch_enum.Xmin);
+            int swstate = exe.getStateOfSwitch(Switch_enum.Xmin, ref);
             sb.append(getDescriptionOfSwitchState(swstate));
             sb.append("\r\n");
             // X max
             sb.append("x_max: ");
-            swstate = exe.getStateOfSwitch(Switch_enum.Xmax);
+            swstate = exe.getStateOfSwitch(Switch_enum.Xmax, ref);
             sb.append(getDescriptionOfSwitchState(swstate));
             sb.append("\r\n");
             // Y min
             sb.append("y_min: ");
-            swstate = exe.getStateOfSwitch(Switch_enum.Ymin);
+            swstate = exe.getStateOfSwitch(Switch_enum.Ymin, ref);
             sb.append(getDescriptionOfSwitchState(swstate));
             sb.append("\r\n");
             // Y max
             sb.append("y_max: ");
-            swstate = exe.getStateOfSwitch(Switch_enum.Ymax);
+            swstate = exe.getStateOfSwitch(Switch_enum.Ymax, ref);
             sb.append(getDescriptionOfSwitchState(swstate));
             sb.append("\r\n");
             // Z min
             sb.append("z_min: ");
-            swstate = exe.getStateOfSwitch(Switch_enum.Zmin);
+            swstate = exe.getStateOfSwitch(Switch_enum.Zmin, ref);
             sb.append(getDescriptionOfSwitchState(swstate));
             sb.append("\r\n");
             // Z max
             sb.append("z_max: ");
-            swstate = exe.getStateOfSwitch(Switch_enum.Zmax);
+            swstate = exe.getStateOfSwitch(Switch_enum.Zmax, ref);
             sb.append(getDescriptionOfSwitchState(swstate));
             sb.append("\r\n");
             sb.append("ok\r\n");
@@ -490,7 +584,14 @@ public class GCodeDecoder
         		lastErrorReason = "Parameter S missing";
         		return RESULT_ERROR;
         	}
-            if(false == exe.setPrintBedTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.setPrintBedTemperatureNoWait(code.getWordValue('S'), ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 141: // set chamber temperature - no wait
         	if(false == code.hasWord('S'))
@@ -498,7 +599,14 @@ public class GCodeDecoder
         		lastErrorReason = "Parameter S missing";
         		return RESULT_ERROR;
         	}
-            if(false == exe.setChamberTemperatureNoWait(code.getWordValue('S'))){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.setChamberTemperatureNoWait(code.getWordValue('S'), ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 190: // set Bed Temperature - and do wait
         	if(false == code.hasWord('S'))
@@ -506,7 +614,7 @@ public class GCodeDecoder
         		lastErrorReason = "Parameter S missing";
         		return RESULT_ERROR;
         	}
-            if(false == exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'), resultStream))
+            if(false == exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'), resultStream, ref))
             {
                 return RESULT_ERROR;
             }
@@ -534,7 +642,8 @@ public class GCodeDecoder
             if(false == exe.runPIDautotune(ext,
                                            code.getWordValue('S'),
                                            (int)Math.round(code.getWordValue('C', 3.0)),
-                                           resultStream))
+                                           resultStream,
+                                           ref))
             {
                 return RESULT_ERROR;
             }
@@ -550,7 +659,7 @@ public class GCodeDecoder
         }
     }
 
-    private int decode_General_Function_Code(final GCode code)
+    private int decode_General_Function_Code(final GCode code, Reference ref)
     {
         final Double Number = code.getWordValue('G');
         final int num = Number.intValue();
@@ -558,10 +667,24 @@ public class GCodeDecoder
         {
         case 0: // Rapid Linear Motion
         case 1: // Linear Motion at Feed Rate
-            if(false == exe.addMoveTo(getRelativeMovefor(code))){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.addMoveTo(getRelativeMovefor(code), ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 4: // Dwell
-            if(false == exe.addPauseFor(code.getWordValue('P'))){ return RESULT_ERROR;} else {return RESULT_OK;}
+            if(false == exe.addPauseFor(code.getWordValue('P'), ref))
+            {
+            	return RESULT_ERROR;
+            }
+            else
+            {
+            	return RESULT_OK;
+            }
 
         case 10: // Set Coordinate System Data
             for(Axis_enum axel : Axis_enum.values())
@@ -596,7 +719,7 @@ public class GCodeDecoder
                 homingAxis.add(Axis_enum.Y);
                 homingAxis.add(Axis_enum.Z);
             }
-            if(false == exe.startHoming(homingAxis.toArray(new Axis_enum[0])))
+            if(false == exe.startHoming(homingAxis.toArray(new Axis_enum[0]), ref))
             {
                 lastErrorReason = exe.getLastErrorReason();
                 return RESULT_ERROR;
@@ -632,11 +755,11 @@ public class GCodeDecoder
         }
     }
 
-    private int decode_Tool_Function_Code(GCode code)
+    private int decode_Tool_Function_Code(GCode code, Reference ref)
     {
         final Double Number = code.getWordValue('T');
         final int num = Number.intValue();
-        if(true == exe.switchExtruderTo(num))
+        if(true == exe.switchExtruderTo(num, ref))
         {
             return RESULT_OK;
         }

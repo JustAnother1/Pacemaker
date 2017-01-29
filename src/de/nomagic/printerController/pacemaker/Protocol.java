@@ -28,6 +28,7 @@ import de.nomagic.printerController.core.Action_enum;
 import de.nomagic.printerController.core.Event;
 import de.nomagic.printerController.core.EventSource;
 import de.nomagic.printerController.core.Executor;
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.core.devices.Switch;
@@ -190,6 +191,11 @@ public class Protocol implements EventSource
     public static final int FIRMWARE_SETTING_TYPE_SWITCH = 3;
     public static final int FIRMWARE_SETTING_TYPE_DEBUG = 4;
 
+    public static final byte MOVEMENT_BLOCK_QUEUE_FULL = 0x01;
+    public static final byte MOVEMENT_BLOCK_UNKNOWN_BLOCK = 0x02;
+    public static final byte MOVEMENT_BLOCK_MALFORMED_BLOCK = 0x03;
+    public static final byte MOVEMENT_BLOCK_ERROR_IN_BLOCK = 0x04;
+
     ////////////////////////////////////////////////////////////////////////////
     // end of Magic Number from Protocol Definition
     ////////////////////////////////////////////////////////////////////////////
@@ -213,6 +219,7 @@ public class Protocol implements EventSource
     private final long QUEUE_POLL_DELAY = 100;
 
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
+    private static final Logger Log = LoggerFactory.getLogger("static:Protocol");
     private final ClientConnection cc;
 
     // TODO needs Syncronisation:
@@ -231,7 +238,6 @@ public class Protocol implements EventSource
     private volatile int hostTimeout = 2;
     private final TimeoutHandler timeout;
     private int timeoutId;
-    private byte[] movementCommand;
 
     public Protocol(ClientConnection Client, TimeoutHandler timeout)
     {
@@ -243,7 +249,7 @@ public class Protocol implements EventSource
         else
         {
             // take client out of Stopped Mode
-            isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE);
+            isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE, new Reference("Protocol Initialisation"));
         }
         this.timeout = timeout;
         if(null != timeout)
@@ -262,7 +268,7 @@ public class Protocol implements EventSource
     }
 
     @Override
-    public void reportEventStatus(ActionResponse response)
+    public void reportEventStatus(ActionResponse response, Reference Ref)
     {
         if(true == isOperational)
         {
@@ -380,12 +386,22 @@ public class Protocol implements EventSource
             return Tool.fromByteBufferToUtf8String(buf, length, offset);
 
         default:
-            return Tool.fromByteBufferToHexString(buf, length, offset);
+            return Tool.fromByteBufferToHexString(buf, length, offset) + " == " + Tool.fromByteBufferToUtf8String(buf, length, offset);
         }
     }
 
     private static String parseQueueBlock(byte[] buf, int length, int offset)
     {
+    	if(length < 2)
+    	{
+    		Log.error("Too little data to parse!");
+    		return "";
+    	}
+    	if(offset + length > buf.length)
+    	{
+    		Log.error("Invalid Parameters that would cause out of Bounds! buf.length= {}, length = {}, offset = {}", buf.length, length, offset);
+    		return "";
+    	}
         final StringBuffer res = new StringBuffer();
         int bytesToGo = length;
         do
@@ -699,33 +715,66 @@ public class Protocol implements EventSource
     {
         if(null != cc)
         {
-            cc.close();
+            cc.disconnect();
         }
         isOperational = false;
     }
 
 // Information
 
-    public Reply sendInformationRequest(final int which) throws IOException
+    public Reply sendInformationRequest(final int which, Reference ref) throws IOException
     {
         final byte[] request = new byte[1];
         request[0] = (byte)(0xff & which);
-        return cc.sendRequest(ORDER_REQ_INFORMATION, request);
+        Reply res = cc.sendRequest(ORDER_REQ_INFORMATION, request, ref);
+        if(null == res)
+        {
+            log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
+        }
+        if(false == res.isOKReply())
+        {
+        	log.error("Client reports error! Recovery not possible!");
+        	System.exit(1);
+        }
+        return res;
     }
 
-    public Reply sendDeviceCountRequest(final int device) throws IOException
+    public Reply sendDeviceCountRequest(final int device, Reference ref) throws IOException
     {
         final byte[] request = new byte[1];
         request[0] = (byte)(0xff & device);
-        return cc.sendRequest(ORDER_REQUEST_DEVICE_COUNT, request);
+        Reply res = cc.sendRequest(ORDER_REQUEST_DEVICE_COUNT, request, ref);
+        if(null == res)
+        {
+            log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
+        }
+        if(false == res.isOKReply())
+        {
+        	log.error("Client reports error! Recovery not possible!");
+        	System.exit(1);
+        }
+        return res;
     }
 
-    public Reply sendDeviceNameRequest(final byte type, final int index) throws IOException
+    public Reply sendDeviceNameRequest(final byte type, final int index, Reference ref) throws IOException
     {
         final byte[] request = new byte[2];
         request[0] = type;
         request[1] = (byte)(0xff & index);
-        return cc.sendRequest(ORDER_REQ_DEVICE_NAME, request);
+        Reply res = cc.sendRequest(ORDER_REQ_DEVICE_NAME, request, ref);
+        if(null == res)
+        {
+            log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
+        }
+        if(false == res.isOKReply())
+        {
+        	log.error("Client reports error! Recovery not possible!");
+        	System.exit(1);
+        }
+        return res;
     }
 
     public static String getDeviceTypeName(int deviceType)
@@ -744,12 +793,12 @@ public class Protocol implements EventSource
         }
     }
 
-    public DeviceInformation getDeviceInformation()
+    public DeviceInformation getDeviceInformation(Reference ref)
     {
         final DeviceInformation paceMaker = new DeviceInformation();
         try
         {
-            if(true == paceMaker.readDeviceInformationFrom(this))
+            if(true == paceMaker.readDeviceInformationFrom(this, ref))
             {
                 di = paceMaker;
                 hostTimeout = di.getHostTimeoutSeconds();
@@ -769,24 +818,24 @@ public class Protocol implements EventSource
 
 // Input
 
-    public int getSwitchState(final int num)
+    public int getSwitchState(final int num, Reference ref)
     {
         final byte[] param = new byte[2];
         param[0] = DEVICE_TYPE_INPUT;
         param[1] = (byte) num;
-        final int reply = sendOrderExpectInt(Protocol.ORDER_REQ_INPUT, param);
+        final int reply = sendOrderExpectInt(Protocol.ORDER_REQ_INPUT, param, ref);
         switch(reply)
         {
         case INPUT_HIGH: return Executor.SWITCH_STATE_CLOSED;
         case INPUT_LOW:  return Executor.SWITCH_STATE_OPEN;
-        default :        log.error("Get Switch State returned {} !", reply);
+        default :        log.error("({}):Get Switch State returned {} !", ref, reply);
                          return Executor.SWITCH_STATE_NOT_AVAILABLE;
         }
     }
 
 // Temperature Sensor - Heater
 
-    public boolean setTemperature(final int heaterNum, Double temperature)
+    public boolean setTemperature(final int heaterNum, Double temperature, Reference ref)
     {
         temperature = temperature * 10; // Client expects Temperature in 0.1 degree units.
         final int tempi = temperature.intValue();
@@ -794,18 +843,25 @@ public class Protocol implements EventSource
         param[0] = (byte) heaterNum;
         param[1] = (byte)(0xff & (tempi/256));
         param[2] = (byte)(tempi & 0xff);
-        return sendOrderExpectOK(Protocol.ORDER_SET_HEATER_TARGET_TEMPERATURE, param);
+        return sendOrderExpectOK(Protocol.ORDER_SET_HEATER_TARGET_TEMPERATURE, param, ref);
     }
 
-    public double readTemperatureFrom(int sensorNumber)
+    public double readTemperatureFrom(int sensorNumber, Reference ref)
     {
         final byte[] param = new byte[2];
         param[0] = DEVICE_TYPE_TEMPERATURE_SENSOR;
         param[1] = (byte) sensorNumber;
-        final Reply r = cc.sendRequest(ORDER_REQ_TEMPERATURE, param);
+        final Reply r = cc.sendRequest(ORDER_REQ_TEMPERATURE, param, ref);
         if(null == r)
         {
+            log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
             return TEMPERATURE_ERROR_NO_REPLY;
+        }
+        if(false == r.isOKReply())
+        {
+        	log.error("Client reports error! Recovery not possible!");
+        	System.exit(1);
         }
         if(true == r.isOKReply())
         {
@@ -828,6 +884,7 @@ public class Protocol implements EventSource
         else
         {
             // error -> try again later
+        	// TODO remove ?
             return TEMPERATURE_ERROR_REPLY_NOT_OK;
         }
     }
@@ -838,8 +895,9 @@ public class Protocol implements EventSource
      *
      * @param fan specifies the effected fan.
      * @param speed 0 = off; 65535 = max
+     * @param ref
      */
-    public boolean setFanSpeedfor(final int fan, final int speed)
+    public boolean setFanSpeedfor(final int fan, final int speed, Reference ref)
     {
         if((-1 < fan) && (fan < di.getNumberPwmSwitchedOutputs()))
         {
@@ -848,10 +906,10 @@ public class Protocol implements EventSource
             param[1] = (byte)fan;
             param[2] = (byte)(speed/256);
             param[3] = (byte)(0xff & speed);
-            if(false == sendOrderExpectOK(ORDER_SET_PWM, param))
+            if(false == sendOrderExpectOK(ORDER_SET_PWM, param, ref))
             {
-                log.error("Falied to set Speed on the Fan !");
-                lastErrorReason = "Falied to set Speed on the Fan !";
+                log.error("Falied to set speed on the Fan !");
+                lastErrorReason = "Falied to set speed on the Fan !";
                 return false;
             }
             else
@@ -861,8 +919,8 @@ public class Protocol implements EventSource
         }
         else
         {
-            log.warn("Client does not have the Fan {} ! It has only {} + 1 fans!",
-                    fan,  di.getNumberPwmSwitchedOutputs());
+            log.warn("({}): Client does not have the Fan {} ! It has only {} + 1 fans!",
+                    ref, fan,  di.getNumberPwmSwitchedOutputs());
             return true;
         }
     }
@@ -873,8 +931,9 @@ public class Protocol implements EventSource
      *
      * @param output specifies the effected output.
      * @param state 0 = low; 1 = high; 2 = disabled / high-Z
+     * @param ref
      */
-    public boolean setOutputState(final int output, final int state)
+    public boolean setOutputState(final int output, final int state, Reference ref)
     {
         if((-1 < output) && (output < di.getNumberOutputSignals()))
         {
@@ -882,9 +941,9 @@ public class Protocol implements EventSource
             param[0] = DEVICE_TYPE_OUTPUT;
             param[1] = (byte)output;
             param[2] = (byte)(0xff & state);
-            if(false == sendOrderExpectOK(ORDER_SET_OUTPUT, param))
+            if(false == sendOrderExpectOK(ORDER_SET_OUTPUT, param, ref))
             {
-                log.error("Falied to set output state !");
+                log.error("({}): Falied to set output state !", ref);
                 lastErrorReason = "Falied to set output state !";
                 return false;
             }
@@ -895,22 +954,22 @@ public class Protocol implements EventSource
         }
         else
         {
-            log.warn("Client does not have the output {} ! It has only {} + 1 output!",
-                    output,  di.getNumberOutputSignals());
+            log.warn("({}): Client does not have the output {} ! It has only {} + 1 output!",
+                       ref, output,  di.getNumberOutputSignals());
             return true;
         }
     }
 
 // Stepper Motors
 
-    public boolean activateStepperControl()
+    public boolean activateStepperControl(Reference ref)
     {
         final byte[] param = new byte[1];
         param[0] = 0x01;
-        return sendOrderExpectOK(Protocol.ORDER_ACTIVATE_STEPPER_CONTROL, param);
+        return sendOrderExpectOK(Protocol.ORDER_ACTIVATE_STEPPER_CONTROL, param, ref);
     }
 
-    public boolean configureUnderRunAvoidance(int stepperNumber, int maxSpeedStepsPerSecond, int maxAccelleration)
+    public boolean configureUnderRunAvoidance(int stepperNumber, int maxSpeedStepsPerSecond, int maxAccelleration, Reference ref)
     {
         final byte[] param = new byte[9];
         param[0] = (byte)(0xff & stepperNumber);
@@ -922,10 +981,10 @@ public class Protocol implements EventSource
         param[6] = (byte)(0xff & (maxAccelleration>>16));
         param[7] = (byte)(0xff & (maxAccelleration>>8));
         param[8] = (byte)(0xff & maxAccelleration);
-        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS, param);
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS, param, ref);
     }
 
-    public boolean configureStepperMovementRate(int stepperNumber, int maxSpeedStepsPerSecond)
+    public boolean configureStepperMovementRate(int stepperNumber, int maxSpeedStepsPerSecond, Reference ref)
     {
         final byte[] param = new byte[5];
         param[0] = (byte)(0xff & stepperNumber);
@@ -933,10 +992,10 @@ public class Protocol implements EventSource
         param[2] = (byte)(0xff & (maxSpeedStepsPerSecond>>16));
         param[3] = (byte)(0xff & (maxSpeedStepsPerSecond>>8));
         param[4] = (byte)(0xff & maxSpeedStepsPerSecond);
-        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_AXIS_MOVEMENT_RATES, param);
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_AXIS_MOVEMENT_RATES, param, ref);
     }
 
-    public boolean configureEndStop(Stepper motor, Switch min, Switch max)
+    public boolean configureEndStop(Stepper motor, Switch min, Switch max, Reference ref)
     {
         if((null == min) && (null == max))
         {
@@ -967,13 +1026,14 @@ public class Protocol implements EventSource
             param[startpos + 1] = 1; // MAX
             startpos = startpos + 2;
         }
-        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_END_STOPS, param);
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_END_STOPS, param, ref);
     }
 
     /** only needed to implement M17
+     * @param ref
      *
      */
-    public boolean enableAllStepperMotors()
+    public boolean enableAllStepperMotors(Reference ref)
     {
         final int numSteppers = di.getNumberSteppers();
         final byte[] parameter = new byte[2];
@@ -981,9 +1041,9 @@ public class Protocol implements EventSource
         for(int i = 0; i < numSteppers; i++)
         {
             parameter[0] = (byte)i;
-            if(false == sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter))
+            if(false == sendOrderExpectOK(Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, parameter, ref))
             {
-                log.error("Falied to enable the Steppers !");
+                log.error("({}): Falied to enable the Steppers !", ref);
                 lastErrorReason = "Falied to enable the Steppers !";
                 return false;
             }
@@ -991,11 +1051,11 @@ public class Protocol implements EventSource
         return true;
     }
 
-    public boolean disableAllStepperMotors()
+    public boolean disableAllStepperMotors(Reference ref)
     {
-        if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, null))
+        if(false == sendOrderExpectOK((byte)Protocol.ORDER_ENABLE_DISABLE_STEPPER_MOTORS, null, ref))
         {
-            log.error("Falied to disable the Steppers !");
+            log.error("({}): Falied to disable the Steppers !", ref);
             lastErrorReason = "Falied to disable the Steppers !";
             return false;
         }
@@ -1005,23 +1065,23 @@ public class Protocol implements EventSource
         }
     }
 
-    public boolean doStopPrint()
+    public boolean doStopPrint(Reference ref)
     {
         final byte[] param = new byte[1];
         param[0] = ORDERED_STOP;
-        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param);
+        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param, ref);
     }
 
-    public boolean doEmergencyStopPrint()
+    public boolean doEmergencyStopPrint(Reference ref)
     {
         final byte[] param = new byte[1];
         param[0] = EMERGENCY_STOP;
-        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param);
+        return sendOrderExpectOK(Protocol.ORDER_STOP_PRINT, param, ref);
     }
 
 // Queue handling:
 
-    public int getNumberOfCommandsInClientQueue()
+    public int getNumberOfCommandsInClientQueue(Reference ref)
     {
         final long now = System.currentTimeMillis();
         if((now - timeofLastClientQueueUpdate) > QUEUE_TIMEOUT_MS)
@@ -1066,9 +1126,14 @@ public class Protocol implements EventSource
         }
     }
 
-    public void ClearQueue()
+    public void ClearQueue(Reference ref)
     {
-        final Reply r = cc.sendRequest(ORDER_CLEAR_COMMAND_BLOCK_QUEUE, null);
+        final Reply r = cc.sendRequest(ORDER_CLEAR_COMMAND_BLOCK_QUEUE, null, ref);
+        if(null == r)
+        {
+            log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
+        }
         if(true == r.isOKReply())
         {
             parseQueueReply(r.getParameter());
@@ -1076,204 +1141,37 @@ public class Protocol implements EventSource
         else
         {
             log.error("Could not clear the Command Queue !");
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
         }
     }
 
-    private void fillTopPartForUpTo8Axis(BasicLinearMove aMove, int BytesPerStep, int curPart)
+    public boolean addBasicLinearMove(BasicLinearMove[] aMove)
     {
-        movementCommand = new byte[7 + (BytesPerStep * (2 + aMove.getNumberOfActiveSteppers()))];
-        movementCommand[0] = (byte)(0xff & movementCommand.length - 1); // Length
-        movementCommand[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
-        // active Steppers
-        movementCommand[2] = (byte)aMove.getActiveSteppersMap();
-        // Byte per steps
-        if(1 == BytesPerStep)
-        {
-            movementCommand[3] = 0;
-        }
-        else
-        {
-            movementCommand[3] = (byte) 0x80;
-        }
-        // directions
-        movementCommand[3] =  (byte)(movementCommand[3] | (0x7f & aMove.getDirectionMap()));
-        // Homing
-        if(true == aMove.isHomingMove())
-        {
-            movementCommand[4] = 0x10;
-        }
-        // Primary Axis
-        movementCommand[4] =(byte)(movementCommand[4] | (0x0f & aMove.getPrimaryAxis()));
-        // Nominal Speed
-        movementCommand[5] = (byte)(0xff & aMove.getTravelSpeedFraction(curPart));
-        // end Speed
-        movementCommand[6] = (byte)(0xff & aMove.getEndSpeedFraction(curPart));
-    }
+    	if(null == aMove)
+    	{
+    		return true;
+    	}
 
-    private void fillTopPartForUpTo16Axis(BasicLinearMove aMove, int BytesPerStep, int curPart)
-    {
-        movementCommand = new byte[9 + (BytesPerStep * (2 + aMove.getNumberOfActiveSteppers()))];
-        movementCommand[0] = (byte)(0xff & movementCommand.length - 1); // Length
-        movementCommand[1] = MOVEMENT_BLOCK_TYPE_BASIC_LINEAR_MOVE; // Type
-        // Active Steppers
-        final int ActiveSteppersMap =  aMove.getActiveSteppersMap();
-        movementCommand[3] = (byte)(0xff & ActiveSteppersMap);
-        movementCommand[2] = (byte)(0x80 | (0x7f & (ActiveSteppersMap >> 8)));
-        // Byte per steps
-        if(1 == BytesPerStep)
-        {
-            movementCommand[4] = 0;
-        }
-        else
-        {
-            movementCommand[4] = (byte) 0x80;
-        }
-        // directions
-        final int DirectionMap = aMove.getDirectionMap();
-        movementCommand[5] =  (byte)(0xff & DirectionMap);
-        movementCommand[4] =  (byte)(movementCommand[4] | (0x7f & (DirectionMap>>8)));
-        // Homing
-        if(true == aMove.isHomingMove())
-        {
-            movementCommand[6] = 0x10;
-        }
-        // Primary Axis
-        movementCommand[6] =(byte)(movementCommand[6] | (0x0f & aMove.getPrimaryAxis()));
-        // Nominal Speed
-        movementCommand[7] = (byte)(0xff & aMove.getTravelSpeedFraction(curPart));
-        // end Speed
-        movementCommand[8] = (byte)(0xff & aMove.getEndSpeedFraction(curPart));
-    }
-
-    private void fillBottomPartUsingOneByteForSteps(BasicLinearMove aMove, int offset, int curPart)
-    {
-        movementCommand[offset    ] = (byte)(0xff & aMove.getAccelerationSteps(curPart));
-        movementCommand[offset + 1] = (byte)(0xff & aMove.getDecelerationSteps(curPart));
-        final int numStepperToGo = aMove.getNumberOfActiveSteppers();
-        int stepperfound = 0;
-        // highest Stepper Number can be 0 -> then we still have one stepper
-        for(int i = 0; i < aMove.getHighestStepperNumber() + 1; i++)
-        {
-            final int steps = aMove.getStepsOnActiveStepper(i, curPart);
-            if(0 != steps)
-            {
-                movementCommand[offset + 2 + stepperfound] = (byte)(0xff & steps);
-                stepperfound ++;
-                if(stepperfound == numStepperToGo)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    private void fillBottomPartUsingTwoByteForSteps(BasicLinearMove aMove, int offset, int curPart)
-    {
-        final int accellerationSteps = aMove.getAccelerationSteps(curPart);
-        final int DecellerationSteps = aMove.getDecelerationSteps(curPart);
-        movementCommand[offset    ] = (byte)(0xff & (accellerationSteps>>8));
-        movementCommand[offset + 1] = (byte)(0xff & accellerationSteps);
-        movementCommand[offset + 2] = (byte)(0xff & (DecellerationSteps>>8));
-        movementCommand[offset + 3] = (byte)(0xff & DecellerationSteps);
-        final int numStepperToGo = aMove.getNumberOfActiveSteppers();
-        int stepperfound = 0;
-        // highest Stepper Number can be 0 -> then we still have one stepper
-        for(int i = 0; i < aMove.getHighestStepperNumber() + 1; i++)
-        {
-            final int steps = aMove.getStepsOnActiveStepper(i, curPart);
-            if(0 != steps)
-            {
-                movementCommand[offset + 4 + stepperfound*2] = (byte)(0xff & (steps>>8));
-                movementCommand[offset + 5 + stepperfound*2] = (byte)(0xff & steps);
-                stepperfound ++;
-                if(stepperfound == numStepperToGo)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    public boolean addBasicLinearMove(BasicLinearMove aMove)
-    {
         if(   (false == di.hasExtensionQueuedCommand())
            || (false == di.hasExtensionBasicMove()) )
         {
             lastErrorReason = "no Queue - no chance to add to it.";
             return false;
         }
-        if(false == aMove.isNowComplete())
-        {
-        	// this move is inconsistent / missing data
-        	// we can not send this crap
-        	lastErrorReason = "tried to send an incomplete move";
-        	return false;
-        }
-        
-        if(false == aMove.hasMovementData())
-        {
-            // no movement in this move, so no need to send anything.
-            log.debug("dropping move ({}) that has no steps.", aMove.getId());
-            return true;
-        }
-        log.trace("Sending move {}", aMove.getId());
 
-        // check if we need to break the move into many small moves
-        int maxSteps = aMove.getStepsOnActiveStepper(aMove.getPrimaryAxis());
-        int parts = (maxSteps/65535) + 1; // 0..65534 = 1; 65535.. 131069 =2; ...
-        int maxStepPerPart = (maxSteps / parts) + 1;
-        aMove.splitTo(parts);
-
-        for(int curPart = 0; curPart < parts; curPart ++)
+        for(int i = 0; i < aMove.length; i++)
         {
-            // Prepare data
-            int steppsStart;
-            if(aMove.getNumberOfActiveSteppers() < 7)
-            {
-                // 1 byte Axis selection mode
-                if(255 > maxStepPerPart)
-                {
-                    fillTopPartForUpTo8Axis(aMove, 1, curPart);
-                }
-                else
-                {
-                    fillTopPartForUpTo8Axis(aMove, 2, curPart);
-                }
-                steppsStart = 7;
-            }
-            else if(aMove.getNumberOfActiveSteppers() < 15)
-            {
-                // 2 byte Axis selection mode
-                if(255 > maxStepPerPart)
-                {
-                    fillTopPartForUpTo16Axis(aMove, 1, curPart);
-                }
-                else
-                {
-                    fillTopPartForUpTo16Axis(aMove, 2, curPart);
-                }
-                steppsStart = 9;
-            }
-            else
-            {
-                lastErrorReason = "Too Many Steppers - Can only handle 15 !";
-                log.error(lastErrorReason);
-                return false;
-            }
-            // Add Steps
-            if(255 > maxStepPerPart)
-            {
-                fillBottomPartUsingOneByteForSteps(aMove, steppsStart, curPart);
-            }
-            else
-            {
-                fillBottomPartUsingTwoByteForSteps(aMove, steppsStart, curPart);
-            }
-            // Send the data
-            if(false == enqueueCommandBlocking(movementCommand))
-            {
-                return false;
-            }
+	        log.trace("Sending move {} - {}", aMove[i].getId(), aMove[i]);
+
+	        // Send the data
+	        byte[] data = aMove[i].getMoveData();
+	        // TODO remove
+	        log.trace("Sending move data {}", Tool.fromByteBufferToHexString(data));
+	        if(false == enqueueCommandBlocking(data))
+	        {
+	            return false;
+	        }
         }
         return true;
     }
@@ -1353,6 +1251,8 @@ public class Protocol implements EventSource
         {
             lastErrorReason = "Received No Reply from Client !";
             log.error(lastErrorReason);
+            log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
             return RESULT_ERROR;
         }
         if(true == r.isOKReply())
@@ -1386,9 +1286,27 @@ public class Protocol implements EventSource
                 }
             }
             parseQueueReply(response, 2);
-            if(0x01 != response[0])
+            if(MOVEMENT_BLOCK_QUEUE_FULL != response[0]) // First Parameter Byte = Cause
             {
                 // Error caused by bad Data !
+            	switch(response[0])
+            	{
+            	case MOVEMENT_BLOCK_UNKNOWN_BLOCK:
+            		log.error("Unknown or unsupported Block Type");
+            		break;
+
+            	case MOVEMENT_BLOCK_MALFORMED_BLOCK:
+            		log.error("malformed block");
+            		break;
+
+            	case MOVEMENT_BLOCK_ERROR_IN_BLOCK:
+            		log.error("error in Block");
+            		break;
+
+            	default:
+	            	log.error("Invalid Cause ({}) !", response[0]);
+	            	break;
+            	}
                 lastErrorReason = "Could not Queue Block as Client Reports invalid Data !";
                 log.error(lastErrorReason);
                 log.error("Error Reply Code : " + (0xff & response[8]));
@@ -1399,6 +1317,8 @@ public class Protocol implements EventSource
                 log.error("Send Data: {} !", Tool.fromByteBufferToHexString(param, length));
                 log.error("Send Data: {} !", parseQueueBlock(param, length ,0));
                 log.error("Received : {} !", Tool.fromByteBufferToHexString(response));
+                log.error("Client reports error! Recovery not possible!");
+                System.exit(1);
                 return RESULT_ERROR;
             }
             // else queue full so try next time
@@ -1411,6 +1331,8 @@ public class Protocol implements EventSource
             final String stoppedDescription = getDescriptionOfStopped(stoppedMessage);
             lastErrorReason = "Client entered Stopped Mode (" + stoppedDescription + ")!";
             log.error(lastErrorReason);
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
             return RESULT_ERROR;
         }
         else
@@ -1418,6 +1340,8 @@ public class Protocol implements EventSource
             // error -> send commands later
             lastErrorReason = "Protocol violation - Unexpected Reply !";
             log.error(lastErrorReason);
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
             return RESULT_ERROR;
         }
     }
@@ -1429,10 +1353,13 @@ public class Protocol implements EventSource
      * call. If in this situation try calling enqueueCommandBlocking() !
      *
      * @param param Data of only one command !
+     * @param ref
      * @return RESULT_SUCCESS,  RESULT_ERROR or RESULT_TRY_AGAIN_LATER
      */
     private int enqueueCommand(byte[] param)
     {
+    	// TODO remove
+        log.trace("putting to sendqueue {}", Tool.fromByteBufferToHexString(param));
         if(null != param)
         {
             // add the new command, and...
@@ -1440,9 +1367,10 @@ public class Protocol implements EventSource
         }
         // TODO wait for enough bytes in Buffer ?
         // try to get the Queue empty again.
-        if(0 == sendQueue.size())
+        if((0 == sendQueue.size()) || (false == hasFreeQueueSlots()))
         {
             // nothing to send -> poll client to get number of Slots used
+        	// _OR_ client has no free slot -> poll client to get number of Slots used
             return sendDataToClientQueue(new byte[0], 0, 0);
         }
         if(1 > (ClientQueueFreeSlots - ClientQueueKeepFreeSlots))
@@ -1468,6 +1396,8 @@ public class Protocol implements EventSource
                     final byte[] buf = sendQueue.get(idx);
                     if(null != buf)
                     {
+                    	// TODO remove
+                        log.trace("received from send queue {}", Tool.fromByteBufferToHexString(buf));
                         if(buf.length < QUEUE_SEND_BUFFER_SIZE - writePos)
                         {
                             for(int j = 0; j < buf.length; j++)
@@ -1549,7 +1479,7 @@ public class Protocol implements EventSource
 
 // Firmware specific configuration:
 
-    public boolean writeFirmwareConfigurationValue(String name, String value)
+    public boolean writeFirmwareConfigurationValue(String name, String value, Reference ref)
     {
         final byte[] nameBuf = name.getBytes(Charset.forName("UTF-8"));
         final byte[] valueBuf = value.getBytes(Charset.forName("UTF-8"));
@@ -1563,7 +1493,7 @@ public class Protocol implements EventSource
         {
             parameter[i+nameBuf.length + 1] = valueBuf[i];
         }
-        if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter))
+        if(false == sendOrderExpectOK(ORDER_WRITE_FIRMWARE_CONFIGURATION, parameter, ref))
         {
             log.error("Failed to write Firmware Setting {} = {} !", name, value);
             lastErrorReason = "Failed to write Firmware Setting " + name + " = " + value + " !";
@@ -1575,7 +1505,7 @@ public class Protocol implements EventSource
         }
     }
 
-    public String getCompleteDescriptionForSetting(String curSetting)
+    public String getCompleteDescriptionForSetting(String curSetting, Reference ref)
     {
         if(null == curSetting)
         {
@@ -1590,13 +1520,17 @@ public class Protocol implements EventSource
         {
             return "";
         }
-        final Reply r = cc.sendRequest(ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES, strbuf);
+        final Reply r = cc.sendRequest(ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES, strbuf, ref);
         if(null == r)
         {
+        	log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
             return "";
         }
         if((false == r.isOKReply()) || (false == r.isValid()))
         {
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
             return "";
         }
         final byte[] res = r.getParameter();
@@ -1646,7 +1580,7 @@ public class Protocol implements EventSource
         return description.toString();
     }
 
-    public String traverseFirmwareConfiguration(String curSetting)
+    public String traverseFirmwareConfiguration(String curSetting, Reference ref)
     {
         if(null == curSetting)
         {
@@ -1661,13 +1595,17 @@ public class Protocol implements EventSource
         {
             strbuf = new byte[0];
         }
-        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES, strbuf);
+        final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES, strbuf, ref);
         if(null == r)
         {
+        	log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
             return "";
         }
         if((false == r.isOKReply()) || (false == r.isValid()))
         {
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
             return "";
         }
         final byte[] res = r.getParameter();
@@ -1686,7 +1624,7 @@ public class Protocol implements EventSource
         }
     }
 
-    public String readFirmwareConfigurationValue(String curSetting)
+    public String readFirmwareConfigurationValue(String curSetting, Reference ref)
     {
         if(null == curSetting)
         {
@@ -1701,13 +1639,17 @@ public class Protocol implements EventSource
         {
             return "";
         }
-        final Reply r = cc.sendRequest(ORDER_READ_FIRMWARE_CONFIGURATION, strbuf);
+        final Reply r = cc.sendRequest(ORDER_READ_FIRMWARE_CONFIGURATION, strbuf, ref);
         if(null == r)
         {
+        	log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
             return "";
         }
         if((false == r.isOKReply()) || (false == r.isValid()))
         {
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
             return "";
         }
         final byte[] res = r.getParameter();
@@ -1726,35 +1668,41 @@ public class Protocol implements EventSource
         }
     }
 
-    private boolean sendOrderExpectOK(final byte order, final byte parameter)
+    private boolean sendOrderExpectOK(final byte order, final byte parameter, Reference ref)
     {
         final byte[] help = new byte[1];
         help[0] = parameter;
-        return sendOrderExpectOK(order, help);
+        return sendOrderExpectOK(order, help, ref);
     }
 
-    private boolean sendOrderExpectOK(final byte order, final byte[] parameter)
+    private boolean sendOrderExpectOK(final byte order, final byte[] parameter, Reference ref)
     {
-        final Reply r = cc.sendRequest(order, parameter);
+        final Reply r = cc.sendRequest(order, parameter, ref);
         if(null == r)
         {
-            log.error("Received no Reply !");
+            log.error("({}): Received no Reply !", ref);
             lastErrorReason = "Received no Reply !";
+            log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
             return false;
         }
         return r.isOKReply();
     }
 
-    private int sendOrderExpectInt(final byte order, final byte[] parameter)
+    private int sendOrderExpectInt(final byte order, final byte[] parameter, Reference ref)
     {
-        final Reply r = cc.sendRequest(order, parameter);
+        final Reply r = cc.sendRequest(order, parameter, ref);
         if(null == r)
         {
+        	log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
             return -1;
         }
         if(false  == r.isOKReply())
         {
-            log.error("Reply is not an OK ! " + r);
+            log.error("({}): Reply is not an OK ! " + r, ref);
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
             return -2;
         }
         final byte[] reply = r.getParameter();
@@ -1773,7 +1721,7 @@ public class Protocol implements EventSource
 
     private void sendKeepAliveSignal()
     {
-        final int timeout = sendOrderExpectInt(ORDER_REQ_INFORMATION, new byte[]{INFO_HOST_TIMEOUT});
+        final int timeout = sendOrderExpectInt(ORDER_REQ_INFORMATION, new byte[]{INFO_HOST_TIMEOUT}, new Reference("Host Timeout Poll"));
         if(0 < timeout)
         {
             // read a vaild value

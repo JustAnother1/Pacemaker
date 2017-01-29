@@ -14,6 +14,7 @@
  */
 package de.nomagic.printerController.core.devices;
 
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
@@ -32,9 +33,9 @@ public class Switch
         this.num = number;
     }
 
-    public int getState()
+    public int getState(Reference ref)
     {
-        return pro.getSwitchState(num);
+        return pro.getSwitchState(num, ref);
     }
 
     public int getNumber()

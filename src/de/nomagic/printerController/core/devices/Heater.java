@@ -14,6 +14,7 @@
  */
 package de.nomagic.printerController.core.devices;
 
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
@@ -43,9 +44,9 @@ public class Heater
         this.pro = pro;
     }
 
-    public boolean setTemperature(Double temperature)
+    public boolean setTemperature(Double temperature, Reference ref)
     {
-        if(false == pro.setTemperature(num, temperature))
+        if(false == pro.setTemperature(num, temperature, ref))
         {
             lastErrorReason = pro.getLastErrorReason();
             return false;

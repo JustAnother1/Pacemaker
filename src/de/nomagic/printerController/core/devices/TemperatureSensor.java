@@ -14,6 +14,7 @@
  */
 package de.nomagic.printerController.core.devices;
 
+import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 /**
@@ -32,9 +33,9 @@ public class TemperatureSensor
         this.num = number;
     }
 
-    public Double getTemperature()
+    public Double getTemperature(Reference ref)
     {
-        return pro.readTemperatureFrom(num);
+        return pro.readTemperatureFrom(num, ref);
     }
 
     @Override

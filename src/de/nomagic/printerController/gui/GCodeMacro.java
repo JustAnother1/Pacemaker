@@ -122,4 +122,10 @@ public class GCodeMacro extends Macro implements GCodeResultStream
         log.debug(msg);
     }
 
+	@Override
+	public String getSource() 
+	{
+		return "G-Code Macro";
+	}
+
 }

@@ -12,13 +12,16 @@
   You should have received a copy of the GNU General Public License along
   with this program; if not, see <http://www.gnu.org/licenses/>
  -->
-<project default="all">
+<project name="Pacemaker" default="all" basedir="."  xmlns:fx="javafx:com.sun.javafx.tools.ant" xmlns:cs="antlib:com.puppycrawl.tools.checkstyle.ant">
+
     <property name="mainJar" value="Pacemaker.jar" />
     <property name="SimulatorJar" value="PacemakerTest.jar" />
-    <property name="WizzardJar" value="PacemakerWizard.jar" />
+	<property name="cfgJar" value="ConfigurationCreator.jar" />
     <property name="destDir" value="bin" />
     <property name="javadoc" value="doc/javadoc" />
     <property name="srcDir" value="src" />
+    <property name="testResDir" value="results" />
+    <property name="testsDir" value="tests/src" />
 
     <path id="project.class.path">
         <pathelement location="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
@@ -30,11 +33,37 @@
         <pathelement path="lib/jfreechart-1.0.19.jar"/>
     </path>
 
+    <path id="junit.class.path">
+        <pathelement location="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
+        <pathelement path="lib/logback-1.0.13/logback-core-1.0.13.jar"/>
+        <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
+        <pathelement path="lib/jna-4.1.0.jar"/>
+        <pathelement path="lib/purejavacomm.jar"/>
+        <pathelement path="lib/jcommon-1.0.23.jar"/>
+        <pathelement path="lib/jfreechart-1.0.19.jar"/>
+    	<!-- for JUnit : -->
+    	<pathelement path="lib/junit4-4.12.jar"/>
+    	<pathelement path="lib/hamcrest-core-1.3.jar"/>
+    	<pathelement path="${destDir}"/>
+    </path>
+
     <path id="simulator.class.path">
         <pathelement location="lib/slf4j-1.7.5/slf4j-api-1.7.5.jar"/>
         <pathelement path="lib/logback-1.0.13/logback-core-1.0.13.jar"/>
         <pathelement path="lib/logback-1.0.13/logback-classic-1.0.13.jar"/>
     </path>
+
+	<!--
+	<path id="compile.class.pathtest">
+	    <pathelement location="${checkstyle.dir}/checkstyle-5.5-all.jar"/>
+	    <pathelement location="${checkstyle.dir}/checkstyle-5.5.jar"/>
+	    <pathelement location="${checkstyle.dir}/pmd-3.9.jar"/>
+	    <pathelement location="${checkstyle.dir}/asm-3.0.jar"/>
+	    <pathelement location="${checkstyle.dir}/backport-util-concurrent-2.1.jar"/>
+	    <pathelement location="${checkstyle.dir}/jaxen-1.1-beta-10.jar"/>
+	    <pathelement location="${checkstyle.dir}/saxpath-1.0-FCS.jar"/>
+	</path>
+-->
 
     <manifestclasspath property="pm.cp" jarfile="${mainJar}">
        <classpath refid="project.class.path" />
@@ -44,17 +73,14 @@
        <classpath refid="simulator.class.path" />
     </manifestclasspath>
 
-    <manifestclasspath property="wz.cp" jarfile="${WizzardJar}">
-       <classpath refid="project.class.path" />
-    </manifestclasspath>
-
     <target name="clean" description="delete everything that might have previously been created" >
         <delete dir="${destDir}"/>
         <delete file="${mainJar}"></delete>
         <delete file="${SimulatorJar}"></delete>
-        <delete file="${WizzardJar}"></delete>
-        <delete file="${TerminalJar}"></delete>
+        <delete file="${cfgJar}"></delete>
         <delete dir="${javadoc}"/>
+    	<delete dir="build"/>
+    	<delete dir="testResDir"/>
     </target>
 
     <target name="prepare" depends="clean" description="Prepare for building" >
@@ -72,14 +98,23 @@
             <arg value = "diff" />
             <arg value = "--shortstat" />
         </exec>
+		<path id="fxant">
+			<filelist>
+				<file name="${java.home}/../lib/ant-javafx.jar"/>
+				<file name="${java.home}/lib/jfxrt.jar"/>
+			</filelist>
+		</path>
+		<taskdef resource="com/sun/javafx/tools/ant/antlib.xml"
+			uri="javafx:com.sun.javafx.tools.ant"
+			classpathref="fxant"/>
     </target>
 
     <target name="compile" depends="prepare" description="compile *.java to *.class">
-        <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false" debug="true" debuglevel="lines,vars,source">
+        <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false"
+        	   source="1.8" target="1.8" debug="true" debuglevel="lines,vars,source">
             <classpath refid="project.class.path"/>
         </javac>
     </target>
-
 
     <target name="jar" depends="compile" description="create the Jar File">
         <jar destfile="${mainJar}" update="false">
@@ -88,6 +123,9 @@
                 <include name="commit-id" />
             </fileset>
             <manifest>
+				<attribute name="Implementation-Vendor" value="nomagic.de"/>
+				<attribute name="Implementation-Title" value="Pacemaker"/>
+				<attribute name="Implementation-Version" value="0.1"/>
                 <attribute name="Main-Class" value="de.nomagic.printerController.ControllerMain" />
                 <attribute name="Class-Path" value=". ${pm.cp}"/>
                 <attribute name="Built-By" value="${user.name}"/>
@@ -100,6 +138,9 @@
                 <include name="**/*.class" />
             </fileset>
             <manifest>
+				<attribute name="Implementation-Vendor" value="nomagic.de"/>
+				<attribute name="Implementation-Title" value="Pacemaker Client Simulation"/>
+				<attribute name="Implementation-Version" value="0.1"/>
                 <attribute name="Main-Class" value="de.nomagic.test.pacemaker.ClientMain" />
                 <attribute name="Class-Path" value=". ${sim.cp}"/>
                 <attribute name="Built-By" value="${user.name}"/>
@@ -107,17 +148,35 @@
             </manifest>
         </jar>
 
-        <jar destfile="${WizzardJar}" update="false">
+		<fx:jar id="cfgfxjar" destfile="${cfgJar}">
+
+			<fx:platform basedir="${java.home}"/>
+
+			<fx:application id="fxApplication"
+				name="Pacemaker Client Configuration creator"
+				mainClass="de.nomagic.printerController.createConfigFx.Main"
+				toolkit="fx"
+			/>
+
+            <fx:resources>
+            	<fx:fileset dir="lib" includes="lib/jna-4.1.0.jar" type="jar"/>
+           </fx:resources>
+
             <fileset dir="${destDir}">
                 <include name="**/*.class" />
+				<include name="commit-id" />
             </fileset>
-            <manifest>
-                <attribute name="Main-Class" value="de.nomagic.printerController.printerConfigurationCreationWizard.WizardMain" />
-                <attribute name="Class-Path" value=". ${wz.cp}"/>
+
+			<manifest>
+				<attribute name="Implementation-Vendor" value="nomagic.de"/>
+				<attribute name="Implementation-Title" value="Pacemaker Client Configuration creator"/>
+				<attribute name="Implementation-Version" value="0.1"/>
+				<attribute name="JavaFX-Feature-Proxy" value="None"/>
+				<attribute name="Class-Path" value="lib/jna-4.1.0.jar"/>
                 <attribute name="Built-By" value="${user.name}"/>
                 <attribute name="Built-Date" value="${TODAY}"/>
-            </manifest>
-        </jar>
+			</manifest>
+		</fx:jar>
     </target>
 
     <target name="javadoc" description="create Documentation" >
@@ -133,6 +192,72 @@
         </javadoc>
     </target>
 
-    <target name="all" depends="jar">
+	<target name="do-deploy" depends="jar">
+		<mkdir dir="build/build/classes/META-INF" />
+
+		<mkdir dir="deploy" />
+		<!-- Need to use ${basedir} because somehow the ant task is calculating the directory differently -->
+		<fx:deploy
+			embedJNLP="false"
+			extension="false"
+			includeDT="false"
+			offlineAllowed="true"
+			outdir="${basedir}/build/deploy"
+			outfile="ConfigurationCreator" nativeBundles="all"
+			updatemode="background" >
+
+			<fx:platform basedir="${java.home}"/>
+			<fx:info title="ConfigurationCreator" vendor="nomagic.de"/>
+
+			<fx:application refId="fxApplication"/>
+
+            <fx:resources>
+               <fx:fileset dir="lib" includes="lib/**" type="jar"/>
+           </fx:resources>
+		</fx:deploy>
+	</target>
+
+	<target name="unittest" depends="prepare" >
+        <delete dir="${testResDir}"/>
+	    <mkdir dir="${testResDir}"/>
+
+        <javac srcdir="${srcDir}" destdir="${destDir}" includeantruntime="false"
+        	source="1.8" target="1.8" debug="true" debuglevel="lines,vars,source" >
+            <classpath refid="project.class.path"/>
+        </javac>
+
+        <javac srcdir="${testsDir}" destdir="${destDir}" includeantruntime="false"
+        	   source="1.8" target="1.8" debug="true" debuglevel="lines,vars,source" >
+            <classpath refid="junit.class.path"/>
+        </javac>
+
+	    <junit printsummary="yes" haltonfailure="no">
+	    	<classpath refid="junit.class.path"/>
+		    <formatter type="plain"/>
+		    <formatter type="xml"/>
+		    <batchtest fork="yes" todir="${testResDir}">
+		        <fileset dir="${testsDir}">
+		            <include name="**/*Test*.java"/>
+		        </fileset>
+		    </batchtest>
+	    </junit>
+	</target>
+
+	<target name="stylecheck">
+	    <taskdef resource="checkstyletask.properties">
+	        <classpath refid="project.class.path"/>
+	    </taskdef>
+	    <cs:checkstyle config="doc/rules.xml" failOnViolation="false">
+	    	<classpath refid="project.class.path"/>
+	        <fileset dir="${srcDir}">
+	            <include name="**/*.java"/>
+	        </fileset>
+	        <formatter type="plain"/>
+	        <formatter type="xml" toFile="checkstyle-result.xml"/>
+	    </cs:checkstyle>
+	</target>
+
+    <target name="all" depends="jar, do-deploy">
     </target>
+
 </project>
