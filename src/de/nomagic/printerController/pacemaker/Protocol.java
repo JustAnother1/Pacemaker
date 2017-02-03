@@ -215,6 +215,9 @@ public class Protocol implements EventSource
 
     private static final int QUEUE_SEND_BUFFER_SIZE = 200;
 
+    // The client switches on the power after a resume command. Give the client this time for the powered on components to boot.
+    private static final int CLIENT_POWER_UP_DELAY_MS = 50;
+
     // the client needs at lest this(in milliseconds) time to free up one slot in the Queue
     private final long QUEUE_POLL_DELAY = 100;
 
@@ -250,6 +253,14 @@ public class Protocol implements EventSource
         {
             // take client out of Stopped Mode
             isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE, new Reference("Protocol Initialisation"));
+            try
+            {
+				Thread.sleep(CLIENT_POWER_UP_DELAY_MS);
+			}
+            catch (InterruptedException e)
+            {
+				e.printStackTrace();
+			}
         }
         this.timeout = timeout;
         if(null != timeout)
