@@ -92,6 +92,11 @@ public class CartesianMove
         }
     }
 
+    public boolean hasMovement()
+    {
+    	return hasMovement;
+    }
+
     public void setIsHoming(boolean b)
     {
         isHoming = b;
@@ -135,25 +140,28 @@ public class CartesianMove
         	log.warn("No Protocol available to send the move!");
             return false;
         }
-        if(false == hasMovement)
+        if(true == hasMovement)
+        {
+        	// send movement
+	        if(false == hasStartSpeed)
+	        {
+	        	log.trace("Tried to send Move without start Speed set!");
+	        	startSpeedMms = 0;
+	        	hasStartSpeed = true;
+	        }
+			// calculate speeds and accelerations
+			// convert into BasicLinearMoves
+			BasicLinearMove[] basicMoves = getMoveDataAsBasicLinearMove(nextMove);
+			// send BasicLinearMoves
+	        if(false == pro.addBasicLinearMove(basicMoves))
+	        {
+	        	log.error("Failed to send the Basic Linear Move !");
+	            return false;
+	        }
+		}
+        else
         {
         	log.trace("No movement to send available in move {}", myId);
-        	return true;
-        }
-        if(false == hasStartSpeed)
-        {
-        	log.trace("Tried to send Move without start Speed set!");
-        	startSpeedMms = 0;
-        	hasStartSpeed = true;
-        }
-		// calculate speeds and accelerations
-		// convert into BasicLinearMoves
-		BasicLinearMove[] basicMoves = getMoveDataAsBasicLinearMove(nextMove);
-		// send BasicLinearMoves
-        if(false == pro.addBasicLinearMove(basicMoves))
-        {
-        	log.error("Failed to send the Basic Linear Move !");
-            return false;
         }
 		// send switch commands
         if(true == hasCommand)

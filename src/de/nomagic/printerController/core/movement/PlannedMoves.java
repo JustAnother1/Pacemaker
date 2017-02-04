@@ -162,7 +162,6 @@ public class PlannedMoves implements EventSource
         if(null == aMove)
         {
             aMove = new CartesianMove(MaxClientStepsPerSecond, printerProps);
-    		aMove.setStartSpeedMms(0);
             log.trace("created Move({}) to hold end stop command.", aMove.getId());
         }
         aMove.addEndStopOnOffCommand(on, switches);
@@ -204,46 +203,57 @@ public class PlannedMoves implements EventSource
 
     private void sendAllPossibleMoves()
     {
-        final int size = entriesSize();
-        if(1 > size)
-        {
-            // no moves available to send
-        	log.trace("No Move to send");
-            return;
-        }
-        CartesianMove firstMove;
-        for(;;)
-        {
-	        firstMove = getFirstMove();
-	        if(null == firstMove)
+    	synchronized(entries)
+    	{
+	        CartesianMove firstMove;
+	        while(0 < entriesSize())
 	        {
-	        	log.trace("Could not get move!(size = {})", size);
-	        	return;
+		        firstMove = getFirstMove();
+		        if(null == firstMove)
+		        {
+		        	log.trace("Could not get move!(size = {})", entriesSize());
+		        	return;
+		        }
+		        CartesianMove secondMove;
+		        if(false == firstMove.hasEndSpeedSet())
+		        {
+		        	if(false == firstMove.hasMovement())
+		        	{
+		        		if(false == firstMove.send(pro, null))
+		        		{
+			        		log.error("Failed to send Switch commands");
+			        		return;
+		        		}
+		        	}
+		        	else
+		        	{
+			        	secondMove = getFirstMove();
+			        	if(null == secondMove)
+			        	{
+			        		// there are no more moves and "firstmove" has no end speed, so we can not send it yet.
+			        		// therefore all possible moves have been send.
+			        		entries.addFirst(firstMove);
+			        		return;
+			        	}
+			        	boolean res = firstMove.send(pro, secondMove);
+			            entries.addFirst(secondMove);
+			            if(false == res)
+			            {
+			            	log.error("Failed to send move");
+			            	return;
+			            }
+		        	}
+		        }
+		        else
+		        {
+		        	if(false == firstMove.send(pro, null))
+		        	{
+		        		log.error("Failed to send move with end speed set.");
+		        		return;
+		        	}
+		        }
 	        }
-	        CartesianMove secondMove;
-	        if(false == firstMove.hasEndSpeedSet())
-	        {
-	        	secondMove = getFirstMove();
-	        	boolean res = firstMove.send(pro, secondMove);
-	            synchronized(entries)
-	            {
-	            	entries.addFirst(secondMove);
-	            }
-	            if(false == res)
-	            {
-	            	log.error("Failed to send move");
-	            	return;
-	            }
-	        }
-	        else
-	        {
-	        	if(false == firstMove.send(pro, null))
-	        	{
-	        		log.error("Failed to get Queue size");
-	        		return;
-	        	}
-	        }
-        }
+    	}
     }
 
     private boolean sendLastMoves()
