@@ -482,8 +482,22 @@ public class GCodeDecoder
         case 109: // Set Extruder Temperature and wait
         	if(false == code.hasWord('S'))
         	{
-        		lastErrorReason = "Parameter S missing";
-        		return RESULT_ERROR;
+        		if(false == code.hasWord('R'))
+        		{
+	        		lastErrorReason = "Parameter S or R missing";
+	        		return RESULT_ERROR;
+        		}
+        		else
+        		{
+                    if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('R'), resultStream, ref))
+                    {
+                        return RESULT_ERROR;
+                    }
+                    else
+                    {
+                        return RESULT_OK;
+                    }
+        		}
         	}
             if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'), resultStream, ref))
             {
