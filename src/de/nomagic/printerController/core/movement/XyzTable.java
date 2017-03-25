@@ -372,7 +372,7 @@ public class XyzTable
        log.trace("letting the movement stop");
        if(null == planner)
        {
-           log.warn("No Steppers configured ! No movement to stop !");
+           log.trace("No Steppers configured ! No movement to stop !");
            return true;
        }
        else

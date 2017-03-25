@@ -18,6 +18,9 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /** send G-Codes using a TCP connection.
  *
  * @author Lars P&ouml;tter
@@ -27,6 +30,8 @@ import java.net.Socket;
 public class TcpInterface extends InteractiveInterface
 {
     public static final int PORT = 2342;
+
+    private final Logger log = (Logger) LoggerFactory.getLogger(this.getClass().getName());
 
     public TcpInterface()
     {
@@ -44,6 +49,7 @@ public class TcpInterface extends InteractiveInterface
             e.printStackTrace();
             return;
         }
+        log.info("Starting to Listen on TCP Port {} !", PORT);
         while(false == isInterrupted())
         {
             try
@@ -70,7 +76,7 @@ public class TcpInterface extends InteractiveInterface
     }
 
 	@Override
-	public String getSource() 
+	public String getSource()
 	{
 		return "TCP";
 	}

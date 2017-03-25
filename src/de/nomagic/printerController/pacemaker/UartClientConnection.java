@@ -373,17 +373,17 @@ public final class UartClientConnection extends ClientConnectionBase
         catch(NoSuchPortException e)
         {
             log.error("There is no port named {} !", PortName);
-            e.printStackTrace();
+            // e.printStackTrace();
         }
         catch(UnsupportedCommOperationException e)
         {
             log.error("The Interface {} does not support the requested parameters !", PortName);
-            e.printStackTrace();
+            // e.printStackTrace();
         }
         catch(IOException e)
         {
             log.error("The Interface {} caused an IO Exception !", PortName);
-            e.printStackTrace();
+            // e.printStackTrace();
         }
         disconnect(); // In case that we had a problem after the open
         return false;

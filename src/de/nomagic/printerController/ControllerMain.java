@@ -399,6 +399,10 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
         if(false == core.isOperational())
         {
             System.err.println("Could not Connect to Pacemaker Client !");
+            if(false == shallStartGui)
+            {
+            	close();
+            }
             return;
         }
         if(true == shallStartTcp)
