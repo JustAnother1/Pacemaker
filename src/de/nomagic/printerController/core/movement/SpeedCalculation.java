@@ -3,7 +3,7 @@ package de.nomagic.printerController.core.movement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SpeedCalculation 
+public class SpeedCalculation
 {
 	private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
 	private boolean valid;
@@ -12,7 +12,7 @@ public class SpeedCalculation
 	private int acceleartionSteps;
 	private int decceleartionSteps;
 	private int travelSteps;
-	
+
 	public SpeedCalculation(CartesianMove firstMove, CartesianMove nextMove)
 	{
 		// simplest version (start Speed = end Speed = 0; No speed limit);
@@ -20,7 +20,7 @@ public class SpeedCalculation
 		endSpeedFraction = 0;
 		travelSpeedFraction = 1;
 		travelSteps = 0;
-		int steps = firstMove.getStepsOnStepper(firstMove.getPrimaryStepper());
+		int steps = Math.abs(firstMove.getStepsOnStepper(firstMove.getPrimaryStepper()));
 		if(0 == steps)
 		{
 			log.error("No Steps on Primary Axis !");
@@ -35,36 +35,36 @@ public class SpeedCalculation
 		}
 		valid = true;
 	}
-	
+
 	public boolean isValid()
 	{
 		return valid;
 	}
 
-	public int getEndSpeedFraction() 
+	public int getEndSpeedFraction()
 	{
 		return endSpeedFraction;
 	}
 
-	public int getTravelSpeedFraction() 
+	public int getTravelSpeedFraction()
 	{
 		return travelSpeedFraction;
 	}
 
-	public int getAccelerationSteps() 
+	public int getAccelerationSteps()
 	{
 		return acceleartionSteps;
 	}
 
-	public int getDecelerationSteps() 
+	public int getDecelerationSteps()
 	{
 		return decceleartionSteps;
 	}
 
-	public int getTravelSteps() 
+	public int getTravelSteps()
 	{
 		return travelSteps;
 	}
-	
-	
+
+
 }

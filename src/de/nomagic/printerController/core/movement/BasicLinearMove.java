@@ -85,11 +85,12 @@ public class BasicLinearMove
     		directionsMap = directionsMap | (1<<stepper);
     		steps = Math.abs(steps);
     	}
-    	if(0 == steps)
+    	else if(0 == steps)
     	{
     		// We don't need an Axis with no steps on it.
     		return;
     	}
+    	// steps is now bigger than 0 !
     	if(maxSteps < steps)
     	{
     		primaryAxis = stepper;
@@ -129,12 +130,12 @@ public class BasicLinearMove
 
     public void setAccelerationSteps(int accelerationSteps)
     {
-    	this.accelerationSteps = accelerationSteps;
+    	this.accelerationSteps = Math.abs(accelerationSteps);
 	}
 
     public void setDecellerationSteps(int decellerationsteps)
     {
-    	this.decellerationsteps = decellerationsteps;
+    	this.decellerationsteps = Math.abs(decellerationsteps);
     }
 
     public  byte[] getMoveData()
