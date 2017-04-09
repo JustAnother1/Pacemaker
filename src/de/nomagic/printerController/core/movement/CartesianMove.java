@@ -403,7 +403,7 @@ public class CartesianMove
             }
         }
         log.trace("adding {} steps to Stepper {}", steps, stepperNumber);
-        StepsOnAxis.put(stepperNumber, Math.abs(steps));
+        StepsOnAxis.put(stepperNumber, steps);
         if(StepsOnPrimaryAxis < Math.abs(steps))
         {
         	StepsOnPrimaryAxis = Math.abs(steps);

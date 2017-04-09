@@ -247,6 +247,7 @@ public class Protocol implements EventSource
         this.cc = Client;
         if(null == cc)
         {
+        	log.error("Received no Client!");
             isOperational = false;
         }
         else
@@ -361,6 +362,33 @@ public class Protocol implements EventSource
     {
         switch(replyCode)
         {
+        case RESPONSE_STOPPED:
+        	StringBuffer sb = new StringBuffer();
+        	sb.append("Recovery: ");
+        	switch(buf[offset])
+        	{
+        	case RECOVERY_CLEARED       : sb.append("cleared"); break;
+        	case RECOVERY_PERSISTS      : sb.append("persists"); break;
+        	case RECOVERY_UNRECOVERABLE : sb.append("unrecoverable"); break;
+        	default                     : sb.append("invalid : (" + buf[offset] + ")");
+        	}
+        	sb.append(" Cause: ");
+        	switch(buf[offset + 1])
+        	{
+        	case CAUSE_RESET             : sb.append("Reset"); break;
+        	case CAUSE_END_STOP_HIT      : sb.append("unexpected end stop hit"); break;
+        	case CAUSE_MOVEMENT_ERROR    : sb.append("movement error"); break;
+        	case CAUSE_TEMPERATURE_ERROR : sb.append("temperature error"); break;
+        	case CAUSE_DEVICE_FAULT      : sb.append("device fault"); break;
+        	case CAUSE_ELECTRICAL_FAULT  : sb.append("electrical fault"); break;
+        	case CAUSE_FIRMWARE_FAULT    : sb.append("firmware fault"); break;
+        	case CAUSE_USER_REQUESTED    : sb.append("user requested"); break;
+        	case CAUSE_HOST_TIMEOUT      : sb.append("host timeout"); break;
+        	case CAUSE_OTHER_FAULT       : sb.append("other fault"); break;
+        	default                      : sb.append("invalid : (" + buf[offset] + ")");
+        	}
+        	return sb.toString();
+
         case RESPONSE_FRAME_RECEIPT_ERROR:
             switch(buf[offset])
             {
@@ -834,7 +862,7 @@ public class Protocol implements EventSource
         final byte[] param = new byte[2];
         param[0] = DEVICE_TYPE_INPUT;
         param[1] = (byte) num;
-        final int reply = sendOrderExpectInt(Protocol.ORDER_REQ_INPUT, param, ref);
+        final int reply = sendOrderExpectUnsignedByte(Protocol.ORDER_REQ_INPUT, param, ref);
         switch(reply)
         {
         case INPUT_HIGH: return Executor.SWITCH_STATE_CLOSED;
@@ -1723,6 +1751,26 @@ public class Protocol implements EventSource
         case 2: return (0xff & reply[0])* 256 + (0xff & reply[1]); // 16 bit int
         default: return -3;
         }
+    }
+
+    private int sendOrderExpectUnsignedByte(final byte order, final byte[] parameter, Reference ref)
+    {
+        final Reply r = cc.sendRequest(order, parameter, ref);
+        if(null == r)
+        {
+        	log.error("Client does not reply! Recovery not possible!");
+            System.exit(1);
+            return -1;
+        }
+        if(false  == r.isOKReply())
+        {
+            log.error("({}): Reply is not an OK ! " + r, ref);
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
+            return -2;
+        }
+        final byte[] reply = r.getParameter();
+        return (0xff & reply[0]);
     }
 
     public Reply sendRawOrder(int order, Integer[] parameterBytes, int length)

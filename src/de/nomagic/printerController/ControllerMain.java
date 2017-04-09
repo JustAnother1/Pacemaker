@@ -402,6 +402,7 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
             if(false == shallStartGui)
             {
             	close();
+            	System.exit(1);
             }
             return;
         }

@@ -34,6 +34,21 @@ public class Reply
     private final int length;
     private final boolean valid;
 
+    public Reply(byte[] data, boolean valid)
+    {
+        if((null == data) || (POS_OF_PARAMETER_START + 1 > data.length))
+        {
+            this.data = new byte[0];
+            length = 0;
+        }
+        else
+        {
+            this.data = data;
+            length = (0xff & data[POS_OF_LENGTH]);
+        }
+        this.valid = false;
+    }
+
     public Reply(byte[] data)
     {
         if((null == data) || (POS_OF_PARAMETER_START + 1 > data.length))

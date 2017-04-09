@@ -151,13 +151,13 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
         {
             try
             {
-                if( true == log.isTraceEnabled() )
+                if(true == log.isTraceEnabled() )
                 {
                 	log.trace("Sending " + Protocol.parse(buf) + " : " + Tool.fromByteBufferToHexString(buf) );
                 }
                 out.write(buf);
                 numberOfTransmissions++;
-                r =  getReply();
+                r = getReply();
             }
             catch (final IOException e)
             {
@@ -165,9 +165,9 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
                 log.error("Failed to send Request - IOException !");
                 return null;
             }
+            logReply(r);
             needsToRetransmitt = retransmissionNeeded(r);
         } while((true == needsToRetransmitt) && (numberOfTransmissions < MAX_TRANSMISSIONS));
-        logReply(r);
         return r;
     }
 
@@ -248,6 +248,8 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
             else
             {
                 log.error("received invalid Frame ({})!", r);
+                // dump frame
+                log.error("invalid frame: {}", r.getDump());
                 return true;
             }
         }
@@ -523,7 +525,9 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
                     log.error("Wrong CRC ! expected : " + String.format("%02X", expectedCRC)
                                        + " received : " + String.format("%02X", buf[2 + replyLength]));
                     isSynced = false;
-                    receiveQueue.put( new Reply(null));
+                    Reply r = new Reply(buf, false);
+                    log.error(r.getDump());
+                    receiveQueue.put(r);
                     continue;
                 }
 
