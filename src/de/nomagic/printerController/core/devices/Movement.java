@@ -196,20 +196,44 @@ public class Movement
         switch(ae)
         {
         case X:
-            min = switches.get(Switch_enum.Xmin);
-            max = switches.get(Switch_enum.Xmax);
+        	if(motor.isDirectionInverted())
+        	{
+	            min = switches.get(Switch_enum.Xmax);
+	            max = switches.get(Switch_enum.Xmin);
+        	}
+        	else
+        	{
+	            min = switches.get(Switch_enum.Xmin);
+	            max = switches.get(Switch_enum.Xmax);
+        	}
             res = pro.configureEndStop(motor, min, max, ref);
             break;
 
         case Y:
-            min = switches.get(Switch_enum.Ymin);
-            max = switches.get(Switch_enum.Ymax);
+        	if(motor.isDirectionInverted())
+        	{
+	            min = switches.get(Switch_enum.Ymax);
+	            max = switches.get(Switch_enum.Ymin);
+        	}
+        	else
+        	{
+	            min = switches.get(Switch_enum.Ymin);
+	            max = switches.get(Switch_enum.Ymax);
+        	}
             res = pro.configureEndStop(motor, min, max, ref);
             break;
 
         case Z:
-            min = switches.get(Switch_enum.Zmin);
-            max = switches.get(Switch_enum.Zmax);
+        	if(motor.isDirectionInverted())
+        	{
+	            min = switches.get(Switch_enum.Zmax);
+	            max = switches.get(Switch_enum.Zmin);
+        	}
+        	else
+        	{
+	            min = switches.get(Switch_enum.Zmin);
+	            max = switches.get(Switch_enum.Zmax);
+        	}
             res = pro.configureEndStop(motor, min, max, ref);
             break;
 
@@ -259,7 +283,7 @@ public class Movement
     }
 
     /** This causes all axis to decelerate to a full stop.
-     * @param ref 
+     * @param ref
      *
      */
     public boolean letMovementStop(Reference ref)

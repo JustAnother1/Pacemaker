@@ -92,7 +92,7 @@ public class XyzTable
 
     public XyzTable(Cfg cfg)
     {
-        Steppers = new Stepper[Axis_enum.size][2];
+        Steppers = new Stepper[Axis_enum.size][MAX_STEPPERS_PER_AXIS];
         curPositionMm = new double[Axis_enum.size];
         isHomed = new boolean[Axis_enum.size];
         endStopminOn = new boolean[Axis_enum.size];
@@ -418,7 +418,21 @@ public class XyzTable
                    }
                }
                curPositionMm[ax.ordinal()] = curPositionMm[ax.ordinal()] + distanceMm;
-               aMove.setDistanceMm(ax, distanceMm);
+               for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
+               {
+            	   if(null != Steppers[ax.ordinal()][i])
+            	   {
+		               if(true ==  Steppers[ax.ordinal()][i].isDirectionInverted())
+		               {
+		                   aMove.setDistanceMm(ax, -distanceMm);
+		               }
+		               else
+		               {
+		                   aMove.setDistanceMm(ax, distanceMm);
+		               }
+            	   }
+               }
+
            }
            // else axis not used
        }
