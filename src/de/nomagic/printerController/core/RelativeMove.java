@@ -22,6 +22,11 @@ import de.nomagic.printerController.core.movement.XyzTable;
 
 /** represents a movement relative to the last position.
  *
+ * The distance on the axis are in milimeter and are signed.
+ * Example:
+ * +5.6 = 5.6 mm in direction increasing
+ * -3.1 = 3.1 mm in direction decreasing
+ *
  * @author Lars P&ouml;tter
  * (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
  */

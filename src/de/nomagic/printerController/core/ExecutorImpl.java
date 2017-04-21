@@ -529,7 +529,7 @@ public class ExecutorImpl implements Executor
         if(null == theFan)
         {
             log.warn("Tried to set Fan Speed for invalid({}) Fan!", fan);
-            return false; // We do not need to stop the printing - we just ignore that fan.
+            return true; // We do not need to stop the printing - we just ignore that fan.
         }
         else
         {

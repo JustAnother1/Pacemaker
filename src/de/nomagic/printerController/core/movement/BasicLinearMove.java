@@ -23,7 +23,6 @@ import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import de.nomagic.printerController.Axis_enum;
 import de.nomagic.printerController.pacemaker.Protocol;
 
 public class BasicLinearMove
@@ -40,8 +39,6 @@ public class BasicLinearMove
 	private int accelerationSteps = 0;
 	private int decellerationsteps = 0;
 	private HashMap<Integer, Integer> StepsOnAxis = new HashMap<Integer, Integer>();
-
-
 	private final int id;
     private byte[] movementCommand = null;
 
@@ -82,13 +79,18 @@ public class BasicLinearMove
     	if(0 > steps)
     	{
     		// inverted
-    		directionsMap = directionsMap | (1<<stepper);
+    		log.trace("Stepper {} is moving towards min endstop !", stepper);
     		steps = Math.abs(steps);
     	}
     	else if(0 == steps)
     	{
     		// We don't need an Axis with no steps on it.
     		return;
+    	}
+    	else
+    	{
+    		log.trace("Stepper {} is moving towards max endstop !", stepper);
+    		directionsMap = directionsMap | (1<<stepper);
     	}
     	// steps is now bigger than 0 !
     	if(maxSteps < steps)
@@ -202,6 +204,7 @@ public class BasicLinearMove
             movementCommand[3] = (byte) 0x80;
         }
         // directions
+        log.trace("Directions: {}", directionsMap);
         movementCommand[3] =  (byte)(movementCommand[3] | (0x7f & directionsMap));
         // Homing
         if(true == isHomingMove)
@@ -236,6 +239,7 @@ public class BasicLinearMove
         }
         // directions
         final int DirectionMap = directionsMap;
+        log.trace("Directions: {}", DirectionMap);
         movementCommand[5] =  (byte)(0xff & DirectionMap);
         movementCommand[4] =  (byte)(movementCommand[4] | (0x7f & (DirectionMap>>8)));
         // Homing

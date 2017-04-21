@@ -199,6 +199,7 @@ public class ControllerMain implements CloseApplication, GCodeResultStream
                     i++;
                     try
                     {
+                    	System.out.println("Reading Configuration from file " + args[i] + " !");
                         final FileInputStream cfgIn = new FileInputStream(new File(args[i]));
                         cfg.readFrom(cfgIn);
                         hasReadConfiguration = true;

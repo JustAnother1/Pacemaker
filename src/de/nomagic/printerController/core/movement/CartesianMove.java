@@ -10,25 +10,34 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import de.nomagic.printerController.Axis_enum;
-import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.pacemaker.Protocol;
 
+/** represents a movement in a Cartesian machine relative to the last position.
+*
+* The distance on the axis (if not set as steps) are in milimeter and are signed.
+* Example:
+* +5.6 = 5.6 mm in direction increasing
+* -3.1 = 3.1 mm in direction decreasing
+*
+* The XYZ Table deals with inverted axis. Here a negative distance means moving
+* towards the min endstop (in decreasing direction)
+*
+* @author Lars P&ouml;tter
+* (<a href=mailto:Lars_Poetter@gmx.de>Lars_Poetter@gmx.de</a>)
+*/
 public class CartesianMove
 {
 	/** 16 bit for steps */
     private final int MAX_POSSIBLE_STEPPS_PER_BASICLINEARMOVE  = 65535;
     /** everything shorter than this will be assumed to be 0 */
     public static final double MIN_MOVEMENT_DISTANCE_MM_SECOND = 0.00001;
-
     public static final double MOVEMENT_SPEED_TOLERANCE_MM_SECOND = 0.0001;
     /** if the axis has steps the speed may not be 0. So this is the speed is will have at least */
     public static final double MIN_MOVEMENT_SPEED_MM_SECOND = 0.1;
 
     private static int nextId = 0; // singleton
-
     private final Logger log = LoggerFactory.getLogger(this.getClass().getName());
     private final int MaxPossibleClientSpeedInStepsPerSecond;
-
     private double feedrateMmPerSecond = MIN_MOVEMENT_SPEED_MM_SECOND;
     private boolean isHoming = false;
     private boolean hasMovement = false;
@@ -38,31 +47,16 @@ public class CartesianMove
     private double startSpeedMms = 0.0;
     private int primaryAxis = -1;
     private int numParts = 1;
-
-
     private HashMap<Axis_enum, Double> distancesMm = new HashMap<Axis_enum, Double>();
-
     private Vector<Integer> activeAxises = new Vector<Integer>();
     private HashMap<Integer, Integer> StepsOnAxis = new HashMap<Integer, Integer>();
-
     private HashMap<Integer, Boolean> AxisDirectionIncreasing = new HashMap<Integer, Boolean>();
-
     private int StepsOnPrimaryAxis = -1;
-
-
     private boolean hasCommand = false;
-
     private boolean Command_on = true;
     private Integer[] Command_switches;
-
-
     private int maxStepperNumber = -1;
-
-
-
     private int myId;
-
-
     private PrinterProperties printer;
 
     public CartesianMove(int MaxPossibleClientSpeedStepsPerSecond, PrinterProperties printer)
@@ -380,27 +374,15 @@ public class CartesianMove
 
     private void addSteppersSteps(int stepperNumber, int steps)
     {
-        if(false == printer.isDirectionInverted(stepperNumber))
+        if(0 < steps)
         {
-            if(0 < steps)
-            {
-                AxisDirectionIncreasing.put(stepperNumber, true);
-            }
-            else
-            {
-                AxisDirectionIncreasing.put(stepperNumber, false);
-            }
+        	log.trace("stepper {} is increasing", stepperNumber);
+            AxisDirectionIncreasing.put(stepperNumber, true);
         }
         else
         {
-            if(0 < steps)
-            {
-                AxisDirectionIncreasing.put(stepperNumber, false);
-            }
-            else
-            {
-                AxisDirectionIncreasing.put(stepperNumber, true);
-            }
+        	log.trace("stepper {} is decreasing", stepperNumber);
+            AxisDirectionIncreasing.put(stepperNumber, false);
         }
         log.trace("adding {} steps to Stepper {}", steps, stepperNumber);
         StepsOnAxis.put(stepperNumber, steps);
