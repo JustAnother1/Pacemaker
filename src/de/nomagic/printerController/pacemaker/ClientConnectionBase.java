@@ -37,7 +37,7 @@ public abstract class ClientConnectionBase extends Thread implements ClientConne
     public static final int MAX_MS_BETWEEN_TWO_BYTES = 20;
     public static final int MAX_MS_UNTIL_REPLY_ARRIVES = 100;
  // number of tries to send the frame
-    public static final int MAX_TRANSMISSIONS = 2;
+    public static final int MAX_TRANSMISSIONS = 4;
  // number of tries to send the frame if the reason was a timeout
     public static final int MAX_TIMEOUT_TRANSMISSIONS = 20;
  // Sync, length, Control, Order, CRC = 5

@@ -336,8 +336,8 @@ public class XyzTable
 
     public void addStepper(Axis_enum ae, Stepper motor)
     {
-    	printerProps.addStepperForAxis(ae, motor.getStepperNumber());
-    	printerProps.setSteppsPerMmOn(motor.getStepperNumber(), motor.getStepsPerMm());
+        printerProps.addStepperForAxis(ae, motor.getStepperNumber());
+        printerProps.setSteppsPerMmOn(motor.getStepperNumber(), motor.getStepsPerMm());
         for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
         {
             if(null == Steppers[ae.ordinal()][i])
@@ -420,17 +420,17 @@ public class XyzTable
                curPositionMm[ax.ordinal()] = curPositionMm[ax.ordinal()] + distanceMm;
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
-            	   if(null != Steppers[ax.ordinal()][i])
-            	   {
-		               if(true ==  Steppers[ax.ordinal()][i].isDirectionInverted())
-		               {
-		                   aMove.setDistanceMm(ax, -distanceMm);
-		               }
-		               else
-		               {
-		                   aMove.setDistanceMm(ax, distanceMm);
-		               }
-            	   }
+                   if(null != Steppers[ax.ordinal()][i])
+                   {
+                       if(true ==  Steppers[ax.ordinal()][i].isDirectionInverted())
+                       {
+                           aMove.setDistanceMm(ax, -distanceMm);
+                       }
+                       else
+                       {
+                           aMove.setDistanceMm(ax, distanceMm);
+                       }
+                   }
                }
 
            }
@@ -476,13 +476,13 @@ public class XyzTable
        }
        if(false == planner.flushQueueToClient(ref))
        {
-    	   log.error("Flush to Client failed !");
-    	   lastErrorReason = "Flush to Client failed";
-    	   return false;
+           log.error("Flush to Client failed !");
+           lastErrorReason = "Flush to Client failed";
+           return false;
        }
        else
        {
-    	   return true;
+           return true;
        }
    }
 
@@ -502,7 +502,6 @@ public class XyzTable
            if(ax != Axis_enum.E)
            {
                homingDistanceMm = (MaxMm[ax.ordinal()] - MinMm[ax.ordinal()]) * HOMING_MOVE_SFAETY_FACTOR;
-               aMove.setDistanceMm(ax, -homingDistanceMm);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
@@ -510,6 +509,10 @@ public class XyzTable
                        if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
+                       }
+                       else
+                       {
+                           aMove.setDistanceMm(ax, -homingDistanceMm);
                        }
                    }
                }
@@ -535,12 +538,15 @@ public class XyzTable
            if(ax != Axis_enum.E)
            {
                homingDistanceMm = homeBackOffDistanceMm;
-               aMove.setDistanceMm(ax, homingDistanceMm);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
                    {
                        if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
+                       {
+                           aMove.setDistanceMm(ax, -homingDistanceMm);
+                       }
+                       else
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
                        }
@@ -568,7 +574,6 @@ public class XyzTable
            if(ax != Axis_enum.E)
            {
                homingDistanceMm = homeBackOffDistanceMm * HOMING_MOVE_SFAETY_FACTOR;
-               aMove.setDistanceMm(ax, -homingDistanceMm);
                for(int i = 0; i < MAX_STEPPERS_PER_AXIS; i++)
                {
                    if(null != Steppers[ax.ordinal()][i])
@@ -576,6 +581,10 @@ public class XyzTable
                        if(true == Steppers[ax.ordinal()][i].isDirectionInverted())
                        {
                            aMove.setDistanceMm(ax, homingDistanceMm);
+                       }
+                       else
+                       {
+                           aMove.setDistanceMm(ax, -homingDistanceMm);
                        }
                    }
                }

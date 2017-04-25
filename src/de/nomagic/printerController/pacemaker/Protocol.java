@@ -247,7 +247,7 @@ public class Protocol implements EventSource
         this.cc = Client;
         if(null == cc)
         {
-        	log.error("Received no Client!");
+            log.error("Received no Client!");
             isOperational = false;
         }
         else
@@ -256,12 +256,12 @@ public class Protocol implements EventSource
             isOperational = sendOrderExpectOK(ORDER_RESUME, CLEAR_STOPPED_STATE, new Reference("Protocol Initialisation"));
             try
             {
-				Thread.sleep(CLIENT_POWER_UP_DELAY_MS);
-			}
+                Thread.sleep(CLIENT_POWER_UP_DELAY_MS);
+            }
             catch (InterruptedException e)
             {
-				e.printStackTrace();
-			}
+                e.printStackTrace();
+            }
         }
         this.timeout = timeout;
         if(null != timeout)
@@ -328,7 +328,29 @@ public class Protocol implements EventSource
                             }
                             else
                             {
-                                res.append(Tool.fromByteBufferToHexString(buf, length, offset));
+                                switch(buf[ORDER_POS_OF_ORDER_CODE])
+                                {
+                                // TODO: Add other commands
+                                case ORDER_CONFIGURE_END_STOPS:
+                                    if(0 == buf[offset + 2])
+                                    {
+                                        res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as min end stop]");
+                                    }
+                                    else if(1 == buf[offset + 2])
+                                    {
+                                        res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as max end stop]");
+                                    }
+                                    else
+                                    {
+                                        res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as something wrong!]");
+                                    }
+                                    break;
+
+                                default:
+                                    res.append(Tool.fromByteBufferToHexString(buf, length, offset));
+                                    break;
+                                }
+
                             }
                         }
                     }
@@ -363,31 +385,31 @@ public class Protocol implements EventSource
         switch(replyCode)
         {
         case RESPONSE_STOPPED:
-        	StringBuffer sb = new StringBuffer();
-        	sb.append("Recovery: ");
-        	switch(buf[offset])
-        	{
-        	case RECOVERY_CLEARED       : sb.append("cleared"); break;
-        	case RECOVERY_PERSISTS      : sb.append("persists"); break;
-        	case RECOVERY_UNRECOVERABLE : sb.append("unrecoverable"); break;
-        	default                     : sb.append("invalid : (" + buf[offset] + ")");
-        	}
-        	sb.append(" Cause: ");
-        	switch(buf[offset + 1])
-        	{
-        	case CAUSE_RESET             : sb.append("Reset"); break;
-        	case CAUSE_END_STOP_HIT      : sb.append("unexpected end stop hit"); break;
-        	case CAUSE_MOVEMENT_ERROR    : sb.append("movement error"); break;
-        	case CAUSE_TEMPERATURE_ERROR : sb.append("temperature error"); break;
-        	case CAUSE_DEVICE_FAULT      : sb.append("device fault"); break;
-        	case CAUSE_ELECTRICAL_FAULT  : sb.append("electrical fault"); break;
-        	case CAUSE_FIRMWARE_FAULT    : sb.append("firmware fault"); break;
-        	case CAUSE_USER_REQUESTED    : sb.append("user requested"); break;
-        	case CAUSE_HOST_TIMEOUT      : sb.append("host timeout"); break;
-        	case CAUSE_OTHER_FAULT       : sb.append("other fault"); break;
-        	default                      : sb.append("invalid : (" + buf[offset] + ")");
-        	}
-        	return sb.toString();
+            StringBuffer sb = new StringBuffer();
+            sb.append("Recovery: ");
+            switch(buf[offset])
+            {
+            case RECOVERY_CLEARED       : sb.append("cleared"); break;
+            case RECOVERY_PERSISTS      : sb.append("persists"); break;
+            case RECOVERY_UNRECOVERABLE : sb.append("unrecoverable"); break;
+            default                     : sb.append("invalid : (" + buf[offset] + ")");
+            }
+            sb.append(" Cause: ");
+            switch(buf[offset + 1])
+            {
+            case CAUSE_RESET             : sb.append("Reset"); break;
+            case CAUSE_END_STOP_HIT      : sb.append("unexpected end stop hit"); break;
+            case CAUSE_MOVEMENT_ERROR    : sb.append("movement error"); break;
+            case CAUSE_TEMPERATURE_ERROR : sb.append("temperature error"); break;
+            case CAUSE_DEVICE_FAULT      : sb.append("device fault"); break;
+            case CAUSE_ELECTRICAL_FAULT  : sb.append("electrical fault"); break;
+            case CAUSE_FIRMWARE_FAULT    : sb.append("firmware fault"); break;
+            case CAUSE_USER_REQUESTED    : sb.append("user requested"); break;
+            case CAUSE_HOST_TIMEOUT      : sb.append("host timeout"); break;
+            case CAUSE_OTHER_FAULT       : sb.append("other fault"); break;
+            default                      : sb.append("invalid : (" + buf[offset] + ")");
+            }
+            return sb.toString();
 
         case RESPONSE_FRAME_RECEIPT_ERROR:
             switch(buf[offset])
@@ -431,16 +453,16 @@ public class Protocol implements EventSource
 
     private static String parseQueueBlock(byte[] buf, int length, int offset)
     {
-    	if(length < 2)
-    	{
-    		Log.error("Too little data to parse!");
-    		return "";
-    	}
-    	if(offset + length > buf.length)
-    	{
-    		Log.error("Invalid Parameters that would cause out of Bounds! buf.length= {}, length = {}, offset = {}", buf.length, length, offset);
-    		return "";
-    	}
+        if(length < 2)
+        {
+            Log.error("Too little data to parse!");
+            return "";
+        }
+        if(offset + length > buf.length)
+        {
+            Log.error("Invalid Parameters that would cause out of Bounds! buf.length= {}, length = {}, offset = {}", buf.length, length, offset);
+            return "";
+        }
         final StringBuffer res = new StringBuffer();
         int bytesToGo = length;
         do
@@ -773,8 +795,8 @@ public class Protocol implements EventSource
         }
         if(false == res.isOKReply())
         {
-        	log.error("Client reports error! Recovery not possible!");
-        	System.exit(1);
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
         }
         return res;
     }
@@ -791,8 +813,8 @@ public class Protocol implements EventSource
         }
         if(false == res.isOKReply())
         {
-        	log.error("Client reports error! Recovery not possible!");
-        	System.exit(1);
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
         }
         return res;
     }
@@ -810,8 +832,8 @@ public class Protocol implements EventSource
         }
         if(false == res.isOKReply())
         {
-        	log.error("Client reports error! Recovery not possible!");
-        	System.exit(1);
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
         }
         return res;
     }
@@ -899,8 +921,8 @@ public class Protocol implements EventSource
         }
         if(false == r.isOKReply())
         {
-        	log.error("Client reports error! Recovery not possible!");
-        	System.exit(1);
+            log.error("Client reports error! Recovery not possible!");
+            System.exit(1);
         }
         if(true == r.isOKReply())
         {
@@ -923,7 +945,7 @@ public class Protocol implements EventSource
         else
         {
             // error -> try again later
-        	// TODO remove ?
+            // TODO remove ?
             return TEMPERATURE_ERROR_REPLY_NOT_OK;
         }
     }
@@ -1187,10 +1209,10 @@ public class Protocol implements EventSource
 
     public boolean addBasicLinearMove(BasicLinearMove[] aMove)
     {
-    	if(null == aMove)
-    	{
-    		return true;
-    	}
+        if(null == aMove)
+        {
+            return true;
+        }
 
         if(   (false == di.hasExtensionQueuedCommand())
            || (false == di.hasExtensionBasicMove()) )
@@ -1201,16 +1223,16 @@ public class Protocol implements EventSource
 
         for(int i = 0; i < aMove.length; i++)
         {
-	        log.trace("Sending move {} - {}", aMove[i].getId(), aMove[i]);
+            log.trace("Sending move {} - {}", aMove[i].getId(), aMove[i]);
 
-	        // Send the data
-	        byte[] data = aMove[i].getMoveData();
-	        // TODO remove
-	        log.trace("Sending move data {}", Tool.fromByteBufferToHexString(data));
-	        if(false == enqueueCommandBlocking(data))
-	        {
-	            return false;
-	        }
+            // Send the data
+            byte[] data = aMove[i].getMoveData();
+            // TODO remove
+            log.trace("Sending move data {}", Tool.fromByteBufferToHexString(data));
+            if(false == enqueueCommandBlocking(data))
+            {
+                return false;
+            }
         }
         return true;
     }
@@ -1328,24 +1350,24 @@ public class Protocol implements EventSource
             if(MOVEMENT_BLOCK_QUEUE_FULL != response[0]) // First Parameter Byte = Cause
             {
                 // Error caused by bad Data !
-            	switch(response[0])
-            	{
-            	case MOVEMENT_BLOCK_UNKNOWN_BLOCK:
-            		log.error("Unknown or unsupported Block Type");
-            		break;
+                switch(response[0])
+                {
+                case MOVEMENT_BLOCK_UNKNOWN_BLOCK:
+                    log.error("Unknown or unsupported Block Type");
+                    break;
 
-            	case MOVEMENT_BLOCK_MALFORMED_BLOCK:
-            		log.error("malformed block");
-            		break;
+                case MOVEMENT_BLOCK_MALFORMED_BLOCK:
+                    log.error("malformed block");
+                    break;
 
-            	case MOVEMENT_BLOCK_ERROR_IN_BLOCK:
-            		log.error("error in Block");
-            		break;
+                case MOVEMENT_BLOCK_ERROR_IN_BLOCK:
+                    log.error("error in Block");
+                    break;
 
-            	default:
-	            	log.error("Invalid Cause ({}) !", response[0]);
-	            	break;
-            	}
+                default:
+                    log.error("Invalid Cause ({}) !", response[0]);
+                    break;
+                }
                 lastErrorReason = "Could not Queue Block as Client Reports invalid Data !";
                 log.error(lastErrorReason);
                 log.error("Error Reply Code : " + (0xff & response[8]));
@@ -1397,7 +1419,7 @@ public class Protocol implements EventSource
      */
     private int enqueueCommand(byte[] param)
     {
-    	// TODO remove
+        // TODO remove
         log.trace("putting to sendqueue {}", Tool.fromByteBufferToHexString(param));
         if(null != param)
         {
@@ -1409,14 +1431,14 @@ public class Protocol implements EventSource
         if((0 == sendQueue.size()) || (false == hasFreeQueueSlots()))
         {
             // nothing to send -> poll client to get number of Slots used
-        	// _OR_ client has no free slot -> poll client to get number of Slots used
+            // _OR_ client has no free slot -> poll client to get number of Slots used
             return sendDataToClientQueue(new byte[0], 0, 0);
         }
         if(1 > (ClientQueueFreeSlots - ClientQueueKeepFreeSlots))
         {
-        	// client queue is full so wait for next slot to become available
-        	sendDataToClientQueue(new byte[0], 0, 0);
-        	return RESULT_TRY_AGAIN_LATER;
+            // client queue is full so wait for next slot to become available
+            sendDataToClientQueue(new byte[0], 0, 0);
+            return RESULT_TRY_AGAIN_LATER;
         }
         else
         {
@@ -1435,7 +1457,7 @@ public class Protocol implements EventSource
                     final byte[] buf = sendQueue.get(idx);
                     if(null != buf)
                     {
-                    	// TODO remove
+                        // TODO remove
                         log.trace("received from send queue {}", Tool.fromByteBufferToHexString(buf));
                         if(buf.length < QUEUE_SEND_BUFFER_SIZE - writePos)
                         {
@@ -1562,7 +1584,7 @@ public class Protocol implements EventSource
         final Reply r = cc.sendRequest(ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES, strbuf, ref);
         if(null == r)
         {
-        	log.error("Client does not reply! Recovery not possible!");
+            log.error("Client does not reply! Recovery not possible!");
             System.exit(1);
             return "";
         }
@@ -1637,7 +1659,7 @@ public class Protocol implements EventSource
         final Reply r = cc.sendRequest(ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES, strbuf, ref);
         if(null == r)
         {
-        	log.error("Client does not reply! Recovery not possible!");
+            log.error("Client does not reply! Recovery not possible!");
             System.exit(1);
             return "";
         }
@@ -1681,7 +1703,7 @@ public class Protocol implements EventSource
         final Reply r = cc.sendRequest(ORDER_READ_FIRMWARE_CONFIGURATION, strbuf, ref);
         if(null == r)
         {
-        	log.error("Client does not reply! Recovery not possible!");
+            log.error("Client does not reply! Recovery not possible!");
             System.exit(1);
             return "";
         }
@@ -1733,7 +1755,7 @@ public class Protocol implements EventSource
         final Reply r = cc.sendRequest(order, parameter, ref);
         if(null == r)
         {
-        	log.error("Client does not reply! Recovery not possible!");
+            log.error("Client does not reply! Recovery not possible!");
             System.exit(1);
             return -1;
         }
@@ -1758,7 +1780,7 @@ public class Protocol implements EventSource
         final Reply r = cc.sendRequest(order, parameter, ref);
         if(null == r)
         {
-        	log.error("Client does not reply! Recovery not possible!");
+            log.error("Client does not reply! Recovery not possible!");
             System.exit(1);
             return -1;
         }
