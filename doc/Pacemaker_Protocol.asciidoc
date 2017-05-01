@@ -1,6 +1,7 @@
 Pacemaker Protocol - the heart of real-time machine control
 ===========================================================
 :toc:
+:toclevels: 3
 :numbered:
 :showcomments:
 
