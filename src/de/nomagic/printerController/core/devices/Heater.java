@@ -57,9 +57,10 @@ public class Heater
         }
     }
 
-    public void setTemperatureSensor(TemperatureSensor sensor)
+    public boolean setTemperatureSensor(TemperatureSensor sensor, Reference ref)
     {
         this.sensor = sensor;
+        return pro.associateTemperatureSensorToHeater(num, sensor.getNumber(), ref);
     }
 
     public TemperatureSensor getTemperatureSenor()

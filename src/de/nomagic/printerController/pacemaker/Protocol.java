@@ -32,6 +32,7 @@ import de.nomagic.printerController.core.Reference;
 import de.nomagic.printerController.core.TimeoutHandler;
 import de.nomagic.printerController.core.devices.Stepper;
 import de.nomagic.printerController.core.devices.Switch;
+import de.nomagic.printerController.core.devices.TemperatureSensor;
 import de.nomagic.printerController.core.movement.BasicLinearMove;
 
 /** Pacemaker protocol.
@@ -296,6 +297,108 @@ public class Protocol implements EventSource
         }
     }
 
+    private static String pareParameter(byte[] buf, int length, int offset)
+    {
+        if((null == buf) || (0 == offset) || (0 == length))
+        {
+            return "";
+        }
+        final StringBuffer res = new StringBuffer();
+        switch(buf[offset -1]) // order
+        {
+        case ORDER_CONFIGURE_END_STOPS:
+            if(3 > length)
+            {
+                return "";
+            }
+            else
+            {
+                if(0 == buf[offset + 2])
+                {
+                    res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as min end stop]");
+                }
+                else if(1 == buf[offset + 2])
+                {
+                    res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as max end stop]");
+                }
+                else
+                {
+                    res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as something wrong!]");
+                }
+            }
+            break;
+
+        case ORDER_ENABLE_DISABLE_END_STOPS:
+            res.append("[");
+            int i = 2;
+            while(length >= i)
+            {
+                if(0 == buf[offset + (i - 1)])
+                {
+                    // disable
+                    res.append(" disabling end stop switch " + buf[offset + (i - 2)]);
+                }
+                else if(1 == buf[offset + (i -1)])
+                {
+                    // enabled
+                    res.append(" enabling end stop switch " + buf[offset + (i - 2)]);
+                }
+                else
+                {
+                    // invalid state
+                    res.append(" invalid state for end stop switch " + buf[offset + (i - 2)] + "!! ");
+                }
+                i = i + 2;
+            }
+            res.append(" ]");
+            break;
+
+        case ORDER_CONFIGURE_HEATER:
+            if(2 == length)
+            {
+                res.append("[Heater " + buf[offset] + " should use the temperature sensor " + buf[offset + 1] + "  ]");
+            }
+            else
+            {
+                 res.append("[Invalid : " + Tool.fromByteBufferToHexString(buf, length, offset) + "]");
+            }
+            break;
+
+            // TODO:
+        case ORDER_RESUME:
+        case ORDER_REQ_INFORMATION:
+        case ORDER_REQ_DEVICE_NAME:
+        case ORDER_REQ_TEMPERATURE:
+        case ORDER_GET_HEATER_CONFIGURATION:
+        case ORDER_SET_HEATER_TARGET_TEMPERATURE:
+        case ORDER_REQ_INPUT:
+        case ORDER_SET_OUTPUT:
+        case ORDER_SET_PWM:
+        case ORDER_WRITE_FIRMWARE_CONFIGURATION:
+        case ORDER_READ_FIRMWARE_CONFIGURATION:
+        case ORDER_STOP_PRINT:
+        case ORDER_ACTIVATE_STEPPER_CONTROL:
+        case ORDER_ENABLE_DISABLE_STEPPER_MOTORS:
+        case ORDER_REQUEST_DEVICE_COUNT:
+        case ORDER_QUEUE_COMMAND_BLOCKS:
+        case ORDER_CONFIGURE_AXIS_MOVEMENT_RATES:
+        case ORDER_RETRIEVE_EVENTS:
+        case ORDER_GET_NUMBER_EVENT_FORMAT_IDS:
+        case ORDER_GET_EVENT_STRING_FORMAT_ID:
+        case ORDER_CLEAR_COMMAND_BLOCK_QUEUE:
+        case ORDER_REQUEST_DEVICE_STATUS:
+        case ORDER_CONFIGURE_MOVEMENT_UNDERRUN_AVOIDANCE_PARAMETERS:
+        case ORDER_GET_FIRMWARE_CONFIGURATION_VALUE_PROPERTIES:
+        case ORDER_TRAVERSE_FIRMWARE_CONFIGURATION_VALUES:
+        case ORDER_RESET:
+
+        default:
+            res.append(Tool.fromByteBufferToHexString(buf, length, offset));
+            break;
+        }
+        return res.toString();
+    }
+
 
     public static String parse(byte[] buf)
     {
@@ -328,29 +431,7 @@ public class Protocol implements EventSource
                             }
                             else
                             {
-                                switch(buf[ORDER_POS_OF_ORDER_CODE])
-                                {
-                                // TODO: Add other commands
-                                case ORDER_CONFIGURE_END_STOPS:
-                                    if(0 == buf[offset + 2])
-                                    {
-                                        res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as min end stop]");
-                                    }
-                                    else if(1 == buf[offset + 2])
-                                    {
-                                        res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as max end stop]");
-                                    }
-                                    else
-                                    {
-                                        res.append("[ stepper " + buf[offset] + " has switch " + buf[offset + 1] + " as something wrong!]");
-                                    }
-                                    break;
-
-                                default:
-                                    res.append(Tool.fromByteBufferToHexString(buf, length, offset));
-                                    break;
-                                }
-
+                                res.append(pareParameter(buf, length, offset));
                             }
                         }
                     }
@@ -456,12 +537,12 @@ public class Protocol implements EventSource
         if(length < 2)
         {
             Log.error("Too little data to parse!");
-            return "";
+            return "[no parameter]";
         }
         if(offset + length > buf.length)
         {
             Log.error("Invalid Parameters that would cause out of Bounds! buf.length= {}, length = {}, offset = {}", buf.length, length, offset);
-            return "";
+            return "[error while parsing parameter]";
         }
         final StringBuffer res = new StringBuffer();
         int bytesToGo = length;
@@ -473,7 +554,7 @@ public class Protocol implements EventSource
             {
             case MOVEMENT_BLOCK_TYPE_COMMAND_WRAPPER:
                 res.append("[order:" + orderCodeToString(buf[offset + 2]));
-                res.append(Tool.fromByteBufferToHexString(buf, blockLength -3, offset + 3));
+                res.append(pareParameter(buf, blockLength -3, offset + 3));
                 break;
 
             case MOVEMENT_BLOCK_TYPE_DELAY:
@@ -896,6 +977,15 @@ public class Protocol implements EventSource
 
 // Temperature Sensor - Heater
 
+
+    public boolean associateTemperatureSensorToHeater(int heater, int sensor, Reference ref)
+    {
+        final byte[] param = new byte[2];
+        param[0] = (byte) heater;
+        param[1] = (byte) sensor;
+        return sendOrderExpectOK(Protocol.ORDER_CONFIGURE_HEATER, param, ref);
+    }
+
     public boolean setTemperature(final int heaterNum, Double temperature, Reference ref)
     {
         temperature = temperature * 10; // Client expects Temperature in 0.1 degree units.
@@ -1310,6 +1400,7 @@ public class Protocol implements EventSource
         // and see what happens.
         if(null == r)
         {
+            // no response:
             lastErrorReason = "Received No Reply from Client !";
             log.error(lastErrorReason);
             log.error("Client does not reply! Recovery not possible!");
@@ -1318,6 +1409,7 @@ public class Protocol implements EventSource
         }
         if(true == r.isOKReply())
         {
+            // OK reply
             parseQueueReply(r.getParameter());
             CommandsSendToClient = CommandsSendToClient + numBlocksInBuffer;
             for(int i = 0; i < numBlocksInBuffer; i++)
@@ -1419,7 +1511,6 @@ public class Protocol implements EventSource
      */
     private int enqueueCommand(byte[] param)
     {
-        // TODO remove
         log.trace("putting to sendqueue {}", Tool.fromByteBufferToHexString(param));
         if(null != param)
         {
@@ -1428,12 +1519,16 @@ public class Protocol implements EventSource
         }
         // TODO wait for enough bytes in Buffer ?
         // try to get the Queue empty again.
-        if((0 == sendQueue.size()) || (false == hasFreeQueueSlots()))
+        if(null == param)
         {
-            // nothing to send -> poll client to get number of Slots used
-            // _OR_ client has no free slot -> poll client to get number of Slots used
-            return sendDataToClientQueue(new byte[0], 0, 0);
+            if((0 == sendQueue.size()) || (false == hasFreeQueueSlots()))
+            {
+                // nothing to send -> poll client to get number of Slots used
+                // _OR_ client has no free slot -> poll client to get number of Slots used
+                return sendDataToClientQueue(new byte[0], 0, 0);
+            }
         }
+        // else we use this call to flush the queue
         if(1 > (ClientQueueFreeSlots - ClientQueueKeepFreeSlots))
         {
             // client queue is full so wait for next slot to become available

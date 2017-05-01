@@ -33,6 +33,11 @@ public class TemperatureSensor
         this.num = number;
     }
 
+    public int getNumber()
+    {
+        return num;
+    }
+
     public Double getTemperature(Reference ref)
     {
         return pro.readTemperatureFrom(num, ref);

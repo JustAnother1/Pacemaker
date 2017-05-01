@@ -240,7 +240,7 @@ public class ExecutorImpl implements Executor
             print.put(i, new Printer(pro));
             mapFans(di, pro, i);
             mapHeaters(di, pro, i);
-            mapTemperatureSensors(di,pro,i);
+            mapTemperatureSensors(di,pro,i, ref);
             mapOutputs(di, pro, i);
             mapSwitches(di, pro, i);
             if(false == move.addConnection(di, cfg, pro, i, Switches))
@@ -342,7 +342,7 @@ public class ExecutorImpl implements Executor
         }
     }
 
-    private void mapTemperatureSensors(DeviceInformation di, Protocol pro, int connectionNumber)
+    private void mapTemperatureSensors(DeviceInformation di, Protocol pro, int connectionNumber, Reference ref)
     {
         for(int i = 0; i < di.getNumberTemperatureSensors(); i++)
         {
@@ -360,7 +360,10 @@ public class ExecutorImpl implements Executor
                 }
                 else
                 {
-                    h.setTemperatureSensor(s);
+                    if(false == h.setTemperatureSensor(s, ref))
+                    {
+                        log.error("Could not associate the Temperature sensor {} to the Heater {} !", s, h);
+                    }
                     heaters.put(func, h);
                 }
             }
