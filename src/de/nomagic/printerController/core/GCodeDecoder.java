@@ -240,21 +240,21 @@ public class GCodeDecoder
         case 0: // Stop Print
             if(false == exe.doShutDown(ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 17: // Enable/Power all stepper motors
             if(false == exe.enableAllStepperMotors(ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         // case 18: see 84
@@ -289,11 +289,11 @@ public class GCodeDecoder
         case 24: // start / resume SD print
             if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 25: // pause SD print
@@ -304,11 +304,11 @@ public class GCodeDecoder
             Double bytePosition = code.getWordValue('S');
             if(false == sdPrinterWorker.setSDCardPosition(bytePosition.longValue()))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 27: // report SD print status
@@ -345,11 +345,11 @@ public class GCodeDecoder
             selectedSDCardFile = code.getLineWithoutCommentWithoutWord('M');
             if(false == sdPrinterWorker.startResumePrinting(selectedSDCardFile))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 82: // set Extruder to absolute Mode
@@ -364,20 +364,20 @@ public class GCodeDecoder
         case 84: // Stop Idle hold
             if(false == exe.disableAllStepperMotors(ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 92: // Set axis_steps_per_unit
-        	boolean foundOne = false;
+            boolean foundOne = false;
             for(Axis_enum axel : Axis_enum.values())
             {
                 if(true == code.hasWord(axel.getChar()))
                 {
-                	foundOne = true;
+                    foundOne = true;
                     if(true == isMetric)
                     {
                         if(false == exe.setStepsPerMilimeter(axel, code.getWordValue(axel.getChar())))
@@ -396,26 +396,26 @@ public class GCodeDecoder
             }
             if(true == foundOne)
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
             else
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
 
         case 104: // Set Extruder Temperature - no wait
-        	if(false == code.hasWord('S'))
-        	{
-        		lastErrorReason = "Parameter S is missing";
-        		return RESULT_ERROR;
-        	}
+            if(false == code.hasWord('S'))
+            {
+                lastErrorReason = "Parameter S is missing";
+                return RESULT_ERROR;
+            }
             if(false == exe.setCurrentExtruderTemperatureNoWait(code.getWordValue('S'), ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 105: // Get Extruder Temperature
@@ -423,11 +423,11 @@ public class GCodeDecoder
             return RESULT_VALUE;
 
         case 106: // set Fan Speed
-        	if(false == code.hasWord('S'))
-        	{
-        		lastErrorReason = "Parameter S is missing";
-        		return RESULT_ERROR;
-        	}
+            if(false == code.hasWord('S'))
+            {
+                lastErrorReason = "Parameter S is missing";
+                return RESULT_ERROR;
+            }
             // The fan Speed in S is 0..255 with 0=off 255=full speed.
             // The Fan speed in Pacemaker is 0=off 0xffff = full speed
             int speed = (code.getWordValue('S').intValue() * 256) + code.getWordValue('S').intValue();
@@ -435,22 +435,22 @@ public class GCodeDecoder
             {
                 if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), speed, ref))
                 {
-                	return RESULT_ERROR;
+                    return RESULT_ERROR;
                 }
                 else
                 {
-                	return RESULT_OK;
+                    return RESULT_OK;
                 }
             }
             else
             {
                 if(false == exe.setFanSpeedfor(0, speed, ref))
                 {
-                	return RESULT_ERROR;
+                    return RESULT_ERROR;
                 }
                 else
                 {
-                	return RESULT_OK;
+                    return RESULT_OK;
                 }
             }
 
@@ -460,35 +460,35 @@ public class GCodeDecoder
             {
                 if(false == exe.setFanSpeedfor(code.getWordValue('P').intValue(), 0, ref))
                 {
-                	return RESULT_ERROR;
+                    return RESULT_ERROR;
                 }
                 else
                 {
-                	return RESULT_OK;
+                    return RESULT_OK;
                 }
             }
             else
             {
                 if(false == exe.setFanSpeedfor(0, 0, ref))
                 {
-                	return RESULT_ERROR;
+                    return RESULT_ERROR;
                 }
                 else
                 {
-                	return RESULT_OK;
+                    return RESULT_OK;
                 }
             }
 
         case 109: // Set Extruder Temperature and wait
-        	if(false == code.hasWord('S'))
-        	{
-        		if(false == code.hasWord('R'))
-        		{
-	        		lastErrorReason = "Parameter S or R missing";
-	        		return RESULT_ERROR;
-        		}
-        		else
-        		{
+            if(false == code.hasWord('S'))
+            {
+                if(false == code.hasWord('R'))
+                {
+                    lastErrorReason = "Parameter S or R missing";
+                    return RESULT_ERROR;
+                }
+                else
+                {
                     if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('R'), resultStream, ref))
                     {
                         return RESULT_ERROR;
@@ -497,8 +497,8 @@ public class GCodeDecoder
                     {
                         return RESULT_OK;
                     }
-        		}
-        	}
+                }
+            }
             if(false == exe.setCurrentExtruderTemperatureAndDoWait(code.getWordValue('S'), resultStream, ref))
             {
                 return RESULT_ERROR;
@@ -522,11 +522,11 @@ public class GCodeDecoder
         case 112: // Emergency Stop
             if(false == exe.doImmediateShutDown(ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 115: // get Firmware Version and capabilities
@@ -593,41 +593,51 @@ public class GCodeDecoder
             return RESULT_VALUE;
 
         case 140: // set Bed Temperature - no wait
-        	if(false == code.hasWord('S'))
-        	{
-        		lastErrorReason = "Parameter S missing";
-        		return RESULT_ERROR;
-        	}
+            if(false == code.hasWord('S'))
+            {
+                lastErrorReason = "Parameter S missing";
+                return RESULT_ERROR;
+            }
             if(false == exe.setPrintBedTemperatureNoWait(code.getWordValue('S'), ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 141: // set chamber temperature - no wait
-        	if(false == code.hasWord('S'))
-        	{
-        		lastErrorReason = "Parameter S missing";
-        		return RESULT_ERROR;
-        	}
+            if(false == code.hasWord('S'))
+            {
+                lastErrorReason = "Parameter S missing";
+                return RESULT_ERROR;
+            }
             if(false == exe.setChamberTemperatureNoWait(code.getWordValue('S'), ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
+            }
+
+        case 144: // set Bed Temperature - no wait
+            if(false == exe.setPrintBedTemperatureNoWait(0.0, ref))
+            {
+                return RESULT_ERROR;
+            }
+            else
+            {
+                return RESULT_OK;
             }
 
         case 190: // set Bed Temperature - and do wait
-        	if(false == code.hasWord('S'))
-        	{
-        		lastErrorReason = "Parameter S missing";
-        		return RESULT_ERROR;
-        	}
+            if(false == code.hasWord('S'))
+            {
+                lastErrorReason = "Parameter S missing";
+                return RESULT_ERROR;
+            }
             if(false == exe.setPrintBedTemperatureAndDoWait(code.getWordValue('S'), resultStream, ref))
             {
                 return RESULT_ERROR;
@@ -683,21 +693,21 @@ public class GCodeDecoder
         case 1: // Linear Motion at Feed Rate
             if(false == exe.addMoveTo(getRelativeMovefor(code), ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 4: // Dwell
             if(false == exe.addPauseFor(code.getWordValue('P'), ref))
             {
-            	return RESULT_ERROR;
+                return RESULT_ERROR;
             }
             else
             {
-            	return RESULT_OK;
+                return RESULT_OK;
             }
 
         case 10: // Set Coordinate System Data
