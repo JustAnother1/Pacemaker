@@ -1178,7 +1178,11 @@ When the client enters an "End-stop hit" Stopped state then:
 - the order queue is flushed,
 - the stopped state is asserted.
 
-However when the movement is performed with the "homing mode" bit set, if any enabled and applicable end-stops trigger, then the stepper devices specifying this end-stop will stop their movement but the other stepper devices will continue moving. The client will not enter the "End-stop hit" stopped state.
+However when the movement is performed with the "homing mode" bit set, if any enabled and applicable end-stops triggers, then the stepper devices specifying this end-stop for the direction they are moving toward will stop their movement but the other stepper devices will continue moving. The client will not enter the "End-stop hit" stopped state.
+
+If an end stop is triggered then it is still possible for the stepper device to move away from it. Example: Stepper device 0 moves in increasing direction (towards max end stop) then this movement is possible if the min end stop is triggered.
+
+In some printers it might be necessary to invert the direction of an axis. Reasons might be cabling or mechanical. In that situation a stepper device ordered to move in increasing direction would actually move the mechanical part(print head,..) into the decreasing direction. This direction inversion is configured in the host. The host will then send commands to move into decreasing direction whenever a move in increasing direction is needed. And increasing moves for decreasing moves needed. In that situation is is also necessary to flip the end stop switches to allow the stepper device to move away from a triggered step. The host will therefore configure the end stop located at the maximum end as min and the end switch at the minimum end as max.
 
 === Orders
 
