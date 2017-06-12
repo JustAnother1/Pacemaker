@@ -132,7 +132,11 @@ public class Movement
                                      cfg.getStepsPerMillimeterFor(ClientNumber, i),
                                      cfg.getMaxJerkMmSfor(ClientNumber, i));
                     table.addStepper(ae, motor);
-                    connectEndSwitchesToStepper(ae, motor, switches, pro);
+
+                    if(false == connectEndSwitchesToStepper(ae, motor, switches, pro))
+                    {
+                        return false;
+                    }
                     if(false == configureStepperMaxSpeed(motor, pro))
                     {
                         return false;
@@ -185,66 +189,72 @@ public class Movement
         return res;
     }
 
-    private void connectEndSwitchesToStepper(Axis_enum ae,
+    private boolean connectEndSwitchesToStepper(Axis_enum ae,
                                              Stepper motor,
                                              HashMap<Switch_enum, Switch> switches,
                                              Protocol pro)
     {
         Switch min;
         Switch max;
-        boolean res = true;
+        boolean res = false;
         switch(ae)
         {
         case X:
-        	if(motor.isDirectionInverted())
-        	{
-	            min = switches.get(Switch_enum.Xmax);
-	            max = switches.get(Switch_enum.Xmin);
-        	}
-        	else
-        	{
-	            min = switches.get(Switch_enum.Xmin);
-	            max = switches.get(Switch_enum.Xmax);
-        	}
+            if(motor.isDirectionInverted())
+            {
+                min = switches.get(Switch_enum.Xmax);
+                max = switches.get(Switch_enum.Xmin);
+            }
+            else
+            {
+                min = switches.get(Switch_enum.Xmin);
+                max = switches.get(Switch_enum.Xmax);
+            }
             res = pro.configureEndStop(motor, min, max, ref);
             break;
 
         case Y:
-        	if(motor.isDirectionInverted())
-        	{
-	            min = switches.get(Switch_enum.Ymax);
-	            max = switches.get(Switch_enum.Ymin);
-        	}
-        	else
-        	{
-	            min = switches.get(Switch_enum.Ymin);
-	            max = switches.get(Switch_enum.Ymax);
-        	}
+            if(motor.isDirectionInverted())
+            {
+                min = switches.get(Switch_enum.Ymax);
+                max = switches.get(Switch_enum.Ymin);
+            }
+            else
+            {
+                min = switches.get(Switch_enum.Ymin);
+                max = switches.get(Switch_enum.Ymax);
+            }
             res = pro.configureEndStop(motor, min, max, ref);
             break;
 
         case Z:
-        	if(motor.isDirectionInverted())
-        	{
-	            min = switches.get(Switch_enum.Zmax);
-	            max = switches.get(Switch_enum.Zmin);
-        	}
-        	else
-        	{
-	            min = switches.get(Switch_enum.Zmin);
-	            max = switches.get(Switch_enum.Zmax);
-        	}
+            if(motor.isDirectionInverted())
+            {
+                min = switches.get(Switch_enum.Zmax);
+                max = switches.get(Switch_enum.Zmin);
+            }
+            else
+            {
+                min = switches.get(Switch_enum.Zmin);
+                max = switches.get(Switch_enum.Zmax);
+            }
             res = pro.configureEndStop(motor, min, max, ref);
             break;
 
-        default:
+        case E:
             // No end Stops on E
+            res = true;
+            break;
+
+        default:
+            res = false;
             break;
         }
         if(false == res)
         {
             log.error("Could not connect the end Switch to the Stepper !");
         }
+        return res;
     }
 
     public boolean addPause(double seconds)
@@ -310,12 +320,12 @@ public class Movement
         to.stopTimeout(TimeoutId);
         if(false == table.homeAxis(axis, ref))
         {
-        	lastErrorReason = "Movement: " + table.getLastErrorReason();
-        	return false;
+            lastErrorReason = "Movement: " + table.getLastErrorReason();
+            return false;
         }
         else
         {
-        	return true;
+            return true;
         }
     }
 

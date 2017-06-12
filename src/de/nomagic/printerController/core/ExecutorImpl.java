@@ -243,11 +243,15 @@ public class ExecutorImpl implements Executor
             mapTemperatureSensors(di,pro,i, ref);
             mapOutputs(di, pro, i);
             mapSwitches(di, pro, i);
-            if(false == move.addConnection(di, cfg, pro, i, Switches))
+            if(0 < di.getNumberSteppers())
             {
-                log.error("Failed to configure the Steppers !");
-                // Clients are allowed to have no steppers! -> this is OK
+                if(false == move.addConnection(di, cfg, pro, i, Switches))
+                {
+                    log.error("Failed to configure the Steppers !");
+                    return false;
+                }
             }
+            // else Clients are allowed to have no steppers! -> this is OK
         }
         return true;
     }
