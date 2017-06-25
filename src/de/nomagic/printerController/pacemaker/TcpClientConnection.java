@@ -36,9 +36,9 @@ public class TcpClientConnection extends ClientConnectionBase
 
     public static TcpClientConnection establishConnectionTo(String data)
     {
-    	TcpClientConnection res = new TcpClientConnection(data);
-    	res.connect();
-    	return res;
+        TcpClientConnection res = new TcpClientConnection(data);
+        res.connect();
+        return res;
     }
 
     public TcpClientConnection(String data)
@@ -46,7 +46,7 @@ public class TcpClientConnection extends ClientConnectionBase
         super("TcpClientConnection");
         if(false == data.contains(":"))
         {
-            log.error("Description({}) has no : !", data);
+            log.error("Description({}) has no \":\" !", data);
             host = "";
             portStr = "";
             pms = null;
@@ -57,8 +57,12 @@ public class TcpClientConnection extends ClientConnectionBase
         pms = new Socket();
     }
 
-	public boolean connect()
-	{
+    public boolean connect()
+    {
+        if(1 > portStr.length())
+        {
+            return false;
+        }
         final int port = Integer.parseInt(portStr);
         // connecting to Pacemaker using TCP
         log.info("Connecting to Pacemaker at {}:{} !", host, port);
@@ -93,20 +97,20 @@ public class TcpClientConnection extends ClientConnectionBase
             e.printStackTrace();
         }
         return false;
-	}
+    }
 
     @Override
     public String toString()
     {
-    	String cn = getConnectionName();
-    	if(0 < cn.length())
-    	{
-    		return cn + ": TCP : " + pms.getInetAddress() + ":" + pms.getPort();
-    	}
-    	else
-    	{
-    		return "TCP : " + pms.getInetAddress() + ":" + pms.getPort();
-    	}
+        String cn = getConnectionName();
+        if(0 < cn.length())
+        {
+            return cn + ": TCP : " + pms.getInetAddress() + ":" + pms.getPort();
+        }
+        else
+        {
+            return "TCP : " + pms.getInetAddress() + ":" + pms.getPort();
+        }
     }
 
     @Override
